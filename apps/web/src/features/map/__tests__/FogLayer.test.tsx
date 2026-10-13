@@ -26,39 +26,43 @@ describe('Fog over Commercial Requirements', () => {
     vi.mocked(usePrefersReducedMotion).mockReturnValue(false);
   });
 
-  it('renders root container on the east side at z-[6] under the Commercial tag', () => {
+  it('renders the fog above traffic and below map markers', () => {
     render(<FogLayer />);
     const root = screen.getByTestId('fog-layer-root');
     expect(root).toBeDefined();
-    expect(root.className).toContain('z-[6]');
+    expect(root.className).toContain('z-[7]');
     expect(root.className).toContain('absolute');
     expect(root.className).toContain('inset-0');
   });
 
-  it('renders base feathered gradient over Commercial half (right-0 w-1/2) with 55-70% opacity and 14% ramp-in', () => {
+  it('feathers gently from the river across the Commercial side', () => {
     render(<FogLayer />);
     const haze = screen.getByTestId('locked-zone-haze');
     expect(haze).toBeDefined();
+    expect(haze.className).toContain('left-[42%]');
     expect(haze.className).toContain('right-0');
-    expect(haze.className).toContain('w-1/2');
 
-    // 55% to 70% opacity
+    // The overlay stays translucent so streets and traffic remain visible below it.
     const opacity = parseFloat(haze.style.opacity);
-    expect(opacity).toBeGreaterThanOrEqual(0.55);
-    expect(opacity).toBeLessThanOrEqual(0.70);
+    expect(opacity).toBeGreaterThanOrEqual(0.40);
+    expect(opacity).toBeLessThanOrEqual(0.50);
 
-    // Ramps in over first 14% at the river
+    // The wide ramp avoids a hard vertical seam at the river.
     expect(haze.style.background).toContain('linear-gradient');
     expect(haze.style.background).toContain('transparent 0%');
-    expect(haze.style.background).toContain('14%');
+    expect(haze.style.background).toContain('20%');
+    expect(haze.style.background).toContain('48%');
     expect(haze.style.background).toContain(designTokens.color.overlay.hazeLocked); // #919190
   });
 
-  it('renders two drifting layers with 40-60 second loops, transform-only drifting, and river feathering mask', () => {
+  it('renders two drifting cloud layers with a broad river feather', () => {
     render(<FogLayer />);
     const container = screen.getByTestId('fog-drifting-container');
     expect(container).toBeDefined();
-    expect(container.style.maskImage).toContain('14%');
+    expect(container.className).toContain('left-[42%]');
+    expect(container.style.maskImage).toContain('18%');
+    expect(container.style.maskImage).toContain('48%');
+    expect(container.style.maskImage).toContain('76%');
 
     const layer1 = screen.getByTestId('fog-cloud-layer-1');
     const layer2 = screen.getByTestId('fog-cloud-layer-2');

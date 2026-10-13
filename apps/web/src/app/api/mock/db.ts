@@ -64,6 +64,7 @@ export interface Session {
   status: 'active' | 'won' | 'lost';
   node: GameNode;
   eliminatedDigits?: string[];
+  ice?: IceType;
 }
 
 export type TransactionCategory =
@@ -438,7 +439,7 @@ export function getActiveAccount(): MockAccount {
     mockAccounts['ZERO_COOL'] = {
       id: 'acc-zero-cool',
       handle: 'ZERO_COOL',
-      avatarUrl: '',
+      avatarUrl: '/Character portraits/Player avatars.png',
       createdAt: Date.now(),
       settings: { ...defaultSettings },
       wallet: mockWallet,
@@ -479,7 +480,7 @@ export function createAccount(handle: string, avatarUrl: string): MockAccount {
   const newAcc: MockAccount = {
     id: `acc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     handle: cleanHandle,
-    avatarUrl: avatarUrl || '',
+    avatarUrl: avatarUrl || '/Character portraits/Player avatars.png',
     createdAt: Date.now(),
     settings: { ...defaultSettings },
     wallet: {
@@ -1047,7 +1048,7 @@ export function startDuelSession(data: {
     status: 'active',
     player: {
       handle: data.playerHandle ?? 'ZERO_COOL',
-      avatar: '/icons/glyph-camera.svg',
+      avatar: '/Character portraits/Player avatars.png',
       guesses: [],
       activeEffects: [],
       shieldActive: false,
@@ -1055,7 +1056,7 @@ export function startDuelSession(data: {
     },
     rival: {
       handle: 'Null_Byte',
-      avatar: '🤖',
+      avatar: '/Character portraits/Null_Byte.png',
       guesses: [],
       activeEffects: [],
       shieldActive: false,

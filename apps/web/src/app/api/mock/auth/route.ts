@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Callsign may only contain letters, numbers, and underscores' }, { status: 400 });
     }
 
-    const account = createAccount(cleanHandle, avatarUrl || '/icons/glyph-camera.svg');
+    const account = createAccount(cleanHandle, avatarUrl || '/Character portraits/Player avatars.png');
     return NextResponse.json({
       profile: {
         id: account.id,

@@ -66,10 +66,10 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
               variant="icon"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2.5 bg-transparent border-transparent hover:border-transparent text-ink text-xs"
+              className="-mr-2 bg-transparent border-transparent hover:border-transparent text-ink text-xs p-1"
             >
-              <span className="w-6 h-6 rounded-full bg-ink/10 flex items-center justify-center hover:bg-ink/20">
-                ✕
+              <span className="w-7 h-7 rounded-full bg-ink/10 flex items-center justify-center hover:bg-ink/20">
+                <img src="/icons/icon-close.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
               </span>
             </Button>
           </div>
@@ -90,9 +90,17 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
                   </span>
                   {tool ? (
                     <div className="flex items-center justify-between mt-1">
-                      <span className="font-heading text-xs font-bold text-ink truncate">
-                        {tool.name}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {tool.icon && (
+                          <div className="w-5 h-5 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+                          </div>
+                        )}
+                        <span className="font-heading text-xs font-bold text-ink truncate">
+                          {tool.name}
+                        </span>
+                      </div>
                       <Button
                         variant="ghost"
                         compact
@@ -137,18 +145,31 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
                         : 'bg-panel border-ink-muted/40'
                     }`}
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-heading text-sm font-bold text-ink truncate">
-                          {tool.name}
-                        </span>
-                        <span className="font-data text-[10px] bg-ink/10 px-1.5 py-0.2 rounded font-bold">
-                          x{count}
-                        </span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {tool.icon && (
+                        <div className="w-9 h-9 rounded bg-panel-dark/5 border border-line p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+                          {isEquipped && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full p-0.5 shadow-sm flex items-center justify-center">
+                              <img src="/icons/icon-check.svg" alt="" className="w-3 h-3 object-contain" aria-hidden="true" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-heading text-sm font-bold text-ink truncate">
+                            {tool.name}
+                          </span>
+                          <span className="font-data text-[10px] bg-ink/10 px-1.5 py-0.2 rounded font-bold">
+                            x{count}
+                          </span>
+                        </div>
+                        <p className="font-data text-[11px] text-ink-muted truncate mt-0.5">
+                          {tool.effect}
+                        </p>
                       </div>
-                      <p className="font-data text-[11px] text-ink-muted truncate mt-0.5">
-                        {tool.effect}
-                      </p>
                     </div>
 
                     <Button

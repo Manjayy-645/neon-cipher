@@ -17,12 +17,12 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
   const [selectedTab, setSelectedTab] = useState<'stats' | 'cosmetics'>('stats');
 
   return (
-    <div className="bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
+    <div className="scene-card bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
       {/* Header with Avatar, Handle, Rank */}
       <div className="flex items-center gap-3 border-b border-line pb-3">
-        <div className="w-12 h-12 rounded-sm border border-line bg-panel flex items-center justify-center shrink-0">
+        <div className="w-12 h-12 rounded-sm border border-line bg-panel flex items-center justify-center shrink-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={avatarUrl} alt={handle} className="w-8 h-8 object-contain" />
+          <img src={avatarUrl} alt={handle} className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

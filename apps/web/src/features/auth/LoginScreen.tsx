@@ -8,20 +8,13 @@ import { useSettingsStore } from '@/stores/settings-store';
 import { soundFx } from '@/lib/audio';
 import { Button } from '@/components/ui/Button';
 
-const AVAILABLE_AVATARS = [
-  { id: 'camera', url: '/icons/glyph-camera.svg', name: 'Optics Relay' },
-  { id: 'terminal', url: '/icons/glyph-terminal.svg', name: 'Decker Console' },
-  { id: 'router', url: '/icons/glyph-router.svg', name: 'Backbone Router' },
-  { id: 'relay', url: '/icons/glyph-relay.svg', name: 'Radio Tower' },
-  { id: 'server', url: '/icons/glyph-server.svg', name: 'Data Vault' },
-  { id: 'safe', url: '/icons/glyph-safe.svg', name: 'Hardware Safe' },
-  { id: 'atm', url: '/icons/glyph-atm.svg', name: 'Credit Node' },
-  { id: 'vending', url: '/icons/glyph-vending.svg', name: 'Street Dispenser' },
-];
+import { PLAYER_AVATARS } from '@neon-cipher/game-rules';
+
+const AVAILABLE_AVATARS = PLAYER_AVATARS;
 
 const PRESET_ACCOUNTS = [
-  { handle: 'ZERO_COOL', avatarUrl: '/icons/glyph-camera.svg', desc: 'Standard Decker ($12,500)' },
-  { handle: 'PHREAK', avatarUrl: '/icons/glyph-router.svg', desc: 'Pro Hacker ($3,200)' },
+  { handle: 'ZERO_COOL', avatarUrl: '/Character portraits/Player avatars.png', desc: 'Standard Decker ($12,500)' },
+  { handle: 'PHREAK', avatarUrl: '/Character portraits/Player avatars (2).png', desc: 'Pro Hacker ($3,200)' },
 ];
 
 export function LoginScreen() {
@@ -30,7 +23,7 @@ export function LoginScreen() {
   const settings = useSettingsStore();
 
   const [handle, setHandle] = useState('ZERO_COOL');
-  const [selectedAvatar, setSelectedAvatar] = useState('/icons/glyph-camera.svg');
+  const [selectedAvatar, setSelectedAvatar] = useState('/Character portraits/Player avatars.png');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -85,16 +78,16 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="h-full w-full bg-panel flex flex-col justify-between p-5 font-data text-ink overflow-y-auto">
+    <div className="scene-ground scene-arrive h-full w-full flex flex-col justify-between p-5 font-data text-ink overflow-y-auto">
       {/* Top Banner / Nix Mentor microcopy */}
       <div className="bg-panel-light border border-line p-3.5 rounded-md shadow-card flex items-start gap-3 shrink-0">
-        <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent flex items-center justify-center font-bold text-accent-text text-xs shrink-0">
-          NX
+        <div className="w-8 h-8 rounded-full border border-accent overflow-hidden shrink-0">
+          <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="type-label text-[10px] text-accent-text font-bold">NIX TRANSMISSION</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
           </div>
           <p className="text-xs text-ink mt-0.5 leading-relaxed">
             Signal stable. Lock is local. Enter your decker callsign and configure your transceiver identity.
@@ -139,8 +132,13 @@ export function LoginScreen() {
           </div>
 
           {error ? (
-            <p className="text-xs text-danger-text font-semibold flex items-center gap-1 mt-1">
-              <span>⚠</span> {error}
+            <p className="text-xs text-danger-text font-semibold flex items-center gap-1.5 mt-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>{error}</span>
             </p>
           ) : (
             <p className="text-[11px] text-ink-muted">
@@ -154,7 +152,7 @@ export function LoginScreen() {
           <label className="type-label text-[11px] block">
             AVATAR TRANSCEIVER GLYPH
           </label>
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {AVAILABLE_AVATARS.map((av) => {
               const isSelected = selectedAvatar === av.url;
               return (
@@ -165,7 +163,7 @@ export function LoginScreen() {
                     setSelectedAvatar(av.url);
                     soundFx.playUiBeep();
                   }}
-                  className={`min-h-[48px] p-2 rounded-[8px] flex flex-col items-center justify-center transition-all relative ${
+                  className={`min-h-[52px] p-1.5 rounded-[8px] flex flex-col items-center justify-center transition-all relative ${
                     isSelected
                       ? 'bg-accent/15 border-accent ring-2 ring-accent/30'
                       : ''
@@ -174,7 +172,7 @@ export function LoginScreen() {
                   aria-label={`Select ${av.name} avatar`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={av.url} alt="" className="w-6 h-6 object-contain" />
+                  <img src={av.url} alt={av.name} className="w-9 h-9 object-cover rounded-sm" />
                   {isSelected && (
                     <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent" />
                   )}

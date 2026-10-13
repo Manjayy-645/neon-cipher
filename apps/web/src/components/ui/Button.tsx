@@ -199,8 +199,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
 
   const content = (
     <>
-      {/* Content wrapper: kept invisible while loading so width does not jump */}
-      <span className={`inline-flex items-center justify-center gap-1.5 ${loading ? 'invisible' : ''}`}>
+      <span className={loading ? 'invisible inline-flex items-center justify-center gap-1.5' : 'contents'}>
         {displayLabel}
         {arrow && (
           <svg

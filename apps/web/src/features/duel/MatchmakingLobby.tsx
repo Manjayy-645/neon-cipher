@@ -176,8 +176,13 @@ export function MatchmakingLobby() {
               <span className="font-mono text-money-text">+{potCalc.netPot.toLocaleString()} CR</span>
             </div>
             {!canAfford && (
-              <div className="mt-1 text-[10px] text-danger-text font-bold">
-                ⚠️ INSUFFICIENT CREDITS (Required: {totalCost.toLocaleString()} CR with Ante)
+              <div className="mt-1 text-[10px] text-danger-text font-bold flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-danger" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>INSUFFICIENT CREDITS (Required: {totalCost.toLocaleString()} CR with Ante)</span>
               </div>
             )}
           </div>
@@ -193,8 +198,13 @@ export function MatchmakingLobby() {
           disabled={isLoading || (!canAfford && selectedMatchType !== 'casual')}
           loading={isLoading}
           data-testid="quick-jack-in-button"
+          className="flex items-center justify-center gap-2"
         >
-          ⚡ QUICK JACK-IN (VS NULL_BYTE)
+          <div className="w-5 h-5 rounded-full overflow-hidden border border-panel-light/60 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Character portraits/Null_Byte.png" alt="Null_Byte" className="w-full h-full object-cover" />
+          </div>
+          <span>QUICK JACK-IN (VS NULL_BYTE)</span>
         </Button>
 
         <div className="flex items-center justify-between pt-1">

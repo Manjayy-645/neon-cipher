@@ -9,6 +9,7 @@ import { isFeatureEnabled } from '../../lib/flags';
 import { getNodes } from './nodeService';
 import { MapOverlay } from './MapOverlay';
 import { FogLayer } from './FogLayer';
+import { AmbientLife } from './AmbientLife';
 import {
   CAMERA_PRESETS,
   CAMERA_EASE_DURATION,
@@ -262,7 +263,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
     >
       <div 
         ref={mapContainer} 
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 z-0 w-full h-full"
         style={{ touchAction: 'none' }}
       >
         {/* Optional grain overlay at under 4 percent opacity, behind markers, pointer-events none */}
@@ -276,24 +277,22 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
           }}
         />
 
-        {/* FogLayer over Commercial side (includes locked-zone-haze) */}
-        <FogLayer />
-
-        {/* Time of Day Tint Overlay */}
-        <div
-          data-testid="time-of-day-tint"
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none transition-all duration-1000 z-[7]"
-          style={{
-            backgroundColor: 'var(--time-tint)',
-            opacity: 'var(--time-tint-opacity)',
-          }}
-        />
-
-        {isMapLoaded && mapInstance.current && (
-          <MapOverlay map={mapInstance.current} nodes={nodes} zoom={zoom} />
-        )}
       </div>
+
+      {isMapLoaded && mapInstance.current && <AmbientLife map={mapInstance.current} />}
+      <FogLayer />
+      <div
+        data-testid="time-of-day-tint"
+        aria-hidden="true"
+        className="absolute inset-0 z-[8] pointer-events-none transition-all duration-1000"
+        style={{
+          backgroundColor: 'var(--time-tint)',
+          opacity: 'var(--time-tint-opacity)',
+        }}
+      />
+      {isMapLoaded && mapInstance.current && (
+        <MapOverlay map={mapInstance.current} nodes={nodes} zoom={zoom} />
+      )}
 
       {showDevOverlay && (
         <div 

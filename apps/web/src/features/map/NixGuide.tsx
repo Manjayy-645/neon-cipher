@@ -171,22 +171,14 @@ export const NixGuide: React.FC = () => {
             data-testid="nix-portrait-button"
             onClick={toggleBubble}
             aria-label="Nix Guide"
-            className="w-[48px] h-[48px] rounded-full bg-panel-light border border-line shadow-card flex items-center justify-center p-1 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-95 transition-transform"
+            className="w-[48px] h-[48px] rounded-full bg-panel-light border border-line shadow-card flex items-center justify-center p-0.5 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-95 transition-transform overflow-hidden"
           >
-            {/* Nix stylized avatar icon */}
-            <svg
-              className="w-7 h-7 text-ink"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="13" rx="2" ry="2" />
-              <path d="M7 9h2M15 9h2M9 13h6M10 20l2-3 2 3" />
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Character portraits/Nix.png"
+              alt="Nix"
+              className="w-full h-full rounded-full object-cover"
+            />
           </button>
 
           {/* Notification Dot */}

@@ -66,7 +66,8 @@ never shown by color alone.
   - Marker: 0 1px 1px rgba(40,30,20,0.45)
   - Bubble or card: 0 2px 8px rgba(0,0,0,0.25)
   - Bottom sheet: 0 -4px 14px rgba(0,0,0,0.25)
-- Texture: optional grain overlay, opacity below 4 percent. Panels stay flat.
+- Texture: optional grain overlay, opacity below 4 percent. Page canvases may
+  use equally faint token-colored route-grid or contour marks; panels stay flat.
 
 ## 4a. Dark mode
 Panels switch to PROPOSED dark values (#2B2824 panel, #35312C panel light,

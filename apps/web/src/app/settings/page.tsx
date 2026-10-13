@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const router = useRouter();
 
   return (
-    <div className="h-full w-full bg-panel p-4 flex flex-col justify-center items-center">
+    <div className="scene-ground scene-arrive h-full w-full p-4 flex flex-col justify-center items-center">
       <SettingsDrawer isOpen={true} onClose={() => router.push('/map')} />
     </div>
   );

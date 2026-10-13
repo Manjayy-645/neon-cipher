@@ -48,25 +48,20 @@ export const DistrictHeaderChip: React.FC<DistrictHeaderChipProps> = ({
         aria-label="Back to city overview"
         className="w-[44px] h-[44px] flex items-center justify-center rounded-sm text-ink hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none cursor-pointer transition-transform active:scale-[0.95]"
       >
-        <svg
-          className="w-5 h-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <img
+          src="/icons/icon-back-arrow.svg"
+          alt=""
+          className="w-5 h-5 object-contain pointer-events-none"
           aria-hidden="true"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        />
       </button>
 
       <div className="flex flex-col ml-1 select-none">
         <span className="font-heading text-[15px] leading-[18px] font-bold uppercase tracking-[0.5px] text-ink">
           {districtDef.name}
         </span>
-        <span className="font-data text-[11px] leading-[14px] text-ink-muted uppercase">
+        <span className="font-data text-[11px] leading-[14px] text-ink-muted uppercase flex items-center gap-1">
+          <img src="/icons/icon-pin.svg" alt="" className="w-2.5 h-2.5 object-contain" aria-hidden="true" />
           {totalCount} NODES
         </span>
       </div>

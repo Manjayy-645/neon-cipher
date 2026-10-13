@@ -70,13 +70,13 @@ export function DevMenu() {
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="w-full max-w-[380px] h-full bg-panel border-l border-line shadow-2xl flex flex-col font-data text-ink overflow-hidden"
+            className="scene-ground w-full max-w-[380px] h-full border-l border-line shadow-2xl flex flex-col font-data text-ink overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-panel-light shrink-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-accent" />
                 <h2 className="font-data text-sm font-bold tracking-wider text-ink uppercase">
                   DEV CONTROL MATRIX
                 </h2>
@@ -448,7 +448,7 @@ export function DevMenu() {
                     <Button
                       variant="secondary"
                       compact
-                      onClick={() => handleSwitchAccount('ZERO_COOL', '/icons/glyph-camera.svg')}
+                      onClick={() => handleSwitchAccount('ZERO_COOL', '/Character portraits/Player avatars.png')}
                       className="p-1.5 bg-panel border border-line text-[11px] hover:border-ink-muted normal-case tracking-normal block w-full text-center"
                     >
                       Load ZERO_COOL
@@ -456,7 +456,7 @@ export function DevMenu() {
                     <Button
                       variant="secondary"
                       compact
-                      onClick={() => handleSwitchAccount('PHREAK', '/icons/glyph-router.svg')}
+                      onClick={() => handleSwitchAccount('PHREAK', '/Character portraits/Player avatars (2).png')}
                       className="p-1.5 bg-panel border border-line text-[11px] hover:border-ink-muted normal-case tracking-normal block w-full text-center"
                     >
                       Load PHREAK

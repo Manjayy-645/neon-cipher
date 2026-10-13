@@ -5,7 +5,6 @@ import { GameNode } from './nodeService';
 import { MapMarker } from './MapMarker';
 import { DistrictLabel } from './DistrictLabel';
 import { DistrictTag } from './DistrictTag';
-import { AmbientLife } from './AmbientLife';
 import { DISTRICTS } from './map-data';
 import { DISTRICT_DEFINITIONS } from './districtConfig';
 import { percentToLngLat } from './coordinates';
@@ -102,9 +101,7 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
     : [];
 
   return (
-    <div id="map-overlay-root" className="absolute inset-0 w-full h-full pointer-events-none z-10">
-      <AmbientLife map={map} />
-
+    <div id="map-overlay-root" className="absolute inset-0 w-full h-full pointer-events-none z-[10]">
       <AnimatePresence>
         {!showMarkers ? (
           <React.Fragment key="district-overview-layer">

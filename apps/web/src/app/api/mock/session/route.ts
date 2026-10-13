@@ -66,6 +66,10 @@ export async function POST(request: Request) {
       timerSeconds,
     };
 
+    const iceTypes = ['Liar', 'Drift', 'Pot-only', 'Ghost', 'Sticky', 'None'] as const;
+    const configuredIce = defense?.ice && defense.ice !== 'None' ? defense.ice : undefined;
+    const activeIce = configuredIce || iceTypeFromCampaign || (node.tier >= 3 ? iceTypes[Math.floor(Math.random() * 5)] : 'None');
+
     const session = {
       id: sessionId,
       nodeId: node.id,
@@ -75,13 +79,10 @@ export async function POST(request: Request) {
       status: 'active' as const,
       node: sessionNode,
       eliminatedDigits,
+      ice: activeIce,
     };
 
     mockSessions.set(sessionId, session);
-
-    const iceTypes = ['Liar', 'Drift', 'Pot-only', 'Ghost', 'Sticky', 'None'] as const;
-    const configuredIce = defense?.ice && defense.ice !== 'None' ? defense.ice : undefined;
-    const activeIce = configuredIce || iceTypeFromCampaign || (node.tier >= 3 ? iceTypes[Math.floor(Math.random() * 5)] : 'None');
 
     return NextResponse.json({
       sessionId,

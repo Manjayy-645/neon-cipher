@@ -28,14 +28,14 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
   return (
     <div className="w-full relative flex flex-col items-center">
       {/* Cyberdeck Schematic SVG Blueprint */}
-      <div className="w-full max-w-md bg-surface-dark border border-line rounded-md p-4 shadow-card relative overflow-hidden">
+      <div className="scene-card w-full max-w-md bg-panel-light border border-line rounded-md p-4 shadow-card relative overflow-hidden">
 
         {/* Chassis Header */}
         <div className="flex justify-between items-center border-b border-ink-muted/40 pb-2 mb-3 text-[10px] font-data text-ink-muted">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span className="font-bold text-accent tracking-widest uppercase">
-              DECK ARCHITECTURE // MERIDIAN-480
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span className="font-bold text-accent-text tracking-widest uppercase">
+              FIELD RIG // MERIDIAN-480
             </span>
           </div>
           <span className="opacity-70">BUS FREQ: 800MHz</span>
@@ -50,6 +50,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
             isSelected={selectedSlotId === 'rig-memory-buffer-1'}
             onClick={() => onSelectSlot('rig-memory-buffer-1')}
             tier="T1 / T2"
+            icon="/icons/icon-memory-buffer.svg"
           />
 
           {/* Slot 2: Memory Buffer Mk II */}
@@ -59,6 +60,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
             isSelected={selectedSlotId === 'rig-memory-buffer-2'}
             onClick={() => onSelectSlot('rig-memory-buffer-2')}
             tier="T3 / T4"
+            icon="/icons/icon-memory-buffer.svg"
           />
 
           {/* Slot 3: Heuristic Co-Processor (Full Width) */}
@@ -69,6 +71,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
               isSelected={selectedSlotId === 'rig-heuristic-coprocessor'}
               onClick={() => onSelectSlot('rig-heuristic-coprocessor')}
               subtitle="Carrier Wave Filter // 2 Digits Pre-Removed"
+              icon="/icons/icon-heuristic-coprocessor.svg"
             />
           </div>
 
@@ -111,6 +114,7 @@ function HardwareSlotCard({
   onClick,
   tier,
   subtitle,
+  icon,
 }: {
   title: string;
   item?: RigHardwareItem;
@@ -118,6 +122,7 @@ function HardwareSlotCard({
   onClick: () => void;
   tier?: string;
   subtitle?: string;
+  icon?: string;
 }) {
   const isInstalled = item?.installed;
   const isBurned = item?.burned;
@@ -133,32 +138,40 @@ function HardwareSlotCard({
           : isBurned
           ? 'bg-danger/15 !border-danger/80'
           : isInstalled
-          ? 'bg-surface-dark/90 !border-accent/70'
-          : 'bg-surface-dark/60 border-ink-muted/30 opacity-75 hover:opacity-100'
+          ? 'bg-panel !border-accent/70'
+          : 'bg-panel !border-line opacity-75 hover:opacity-100'
       }`}
     >
-      <div className="flex items-start justify-between w-full">
-        <div>
-          <span className="text-[9px] text-ink-muted uppercase tracking-wider block">
-            {tier ? `BUS ${tier}` : 'CO-PROC RAIL'}
-          </span>
-          <h4
-            className={`font-heading text-xs font-bold ${
-              isBurned ? 'text-danger-text' : isInstalled ? 'text-panel-light' : 'text-ink-muted'
-            }`}
-          >
-            {title}
-          </h4>
+      <div className="flex items-start justify-between w-full gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {icon && (
+            <div className="w-8 h-8 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={icon} alt={title} className="w-full h-full object-contain" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <span className="text-[9px] text-ink-muted uppercase tracking-wider block">
+              {tier ? `BUS ${tier}` : 'CO-PROC RAIL'}
+            </span>
+            <h4
+              className={`font-heading text-xs font-bold truncate ${
+                isBurned ? 'text-danger-text' : isInstalled ? 'text-ink' : 'text-ink-muted'
+              }`}
+            >
+              {title}
+            </h4>
+          </div>
         </div>
 
         {/* Status Badge */}
-        <div>
+        <div className="shrink-0">
           {isBurned ? (
             <span className="bg-danger/30 text-danger-text border border-danger/60 px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider animate-pulse">
               BURNED
             </span>
           ) : isInstalled ? (
-            <span className="bg-accent/20 text-accent border border-accent/40 px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider">
+            <span className="bg-accent/15 text-accent-text border border-accent/40 px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider">
               ONLINE
             </span>
           ) : (
@@ -174,7 +187,7 @@ function HardwareSlotCard({
           {subtitle || (isInstalled ? '+1 Extra Probe' : 'Slot Available')}
         </span>
         {isBurned && (
-          <span className="text-danger font-bold text-[9px] underline">
+          <span className="text-danger-text font-bold text-[9px] underline">
             Repair (${item.repairCost})
           </span>
         )}
@@ -193,7 +206,7 @@ function ToolSlotCard({
   onClick,
 }: {
   slotNumber: number;
-  tool?: { name: string; effect: string };
+  tool?: { name: string; effect: string; icon?: string };
   isSelected: boolean;
   onClick: () => void;
 }) {
@@ -206,8 +219,8 @@ function ToolSlotCard({
         isSelected
           ? 'ring-2 ring-accent !border-accent'
           : tool
-          ? 'bg-surface-dark/90 !border-accent/50'
-          : 'bg-surface-dark/60 border-dashed border-ink-muted/30 opacity-70 hover:opacity-100'
+          ? 'bg-panel !border-accent/50'
+          : 'bg-panel border-dashed border-ink-muted/50 opacity-70 hover:opacity-100'
       }`}
     >
       <div className="flex items-center justify-between w-full">
@@ -225,13 +238,21 @@ function ToolSlotCard({
         </span>
       </div>
 
-      <div className="mt-1">
-        <h4 className="font-heading text-xs font-bold text-panel-light truncate">
-          {tool ? tool.name : '[Empty Bay]'}
-        </h4>
-        <p className="text-[9px] text-ink-muted truncate">
-          {tool ? tool.effect : 'Tap to arm sabotage tool'}
-        </p>
+      <div className="mt-1 flex items-center gap-2">
+        {tool?.icon && (
+          <div className="w-7 h-7 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <h4 className="font-heading text-xs font-bold text-ink truncate">
+            {tool ? tool.name : '[Empty Bay]'}
+          </h4>
+          <p className="text-[9px] text-ink-muted truncate">
+            {tool ? tool.effect : 'Tap to arm sabotage tool'}
+          </p>
+        </div>
       </div>
     </Button>
   );

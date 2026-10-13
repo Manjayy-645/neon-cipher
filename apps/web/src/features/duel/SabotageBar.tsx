@@ -22,6 +22,15 @@ export interface SabotageBarProps {
   }) => void;
 }
 
+const SABOTAGE_ICONS: Record<string, string> = {
+  'tool-static-injector': '/icons/icon-static-injector.svg',
+  'tool-firewall-patch': '/icons/icon-firewall-patch.svg',
+  'tool-blackout-ping': '/icons/icon-blackout-ping.svg',
+  'tool-trace-accelerator': '/icons/icon-trace-accelerator.svg',
+  'tool-snoop-packet': '/icons/icon-snoop-packet.svg',
+  'tool-false-flag-echo': '/icons/icon-false-flag-echo.svg',
+};
+
 export function SabotageBar({
   duelId: propDuelId,
   playerCredits: propPlayerCredits,
@@ -46,7 +55,7 @@ export function SabotageBar({
   return (
     <section
       aria-label="Sabotage Deck"
-      className="w-full bg-panel/90 backdrop-blur-sm border-t border-line p-3 flex flex-col gap-2.5 transition-all"
+      className="w-full bg-panel border-t border-line p-3 flex flex-col gap-2.5 transition-all"
     >
       {/* Sabotage Header with credits info */}
       <div className="flex items-center justify-between">
@@ -83,9 +92,11 @@ export function SabotageBar({
               clearSabotageFeedback();
             }}
             aria-label="Dismiss sabotage notice"
-            className="ml-2 text-ink-muted text-sm"
+            className="ml-2 text-ink-muted text-sm p-1"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
       )}
@@ -125,18 +136,30 @@ export function SabotageBar({
               disabled={!canAfford || isLoading || propDisabled}
               aria-label={`Activate ${tool.name} for ${tool.creditCost} credits`}
               data-testid={`sabotage-${tool.id}`}
-              className={`min-h-[52px] p-2.5 text-left flex flex-col justify-between normal-case tracking-normal items-start ${
+              className={`min-h-[56px] p-2 text-left flex flex-col justify-between normal-case tracking-normal items-start ${
                 canAfford
                   ? 'hover:border-accent hover:shadow-card'
                   : 'bg-panel/40 border-line/40 opacity-55'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-data text-[11px] font-bold text-ink truncate">
-                  {tool.name}
-                </span>
+              <div className="flex items-center justify-between w-full gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {SABOTAGE_ICONS[tool.id] && (
+                    <div className="w-5 h-5 rounded bg-panel-light border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={SABOTAGE_ICONS[tool.id]}
+                        alt={tool.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <span className="font-data text-[11px] font-bold text-ink truncate">
+                    {tool.name}
+                  </span>
+                </div>
                 <span
-                  className={`font-data text-[11px] font-bold ${
+                  className={`font-data text-[10px] font-bold shrink-0 ${
                     canAfford ? 'text-money-text' : 'text-danger-text'
                   }`}
                 >

@@ -23,7 +23,7 @@ export default function CommsPage() {
   };
 
   return (
-    <main className="w-full h-full relative overflow-hidden bg-panel-light">
+    <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden">
       {selectedChapter ? (
         <NarrativeBriefing
           chapter={selectedChapter}

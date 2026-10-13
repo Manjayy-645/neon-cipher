@@ -32,7 +32,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   return (
-    <div className="bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
+    <div className="scene-card bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
       {/* Header and Sub Navigation */}
       <div className="border-b border-line pb-3">
         <h2 className="font-heading text-title tracking-wide">DECKER NETWORK & EXTRAS</h2>

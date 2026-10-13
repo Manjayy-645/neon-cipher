@@ -108,24 +108,24 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
       onClick={() => handleClose?.()}
     >
       <div
-        className="w-full max-w-[480px] max-h-[90vh] bg-panel-light border-t sm:border border-line rounded-t-lg sm:rounded-lg shadow-sheet flex flex-col overflow-hidden text-ink font-data"
+        className="scene-ground w-full max-w-[480px] max-h-[90vh] border-t sm:border border-line rounded-t-lg sm:rounded-lg shadow-sheet flex flex-col overflow-hidden text-ink font-data"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-panel shrink-0">
-          <div>
-            <h2 className="font-heading text-title tracking-wide text-ink">SETTINGS</h2>
-            <p className="type-label text-[10px] text-ink-muted">DECK HARDWARE & ACCOUNT PARAMS</p>
+          <div className="flex items-center gap-3">
+            <img src="/icons/icon-settings.svg" alt="" className="w-6 h-6 object-contain pointer-events-none" aria-hidden="true" />
+            <div>
+              <h2 className="font-heading text-title tracking-wide text-ink">SETTINGS</h2>
+              <p className="type-label text-[10px] text-ink-muted">DECK HARDWARE & ACCOUNT PARAMS</p>
+            </div>
           </div>
           <Button
             variant="icon"
             onClick={() => handleClose?.()}
             aria-label="Close settings"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <img src="/icons/icon-close.svg" alt="" className="w-5 h-5 object-contain pointer-events-none" aria-hidden="true" />
           </Button>
         </div>
 
@@ -133,7 +133,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
         {statusMessage && (
           <div className="bg-accent/15 border-b border-accent px-4 py-2 text-accent-text text-xs flex items-center justify-between">
             <span>{statusMessage}</span>
-            <Button variant="ghost" compact onClick={() => setStatusMessage(null)} aria-label="Dismiss status notification" className="text-accent font-bold px-2 h-auto min-h-[32px] border-none">✕</Button>
+            <Button
+              variant="ghost"
+              compact
+              onClick={() => setStatusMessage(null)}
+              aria-label="Dismiss status notification"
+              className="text-accent-text hover:text-ink px-2 h-auto min-h-[32px] border-none flex items-center justify-center p-1"
+            >
+              <img src="/icons/icon-close.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
+            </Button>
           </div>
         )}
 

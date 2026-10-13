@@ -109,7 +109,7 @@ export const AmbientLife: React.FC<AmbientLifeProps> = ({ map }) => {
   return (
     <div
       data-testid="ambient-life-layer"
-      className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden z-10"
+      className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden z-[6]"
       aria-hidden="true"
     >
       {/* 1. Animated Shop Sign: Alex's Tech / Corner Store */}
@@ -139,7 +139,10 @@ export const AmbientLife: React.FC<AmbientLifeProps> = ({ map }) => {
                 : undefined
             }
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-line shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Character portraits/Alex.png" alt="Alex" className="w-full h-full object-cover" />
+            </div>
             <span className="truncate">ALEX&apos;S TECH</span>
           </motion.div>
         </div>

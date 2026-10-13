@@ -196,7 +196,7 @@ export function Codemaker() {
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-panel text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
+    <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
       {/* Account & Mode Header Bar */}
       <div className="bg-panel-light border-b border-line px-4 py-3 flex items-center justify-between shrink-0">
         <div>
@@ -236,10 +236,12 @@ export function Codemaker() {
             variant="icon"
             compact
             onClick={() => setStatusMessage(null)}
-            className="text-accent ml-4"
+            className="text-accent ml-4 p-1"
             aria-label="Dismiss status message"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
       )}
@@ -337,7 +339,11 @@ export function Codemaker() {
               data-testid="weak-code-warning"
               className="bg-danger/10 border border-danger/30 text-danger-text p-2.5 rounded-sm font-data text-xs flex items-center gap-2"
             >
-              <span className="text-base font-bold shrink-0">⚠️</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-danger" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
               <div>
                 <strong className="block font-bold">WEAK CODE WARNING</strong>
                 <span>{weakWarning.warning}</span>

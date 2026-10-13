@@ -40,7 +40,7 @@ export const StaticHistoryOverlay: React.FC<StaticHistoryOverlayProps> = ({
   return (
     <div
       data-testid="static-history-overlay"
-      className="absolute inset-0 z-30 bg-ink/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center select-none overflow-hidden"
+      className="absolute inset-0 z-30 bg-ink/95 flex flex-col items-center justify-center p-4 text-center select-none overflow-hidden"
     >
       {/* Scanline / noise overlay */}
       <div
@@ -53,7 +53,9 @@ export const StaticHistoryOverlay: React.FC<StaticHistoryOverlayProps> = ({
 
       <div className="relative z-10 flex flex-col items-center gap-2 max-w-xs">
         <div className="w-10 h-10 rounded-full bg-danger/20 border border-danger flex items-center justify-center text-danger text-lg font-bold animate-pulse">
-          ⚡
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
         </div>
         <div className="font-data text-xs font-bold uppercase tracking-widest text-danger-text">
           STATIC BLACKOUT // BLACKOUT PING ACTIVE
@@ -84,7 +86,11 @@ export const ScrambleKeypadBanner: React.FC<ScrambleKeypadBannerProps> = ({ acti
       data-testid="scramble-keypad-banner"
       className="w-full bg-danger/20 border-y border-danger/60 px-3 py-1 flex items-center justify-center gap-2 text-danger-text text-center select-none animate-pulse"
     >
-      <span className="font-data text-xs font-bold">⚠️</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-danger" aria-hidden="true">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
       <span className="font-data text-[10px] sm:text-[11px] font-bold tracking-wider uppercase">
         KEYPAD MATRIX SCRAMBLED // DIGITS REORDERED
       </span>

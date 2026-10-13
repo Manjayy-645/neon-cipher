@@ -7,6 +7,7 @@ import { useCampaignStore } from '@/stores/campaign-store';
 import { useMapStore } from '@/stores/map-store';
 import { TutorialOverlay } from './TutorialOverlay';
 import { Button } from '@/components/ui/Button';
+import { getNodes } from '@/features/map/nodeService';
 
 export const MapTutorialHost: React.FC = () => {
   const {
@@ -19,6 +20,13 @@ export const MapTutorialHost: React.FC = () => {
   } = useCampaignStore();
 
   const selectedNodeId = useMapStore((s) => s.selectedNodeId);
+  const activeNodeId = useMapStore((s) => s.activeNodeId);
+  const sheetState = useMapStore((s) => s.sheetState);
+  const view = useMapStore((s) => s.view);
+  const selectedDistrict = useMapStore((s) => s.selectedDistrict);
+  const selectDistrict = useMapStore((s) => s.selectDistrict);
+  const setActiveNodeId = useMapStore((s) => s.setActiveNodeId);
+  const setSheetState = useMapStore((s) => s.setSheetState);
 
   useEffect(() => {
     loadCampaign();
@@ -29,6 +37,53 @@ export const MapTutorialHost: React.FC = () => {
     chapter?.tutorialSteps && tutorialActive
       ? chapter.tutorialSteps[tutorialStepIndex]
       : null;
+
+  useEffect(() => {
+    if (!tutorialActive || activeStep?.actionRequired !== 'tap-node' || !chapter?.mapNodeId) {
+      return;
+    }
+
+    const targetNode = getNodes().find((node) => node.id === chapter.mapNodeId);
+    if (
+      targetNode &&
+      (view !== 'district' || selectedDistrict !== targetNode.district)
+    ) {
+      selectDistrict(targetNode.district);
+    }
+  }, [tutorialActive, activeStep?.actionRequired, chapter?.mapNodeId, view, selectedDistrict, selectDistrict]);
+
+  useEffect(() => {
+    if (
+      !tutorialActive ||
+      activeStep?.actionRequired !== 'tap-jack-in' ||
+      !chapter?.mapNodeId
+    ) {
+      return;
+    }
+
+    if (
+      activeNodeId !== chapter.mapNodeId ||
+      selectedNodeId !== chapter.mapNodeId ||
+      view !== 'node'
+    ) {
+      setActiveNodeId(chapter.mapNodeId);
+      return;
+    }
+
+    if (sheetState === 'peek') {
+      setSheetState('half');
+    }
+  }, [
+    tutorialActive,
+    activeStep?.actionRequired,
+    chapter?.mapNodeId,
+    activeNodeId,
+    selectedNodeId,
+    view,
+    sheetState,
+    setActiveNodeId,
+    setSheetState,
+  ]);
 
   // Auto-advance if step requires tapping node and node was selected
   useEffect(() => {

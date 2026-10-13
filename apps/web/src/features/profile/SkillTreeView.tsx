@@ -39,7 +39,7 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
   ];
 
   return (
-    <div className="bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
+    <div className="scene-card bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
       {/* Header and Available Points */}
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>

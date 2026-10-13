@@ -20,11 +20,11 @@ export function MapHub({ onJackIn }: MapHubProps = {}) {
 
   return (
     <div
-      className="w-full h-full relative overflow-hidden bg-panel-light flex flex-col"
+      className="scene-ground w-full h-full relative overflow-hidden flex flex-col"
       data-testid="map-hub"
     >
       <MapEngine>
-        <div className="absolute top-[12px] left-[12px] right-[12px] sm:right-auto sm:max-w-[360px] z-30 pointer-events-none flex flex-col gap-[8px] items-start">
+        <div className={`absolute top-[12px] left-[12px] right-[12px] sm:right-auto sm:max-w-[360px] z-30 pointer-events-none flex flex-col gap-[8px] ${view === 'district' ? 'items-end' : 'items-start'}`}>
           <CampaignObjectiveBanner />
           {view === 'district' && <DistrictHeaderChip className="pointer-events-auto" />}
         </div>

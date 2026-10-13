@@ -42,7 +42,7 @@ export default function DevButtonsPage() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-panel p-4 sm:p-6 overflow-y-auto font-data text-ink">
+    <div className="scene-ground scene-arrive min-h-screen w-full p-4 sm:p-6 overflow-y-auto font-data text-ink">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Navigation & Header */}
         <header className="border-b border-line pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

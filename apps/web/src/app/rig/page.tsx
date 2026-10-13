@@ -99,16 +99,21 @@ export default function RigPage() {
   };
 
   return (
-    <main className="w-full h-full flex flex-col bg-panel-light text-ink overflow-hidden">
+    <main className="scene-ground scene-arrive w-full h-full flex flex-col text-ink overflow-hidden">
       {/* Top Header */}
-      <header className="px-4 py-4 sm:py-5 bg-panel border-b border-line shrink-0 flex items-center justify-between">
-        <div>
+      <header className="px-4 py-4 sm:py-5 bg-panel/90 border-b border-line shrink-0 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span aria-hidden="true" className="hidden xs:flex w-10 h-10 shrink-0 items-center justify-center rounded-md border border-accent/40 bg-accent/10 text-accent-text font-heading text-xl">
+            R
+          </span>
+          <div className="min-w-0">
           <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
             HARDWARE & SAFEHOUSE NETWORK
           </span>
           <h1 className="font-heading text-[28px] leading-[32px] font-normal text-ink">
-            RIG WORKBENCH
+            The Workbench
           </h1>
+          </div>
         </div>
 
         {/* Balances Display */}
@@ -124,7 +129,7 @@ export default function RigPage() {
       </header>
 
       {/* Navigation Tabs (Segmented Control) */}
-      <div className="px-4 py-3 bg-panel-light border-b border-line shrink-0">
+      <div className="px-4 py-3 bg-panel-light/85 border-b border-line shrink-0">
         <SegmentedControl
           ariaLabel="Rig Workbench Tabs"
           value={activeTab}

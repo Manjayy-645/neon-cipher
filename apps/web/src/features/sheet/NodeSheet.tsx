@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, useMotionValue, animate, PanInfo, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, PanInfo, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useMapStore } from '../../stores/map-store';
 import { getNodes, GameNode, NodeStatus } from '../map/nodeService';
@@ -56,8 +56,9 @@ function StatusChip({
     return (
       <span
         data-testid="status-chip-locked"
-        className="bg-ink-muted text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0"
+        className="bg-ink-muted text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0 flex items-center gap-1.5"
       >
+        <img src="/icons/icon-lock.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
         LOCKED
       </span>
     );
@@ -77,8 +78,9 @@ function StatusChip({
       return (
         <span
           data-testid="status-chip-cooldown"
-          className="bg-status-cooldown text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0"
+          className="bg-status-cooldown text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0 flex items-center gap-1.5"
         >
+          <img src="/icons/icon-clock.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
           COOLDOWN
         </span>
       );
@@ -86,8 +88,9 @@ function StatusChip({
       return (
         <span
           data-testid="status-chip-owned"
-          className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0"
+          className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0 flex items-center gap-1.5"
         >
+          <img src="/icons/icon-check.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
           OWNED
         </span>
       );
@@ -95,8 +98,9 @@ function StatusChip({
       return (
         <span
           data-testid="status-chip-tier"
-          className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0"
+          className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase shrink-0 flex items-center gap-1.5"
         >
+          <img src="/icons/icon-tier-badge.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
           TIER {tier}
         </span>
       );
@@ -104,6 +108,7 @@ function StatusChip({
 }
 
 import { useCampaignStore } from '../../stores/campaign-store';
+import { getChapterByNodeId } from '@neon-cipher/game-rules/src/index';
 import { SheetState } from '../../stores/map-store';
 
 export interface NodeSheetProps {
@@ -132,6 +137,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   const selectNode = useMapStore(s => s.selectNode);
   const setActiveNodeId = useMapStore(s => s.setActiveNodeId);
   const storeSheetState = useMapStore(s => s.sheetState);
+  const storeSheetHeight = useMapStore(s => s.sheetHeight);
   const setStoreSheetState = useMapStore(s => s.setSheetState);
   const mapBridgeUnlocked = useMapStore(s => s.unlocks.bridge);
   const campaignBridgeUnlocked = useCampaignStore(s => s.unlocks.bridge);
@@ -142,19 +148,51 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   const inventory = usePlayerStore((s) => s.inventory);
   const setEquippedTools = usePlayerStore((s) => s.setEquippedTools);
   const syncWallet = usePlayerStore((s) => s.syncWallet);
+  const activeChapterId = useCampaignStore((s) => s.activeChapterId);
+  const tutorialActive = useCampaignStore((s) => s.tutorialActive);
+  const tutorialStepIndex = useCampaignStore((s) => s.tutorialStepIndex);
+  const nextTutorialStep = useCampaignStore((s) => s.nextTutorialStep);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const effectiveNodeId = controlledNodeId !== undefined ? controlledNodeId : (activeNodeId ?? selectedNodeId);
-  const effectiveSheetState = controlledSheetState ?? storeSheetState;
 
-  const [snapIndex, setSnapIndex] = useState(() => {
-    if (effectiveSheetState) {
-      return STATE_TO_INDEX[effectiveSheetState] ?? 1;
+  // Internal override state for user-driven interactions (drag, click, keyboard)
+  const [internalState, setInternalState] = useState<SheetState | null>(null);
+  const prevNodeIdRef = React.useRef<string | null | undefined>(effectiveNodeId);
+  const prevControlledRef = React.useRef<SheetState | undefined>(controlledSheetState);
+
+  // Clear internal override when selected node or controlled prop changes
+  useEffect(() => {
+    if (prevNodeIdRef.current !== effectiveNodeId) {
+      prevNodeIdRef.current = effectiveNodeId;
+      setInternalState(null);
     }
-    return effectiveNodeId ? 1 : 0;
-  });
+  }, [effectiveNodeId]);
+
+  useEffect(() => {
+    if (prevControlledRef.current !== controlledSheetState) {
+      prevControlledRef.current = controlledSheetState;
+      setInternalState(null);
+    }
+  }, [controlledSheetState]);
+
+  // Derived effective sheet state: internal user action > controlled prop > store height / state
+  const effectiveSheetState: SheetState =
+    internalState ??
+    controlledSheetState ??
+    (storeSheetHeight !== undefined
+      ? storeSheetHeight <= 100
+        ? 'peek'
+        : storeSheetHeight >= 350
+        ? 'expanded'
+        : 'half'
+      : storeSheetState ?? (effectiveNodeId ? 'half' : 'peek'));
+
+  const snapIndex = STATE_TO_INDEX[effectiveSheetState] ?? (effectiveNodeId ? 1 : 0);
+
   const [isLoadoutOpen, setIsLoadoutOpen] = useState(false);
-  const y = useMotionValue(-SNAP_POINTS[snapIndex]);
+  const y = useMotionValue(SNAP_POINTS[2] - SNAP_POINTS[snapIndex]);
+  const footerY = useTransform(y, (value) => -value);
 
   // Sync wallet on mount to ensure fresh loadout and inventory
   useEffect(() => {
@@ -181,32 +219,24 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
     }
   };
 
-  // When sheetState in store or props changes, sync snapIndex
-  useEffect(() => {
-    if (effectiveSheetState) {
-      const targetIdx = STATE_TO_INDEX[effectiveSheetState];
-      if (targetIdx !== undefined && targetIdx !== snapIndex) {
-        setSnapIndex(targetIdx);
+  const handleSnapChange = (targetIdx: number) => {
+    const nextState = INDEX_TO_STATE[targetIdx];
+    if (nextState) {
+      setInternalState(nextState);
+      if (storeSheetState !== nextState) {
+        setStoreSheetState?.(nextState);
+      }
+      if (storeSheetHeight !== SNAP_POINTS[targetIdx]) {
+        setSheetHeight?.(SNAP_POINTS[targetIdx]);
       }
     }
-  }, [effectiveSheetState]);
+  };
 
-  // When effective node changes, open at 'half' if selected
-  useEffect(() => {
-    if (effectiveNodeId) {
-      setSnapIndex(1);
-      setStoreSheetState?.('half');
-    } else {
-      setSnapIndex(0);
-      setStoreSheetState?.('peek');
-    }
-  }, [effectiveNodeId, setStoreSheetState]);
-
-  // Animate to snap point whenever snapIndex changes
+  // Animate to snap point whenever snapIndex changes (transform only, no store mutations)
   useEffect(() => {
     animate(
       y,
-      -SNAP_POINTS[snapIndex],
+      SNAP_POINTS[2] - SNAP_POINTS[snapIndex],
       prefersReducedMotion
         ? { duration: 0.05 }
         : {
@@ -217,12 +247,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             restDelta: 0.5,
           }
     );
-    setSheetHeight(SNAP_POINTS[snapIndex]);
-    const newState = INDEX_TO_STATE[snapIndex];
-    if (newState && setStoreSheetState) {
-      setStoreSheetState(newState);
-    }
-  }, [snapIndex, y, setSheetHeight, setStoreSheetState]);
+  }, [snapIndex, y, prefersReducedMotion]);
 
   // Escape key closes loadout selector or dismisses node sheet
   useEffect(() => {
@@ -264,9 +289,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   }
 
   const handleDragEnd = (_e: any, info: PanInfo) => {
-    const currentH = -y.get();
-    const velocityH = -info.velocity.y;
-    const projectedH = currentH + velocityH * 0.15;
+    const projectedH = SNAP_POINTS[2] - (y.get() + info.velocity.y * 0.15);
 
     let closestIndex = 0;
     let minDiff = Infinity;
@@ -278,16 +301,16 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
       }
     });
 
-    setSnapIndex(closestIndex);
+    handleSnapChange(closestIndex);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSnapIndex(prev => Math.min(prev + 1, SNAP_POINTS.length - 1));
+      handleSnapChange(Math.min(snapIndex + 1, SNAP_POINTS.length - 1));
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSnapIndex(prev => Math.max(prev - 1, 0));
+      handleSnapChange(Math.max(snapIndex - 1, 0));
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       cycleState();
@@ -295,11 +318,20 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   };
 
   const cycleState = () => {
-    setSnapIndex(prev => (prev === 2 ? 0 : prev + 1));
+    handleSnapChange(snapIndex === 2 ? 0 : snapIndex + 1);
   };
 
   const navigateToTerminal = () => {
     if (isActionDisabled) return;
+    const chapter = getChapterByNodeId(node.id);
+    const tutorialStep = chapter?.tutorialSteps?.[tutorialStepIndex];
+    if (
+      tutorialActive &&
+      chapter?.id === activeChapterId &&
+      tutorialStep?.actionRequired === 'tap-jack-in'
+    ) {
+      nextTutorialStep();
+    }
     if (onJackIn) {
       onJackIn(node.id);
     }
@@ -315,13 +347,14 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
     <>
       <motion.div
         data-testid="node-sheet"
-        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-30 flex flex-col touch-none pointer-events-auto select-none"
+        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-30 flex h-[500px] flex-col touch-none pointer-events-auto select-none"
         style={{ 
-          y, 
-          bottom: `calc(-1 * max(${SNAP_POINTS[2]}px, 100vh))`
+          y,
+          bottom: 0,
+          height: SNAP_POINTS[2],
         }}
         drag="y"
-        dragConstraints={{ top: -SNAP_POINTS[2], bottom: -SNAP_POINTS[0] }}
+        dragConstraints={{ top: 0, bottom: SNAP_POINTS[2] - SNAP_POINTS[0] }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
       >
@@ -355,7 +388,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
               /* Peek (76px): plate 36px, node name serif 17px, tier chip, bounty in money.text, chevron up */
               <div 
                 className="h-[48px] px-4 flex items-center justify-between gap-3 cursor-pointer select-none"
-                onClick={() => setSnapIndex(1)}
+                onClick={() => handleSnapChange(1)}
                 data-testid="node-sheet-peek"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -365,7 +398,8 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <span className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase">
+                  <span className="bg-accent text-white font-data text-[11px] font-semibold tracking-[1px] rounded-[6px] py-[4px] px-[8px] uppercase flex items-center gap-1">
+                    <img src="/icons/icon-tier-badge.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
                     TIER {node.tier}
                   </span>
                   <span className="font-data text-[15px] font-semibold text-money-text">
@@ -375,7 +409,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                     variant="icon"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSnapIndex(1);
+                      handleSnapChange(1);
                     }}
                     aria-label="Expand sheet"
                     data-testid="peek-expand-button"
@@ -397,7 +431,10 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
               </div>
             ) : (
               /* Half (about 250px) & Expanded */
-              <div className="px-4 pb-[env(safe-area-inset-bottom)] flex-1 flex flex-col gap-2.5 overflow-hidden">
+              <div
+                className="px-4 pb-[env(safe-area-inset-bottom)] flex-1 flex flex-col gap-2.5 overflow-y-auto"
+                style={{ paddingBottom: 100 }}
+              >
                 {/* 1. Row: 52px plate, node name serif 21px / 23px line height (max two lines), status chip right */}
                 <div className="flex items-center justify-between gap-3 shrink-0 pt-1">
                   <div className="flex items-center gap-3 min-w-0">
@@ -406,12 +443,30 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                       {node.name}
                     </h2>
                   </div>
-                  <StatusChip status={node.status} isLocked={isLocked} tier={node.tier} />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <StatusChip status={node.status} isLocked={isLocked} tier={node.tier} />
+                    <Button
+                      variant="icon"
+                      onClick={() => {
+                        if (onClose) {
+                          onClose();
+                        } else {
+                          selectNode(null);
+                          setActiveNodeId(null);
+                        }
+                      }}
+                      aria-label="Close sheet"
+                      className="w-8 h-8 flex items-center justify-center p-1 text-ink-muted hover:text-ink"
+                    >
+                      <img src="/icons/icon-close.svg" alt="" className="w-4 h-4 object-contain pointer-events-none" aria-hidden="true" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 2. Specs row: four equal columns (DIGITS, TRIES, TIMER, BOUNTY), 1px vertical dividers */}
                 <div 
                   data-testid="specs-row"
+                  data-tutorial="sheet-specs"
                   className="grid grid-cols-4 divide-x divide-line border-y border-line py-2 shrink-0"
                 >
                   <div className="flex flex-col items-center justify-center px-1 text-center">
@@ -423,7 +478,10 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                     <span className="font-data text-[15px] font-semibold text-ink">{node.attempts}</span>
                   </div>
                   <div className="flex flex-col items-center justify-center px-1 text-center">
-                    <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted">TIMER</span>
+                    <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted flex items-center justify-center gap-1">
+                      <img src="/icons/icon-stopwatch.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
+                      <span>TIMER</span>
+                    </span>
                     <span className="font-data text-[15px] font-semibold text-ink">{node.timerSeconds}s</span>
                   </div>
                   <div className="flex flex-col items-center justify-center px-1 text-center">
@@ -448,6 +506,26 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                 {/* Expanded state: adds recent attempts, trace risk, rival activity */}
                 {snapIndex === 2 && (
                   <div className="flex flex-col divide-y divide-line border-y border-line py-1 text-sm shrink-0" data-testid="expanded-specs">
+                    {(() => {
+                      const campaignChapter = getChapterByNodeId(node.id);
+                      if (!campaignChapter?.sceneImage) return null;
+                      return (
+                        <div className="py-2">
+                          <div className="relative w-full h-32 rounded-[8px] overflow-hidden border border-line shadow-inner">
+                            <img
+                              src={campaignChapter.sceneImage}
+                              alt={`${node.name} location scan`}
+                              className="w-full h-full object-cover brightness-90"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-panel/90 via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute top-1.5 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-panel/90 border border-line text-[9px] font-data text-ink font-semibold uppercase tracking-wider">
+                              <img src="/icons/icon-pin.svg" alt="" className="w-3 h-3 object-contain pointer-events-none" aria-hidden="true" />
+                              <span>SURVEILLANCE SCAN // {campaignChapter.mapLocation}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center justify-between py-2">
                       <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted">TRACE RISK</span>
                       <span className="font-data text-[15px] font-semibold text-danger-text">{node.traceRisk}%</span>
@@ -470,41 +548,47 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                   </div>
                 )}
 
-                {/* 4. JACK IN button pinned at the bottom (+ Loadout slots button) */}
-                <div className="mt-auto flex flex-col gap-2 pt-1 pb-3 shrink-0">
-                  {!isActionDisabled && (
-                    <Button
-                      variant="secondary"
-                      fullWidth
-                      onClick={() => setIsLoadoutOpen(true)}
-                      aria-label="Configure equipped sabotage tools"
-                      data-testid="loadout-toggle-button"
-                      className="justify-between px-3"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                        <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted">LOADOUT SLOTS</span>
-                      </div>
-                      <span className="font-data text-[11px] font-semibold text-accent-text">
-                        {equippedTools.length > 0 ? `${equippedTools.length}/2 TOOLS ARMED` : 'ARM TOOLS (0/2)'}
-                      </span>
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={navigateToTerminal}
-                    disabled={isActionDisabled}
-                    data-testid="jack-in-button"
-                  >
-                    {actionLabel}
-                  </Button>
-                </div>
               </div>
             )}
           </motion.div>
         </AnimatePresence>
+        {snapIndex > 0 && (
+          <motion.div
+            data-testid="node-sheet-actions"
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 border-t border-line bg-panel-light px-4 pt-2 pb-[env(safe-area-inset-bottom)]"
+            style={{ y: footerY }}
+          >
+            {!isActionDisabled && (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => setIsLoadoutOpen(true)}
+                aria-label="Configure equipped sabotage tools"
+                data-testid="loadout-toggle-button"
+                className="justify-between px-3"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                  <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted">LOADOUT SLOTS</span>
+                </div>
+                <span className="font-data text-[11px] font-semibold text-accent-text">
+                  {equippedTools.length > 0 ? `${equippedTools.length}/2 TOOLS ARMED` : 'ARM TOOLS (0/2)'}
+                </span>
+              </Button>
+            )}
+
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={navigateToTerminal}
+              disabled={isActionDisabled}
+              data-testid="jack-in-button"
+              data-tutorial="jack-in"
+            >
+              {actionLabel}
+            </Button>
+          </motion.div>
+        )}
       </motion.div>
 
       <LoadoutSelector

@@ -13,7 +13,7 @@ export default function DevIconsPage() {
   return (
     <div
       data-surface="panel"
-      className={`min-h-screen bg-panel p-6 text-ink font-data text-body relative ${
+      className={`scene-ground min-h-screen p-6 text-ink font-data text-body relative ${
         isGrayscale ? 'grayscale' : ''
       }`}
     >

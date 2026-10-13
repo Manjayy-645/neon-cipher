@@ -100,7 +100,7 @@ export default function ProfilePage() {
 
   if (isLoading || !data) {
     return (
-      <div className="h-full w-full bg-panel p-6 flex items-center justify-center font-data text-ink">
+      <div className="scene-ground h-full w-full p-6 flex items-center justify-center font-data text-ink">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="type-label text-xs">SYNCHRONIZING PROFILE MATRIX...</p>
@@ -110,7 +110,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="h-full w-full bg-panel overflow-y-auto p-4 sm:p-5 font-data text-ink space-y-4">
+    <div className="scene-ground scene-arrive h-full w-full overflow-y-auto p-4 sm:p-5 font-data text-ink space-y-4">
       {/* Top Section Navigation */}
       <div className="sticky top-0 z-10 bg-panel border-b border-line pb-2.5 pt-1">
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">

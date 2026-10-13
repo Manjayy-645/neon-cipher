@@ -90,7 +90,7 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
   return (
     <div className="w-full flex flex-col gap-4">
       {/* Safehouse Syndicate Stats Card */}
-      <div className="bg-panel-light border border-line rounded-[12px] p-3 sm:p-4 shadow-card font-data flex flex-col gap-3">
+      <div className="scene-card bg-panel-light border border-line rounded-[12px] p-3 sm:p-4 shadow-card font-data flex flex-col gap-3">
         <div className="flex justify-between items-center border-b border-line pb-2.5">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent" />
@@ -193,11 +193,15 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
                   handleCardClick();
                 }
               }}
-              className={`p-3.5 sm:p-4 rounded-[12px] border bg-panel-light shadow-card flex flex-col gap-3 transition-transform duration-[120ms] cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+              className={`scene-card p-3.5 sm:p-4 rounded-[12px] border bg-panel-light shadow-card flex flex-col gap-3 transition-transform duration-[120ms] cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
                 isOwned ? 'border-accent/50' : 'border-line'
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="w-12 h-12 rounded-[8px] bg-panel border border-line p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/icon-safehouse.svg" alt={prop.name} className="w-full h-full object-contain" />
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h5 className="font-heading text-lg font-normal text-ink">{prop.name}</h5>

@@ -23,7 +23,7 @@ export default function MarketPage() {
     };
 
     return (
-      <main className="w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 bg-panel-light text-ink text-center">
+      <main className="scene-ground scene-arrive w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 text-ink text-center">
         <div
           role="button"
           tabIndex={0}
@@ -37,20 +37,34 @@ export default function MarketPage() {
           aria-label="Black market locked: Finish Chapter 2 to open this"
           className="max-w-md w-full p-6 bg-panel-light rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none text-center"
         >
-          <div className="w-12 h-12 rounded-full bg-panel border border-line flex items-center justify-center text-ink-muted">
-            <svg
-              className="w-6 h-6"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+          {/* Shuttered Storefront Preview */}
+          <div className="w-full h-36 rounded-[8px] overflow-hidden relative border border-line">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Shop and scenes/shop-front.png"
+              alt="Shuttered Black Market Storefront"
+              className="w-full h-full object-cover grayscale brightness-40 contrast-125"
+            />
+            <div className="absolute inset-0 bg-panel/50 backdrop-blur-[1px] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-panel/90 border border-line flex items-center justify-center text-ink-muted shadow-sm">
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </div>
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-[4px] bg-panel/90 text-[10px] font-data text-ink-muted uppercase tracking-wider border border-line">
+              SHUTTERED // CLEARANCE REQUIRED
+            </div>
           </div>
           <div>
             <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block mb-1">
@@ -83,7 +97,7 @@ export default function MarketPage() {
 
   if (view === 'dialogue') {
     return (
-      <main className="w-full h-full relative overflow-hidden bg-panel-light">
+      <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden">
         <ShopkeeperScene
           vendorName="GLITCH"
           vendorTitle="BLACK MARKET BROKER"
@@ -95,7 +109,7 @@ export default function MarketPage() {
   }
 
   return (
-    <main className="w-full h-full relative overflow-hidden bg-panel-light">
+    <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden">
       <BlackMarket onBackToDialogue={() => setView('dialogue')} />
     </main>
   );

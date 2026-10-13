@@ -1,9 +1,15 @@
 import TerminalScreen from '@/features/terminal/TerminalScreen';
 
-export default function TerminalPage({ params }: { params: { nodeId: string } }) {
+export default async function TerminalPage({
+  params,
+}: {
+  params: Promise<{ nodeId: string }>;
+}) {
+  const { nodeId } = await params;
+
   return (
-    <div className="w-full h-full relative bg-ink" data-surface="terminal">
-      <TerminalScreen nodeId={params.nodeId} />
+    <div className="w-full h-full relative bg-terminal-bg text-terminal-ink" data-surface="terminal">
+      <TerminalScreen nodeId={nodeId} />
     </div>
   );
 }

@@ -6,6 +6,12 @@ import TerminalHistory from './TerminalHistory';
 import { IceIndicator } from './IceIndicator';
 import { SuccessScreen, FailureScreen } from './TerminalScreens';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+  }),
+}));
+
 describe('Task 7: Terminal skins & ICE features', () => {
   describe('TerminalFrame - 5 tier skins', () => {
     it('renders Tier 1 vending skin with manufacturer mark and serial', () => {
@@ -137,6 +143,36 @@ describe('Task 7: Terminal skins & ICE features', () => {
       expect(screen.getByText('DISCONNECT')).toBeInTheDocument();
       expect(screen.getByText('-$50')).toBeInTheDocument();
       expect(screen.getByText('4321')).toBeInTheDocument();
+    });
+  });
+
+  describe('TerminalScreen lifecycle and hook consistency', () => {
+    it('transitions smoothly from loading to active session without hook order errors', async () => {
+      const { terminalService } = await import('./terminalService');
+      const TerminalScreen = (await import('./TerminalScreen')).default;
+
+      vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+        sessionId: 'test-session-123',
+        startedAt: Date.now(),
+        config: {
+          digits: 3,
+          allowDuplicates: false,
+          attempts: 5,
+          timerSeconds: 60,
+          tier: 1,
+          ice: 'None',
+          eliminatedDigits: ['9'],
+        },
+      });
+
+      render(<TerminalScreen nodeId="n1" />);
+
+      // First renders loading state
+      expect(screen.getByText(/ESTABLISHING QUANTUM LINK/i)).toBeInTheDocument();
+
+      // After resolution, renders active terminal without throwing hook errors
+      expect(await screen.findByText(/Node: n1/i)).toBeInTheDocument();
+      expect(screen.getByText(/TIER 1 • UNIQUE/i)).toBeInTheDocument();
     });
   });
 });

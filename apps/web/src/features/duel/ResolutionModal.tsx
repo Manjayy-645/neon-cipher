@@ -107,7 +107,13 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
         <div className="p-6 flex flex-col gap-4 bg-panel-light">
           {/* Performance & Time Delta */}
           <div className="p-3 bg-panel rounded border border-line flex items-center justify-between font-data text-xs">
-            <span className="text-ink-muted uppercase">Execution Delta</span>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-danger/40 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/Character portraits/Null_Byte.png" alt="Null_Byte" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-ink-muted uppercase">Execution Delta</span>
+            </div>
             <span
               data-testid="time-delta"
               className={`font-bold ${isWinner ? 'text-accent-text' : isLoser ? 'text-danger-text' : 'text-ink'}`}

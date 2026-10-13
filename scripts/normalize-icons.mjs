@@ -155,4 +155,13 @@ if (fs.existsSync(statusPlatesDir)) {
   }
 }
 
+// Also normalize in Store icons and items subdirectory if present
+const storeIconsDir = path.join(publicIconsDir, 'Store icons and items');
+if (fs.existsSync(storeIconsDir)) {
+  const stFiles = fs.readdirSync(storeIconsDir).filter(f => f.endsWith('.svg'));
+  for (const f of stFiles) {
+    normalizeSvgFile(path.join(storeIconsDir, f));
+  }
+}
+
 console.log(JSON.stringify(table, null, 2));

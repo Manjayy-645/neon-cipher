@@ -25,6 +25,7 @@ describe('Ambient Life & Performance Guard', () => {
 
     const layer = screen.getByTestId('ambient-life-layer');
     expect(layer).toBeInTheDocument();
+    expect(layer.className).toContain('z-[6]');
 
     // 1 Shop sign
     expect(screen.getByTestId('ambient-shop-sign')).toBeInTheDocument();

@@ -34,7 +34,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   },
   equippedTools: ['tool-static-injector'],
   handle: 'ZERO_COOL',
-  avatarUrl: '', // Neutral fallback (initial or silhouette)
+  avatarUrl: '/Character portraits/Player avatars.png',
   sectorHeat: 62, // 62%
   nixDismissed: false,
   dismissNix: () => set({ nixDismissed: true }),

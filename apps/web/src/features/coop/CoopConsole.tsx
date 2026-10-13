@@ -188,7 +188,7 @@ export function CoopConsole() {
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-panel text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
+    <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
       {/* Top Console Header & Shared Timer (Requirement 2) */}
       <div className="bg-panel-light border-b border-line px-4 py-3 flex items-center justify-between shrink-0">
         <div>
@@ -254,9 +254,12 @@ export function CoopConsole() {
           onClick={handleSimulatePartnerSolve}
           disabled={heistStatus !== 'active'}
           data-testid="partner-solve-button"
-          className="text-accent-text"
+          className="text-accent-text flex items-center gap-1.5"
         >
-          ⚡ Partner Bot Solve Stage
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          <span>Partner Bot Solve Stage</span>
         </Button>
       </div>
 
@@ -264,17 +267,29 @@ export function CoopConsole() {
       {heistStatus === 'won' && (
         <div
           data-testid="heist-won-banner"
-          className="bg-accent text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider"
+          className="bg-accent text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider flex items-center justify-center gap-2"
         >
-          🎉 VAULT BREACH SUCCESSFUL // All syndicate dividends secured!
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34" />
+            <path d="M6 4h12v6c0 3.31-2.69 6-6 6s-6-2.69-6-6V4Z" />
+          </svg>
+          <span>VAULT BREACH SUCCESSFUL // All syndicate dividends secured!</span>
         </div>
       )}
       {heistStatus === 'lost' && (
         <div
           data-testid="heist-lost-banner"
-          className="bg-danger text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider"
+          className="bg-danger text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider flex items-center justify-center gap-2"
         >
-          ⚠️ HEIST TRACED // Connection terminated by counter-ICE.
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span>HEIST TRACED // Connection terminated by counter-ICE.</span>
         </div>
       )}
 

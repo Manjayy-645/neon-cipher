@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NodeSheet } from '../NodeSheet';
 import { useMapStore } from '../../../stores/map-store';
 import { usePlayerStore } from '../../../stores/player-store';
+import { useCampaignStore } from '../../../stores/campaign-store';
 import { walletService } from '../../market/walletService';
 
 const mockPush = vi.fn();
@@ -50,6 +51,11 @@ describe('STYLE S7: Node Bottom Sheet', () => {
         equippedTools: [],
         inventory: {},
       });
+      useCampaignStore.setState({
+        activeChapterId: null,
+        tutorialActive: false,
+        tutorialStepIndex: 0,
+      });
     });
   });
 
@@ -66,6 +72,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     const sheet = screen.getByTestId('node-sheet');
     expect(sheet).toBeInTheDocument();
     expect(sheet).toHaveClass('bg-panel-light', 'border-t', 'border-line', 'shadow-sheet', 'rounded-t-lg');
+    expect(sheet).toHaveStyle({ bottom: '0px', height: '500px' });
   });
 
   it('renders handle with 44x5px pill centered within a 28px tall touch zone', async () => {
@@ -96,6 +103,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     // Specs row: 4 equal columns with 1px dividers
     const specsRow = screen.getByTestId('specs-row');
     expect(specsRow).toBeInTheDocument();
+    expect(specsRow).toHaveAttribute('data-tutorial', 'sheet-specs');
     expect(specsRow).toHaveClass('grid', 'grid-cols-4', 'divide-x', 'divide-line');
     expect(screen.getByText('DIGITS')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
@@ -118,6 +126,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     expect(jackInBtn).toBeInTheDocument();
     expect(jackInBtn).toHaveTextContent('JACK IN');
     expect(jackInBtn).toHaveClass('min-h-[48px]', 'bg-accent', 'text-white', 'rounded-[8px]', 'font-data', 'text-[15px]', 'tracking-[3px]');
+    expect(jackInBtn).toHaveAttribute('data-tutorial', 'jack-in');
     expect(jackInBtn).not.toBeDisabled();
   });
 
@@ -126,6 +135,54 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     const jackInBtn = screen.getByTestId('jack-in-button');
     fireEvent.click(jackInBtn);
     expect(mockPush).toHaveBeenCalledWith('/terminal/n1');
+  });
+
+  it('advances the matching campaign tutorial step when JACK IN is pressed', async () => {
+    act(() => {
+      useCampaignStore.setState({
+        activeChapterId: 'chapter-1',
+        tutorialActive: true,
+        tutorialStepIndex: 1,
+      });
+    });
+    await renderSheet();
+
+    fireEvent.click(screen.getByTestId('jack-in-button'));
+
+    expect(useCampaignStore.getState().tutorialStepIndex).toBe(2);
+    expect(mockPush).toHaveBeenCalledWith('/terminal/n1');
+  });
+
+  it('advances the chapter 2 tutorial from node inspection into its terminal workflow', async () => {
+    act(() => {
+      useMapStore.setState({ selectedNodeId: 'n4' });
+      useCampaignStore.setState({
+        activeChapterId: 'chapter-2',
+        tutorialActive: true,
+        tutorialStepIndex: 1,
+      });
+    });
+    await renderSheet();
+
+    fireEvent.click(screen.getByTestId('jack-in-button'));
+
+    expect(useCampaignStore.getState().tutorialStepIndex).toBe(2);
+    expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
+  });
+
+  it('does not advance an unrelated campaign tutorial step when JACK IN is pressed', async () => {
+    act(() => {
+      useCampaignStore.setState({
+        activeChapterId: 'chapter-1',
+        tutorialActive: true,
+        tutorialStepIndex: 0,
+      });
+    });
+    await renderSheet();
+
+    fireEvent.click(screen.getByTestId('jack-in-button'));
+
+    expect(useCampaignStore.getState().tutorialStepIndex).toBe(0);
   });
 
   it('renders contested warning in danger.text and CONTESTED chip for contested node', async () => {

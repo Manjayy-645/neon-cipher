@@ -117,33 +117,34 @@ describe('STYLE S4: Map surface requirements', () => {
   });
 
   describe('2. Locked-zone haze overlay', () => {
-    it('renders on the Commercial side (right-0, w-1/2) with pointer-events-none', () => {
+    it('spans the Commercial side from the river with pointer-events-none', () => {
       render(<MapEngine />);
       const haze = screen.getByTestId('locked-zone-haze');
       expect(haze).toBeDefined();
+      expect(haze.className).toContain('left-[42%]');
       expect(haze.className).toContain('right-0');
-      expect(haze.className).toContain('w-1/2');
       expect(haze.className).toContain('pointer-events-none');
     });
 
-    it('ramps in over the first 14% of width using token overlay.hazeLocked (#919190)', () => {
+    it('uses a broad gradient ramp with token overlay.hazeLocked (#919190)', () => {
       render(<MapEngine />);
       const haze = screen.getByTestId('locked-zone-haze');
       const backgroundStyle = haze.style.background;
       expect(backgroundStyle).toContain('linear-gradient');
       expect(backgroundStyle).toContain('transparent 0%');
-      expect(backgroundStyle).toContain('14%');
+      expect(backgroundStyle).toContain('20%');
+      expect(backgroundStyle).toContain('48%');
       expect(backgroundStyle).toContain(designTokens.color.overlay.hazeLocked); // #919190
     });
 
-    it('is at about 55 to 70 percent opacity when locked and fades out over 1.2 seconds when unlocked', () => {
+    it('stays translucent when locked and fades out over 1.2 seconds when unlocked', () => {
       act(() => {
         useMapStore.setState({ unlocks: { bridge: false } });
       });
       const { rerender } = render(<MapEngine />);
       const haze = screen.getByTestId('locked-zone-haze');
-      expect(parseFloat(haze.style.opacity)).toBeGreaterThanOrEqual(0.55);
-      expect(parseFloat(haze.style.opacity)).toBeLessThanOrEqual(0.70);
+      expect(parseFloat(haze.style.opacity)).toBeGreaterThanOrEqual(0.40);
+      expect(parseFloat(haze.style.opacity)).toBeLessThanOrEqual(0.50);
       expect(haze.className).toContain('duration-[1200ms]');
 
       // Unlock bridge
@@ -203,6 +204,7 @@ describe('STYLE S4: Map surface requirements', () => {
       rerender(<MapOverlay map={mockMap} nodes={mockNodes} zoom={4} />);
       // Markers are rendered
       expect(screen.getByTestId('marker-s1')).toBeDefined();
+      expect(document.getElementById('map-overlay-root')?.className).toContain('z-[10]');
       // District container either fades out (opacity: 0) or unmounts
       const exitingDistrict = screen.queryByTestId('district-container-S');
       if (exitingDistrict) {
@@ -258,4 +260,3 @@ describe('STYLE S4: Map surface requirements', () => {
     });
   });
 });
-

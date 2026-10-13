@@ -96,20 +96,13 @@ export function BootSequence({ onComplete, autoRoute = true }: BootSequenceProps
 
   return (
     <div
-      data-surface="terminal"
-      className="fixed inset-0 z-50 bg-[var(--terminal-bg,#1B1915)] text-ink flex flex-col justify-between p-6 select-none font-data overflow-hidden"
+      className="scene-ground scene-arrive fixed inset-0 z-50 text-ink flex flex-col justify-between p-5 sm:p-6 select-none font-data overflow-hidden"
       onClick={() => finishBoot()}
     >
-      {/* Subtle CRT Scanline overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]"
-        aria-hidden="true"
-      />
-
       {/* Top Header & Skip Button */}
       <div className="flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-accent" />
           <span className="text-[11px] font-data tracking-widest text-ink-muted uppercase">
             PORT 433 // RF-ACTIVE
           </span>
@@ -132,14 +125,16 @@ export function BootSequence({ onComplete, autoRoute = true }: BootSequenceProps
       {/* Center Hero */}
       <div className="my-auto z-10 max-w-[420px] w-full mx-auto space-y-5">
         <div>
-          <span className="type-label text-[11px] text-ink-muted tracking-[2px] uppercase block mb-1">
-            LOW MERIDIAN PROTOCOL
+          <span className="type-label text-[11px] text-accent-text tracking-[2px] uppercase block mb-1">
+            LOW MERIDIAN FIELD NETWORK
           </span>
           <h1 className="font-heading text-4xl text-ink tracking-wide">
             NEON CIPHER
           </h1>
-          <p className="font-data text-xs text-ink-muted tracking-widest uppercase mt-1">
-            STREET CRACKING CONSOLE
+          <p className="font-data text-xs text-ink-muted tracking-widest uppercase mt-1 flex items-center gap-1.5 flex-wrap">
+            <span>STREET CRACKING CONSOLE</span>
+            <span>//</span>
+            <span>CITY FIELD GUIDE</span>
           </p>
         </div>
 

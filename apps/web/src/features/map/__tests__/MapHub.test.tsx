@@ -104,6 +104,21 @@ describe('Map Hub Interactivity & Central State', () => {
       expect(updated.sheetState).toBe('half');
       expect(updated.sheetHeight).toBe(250);
     });
+
+    it('shows the selected marker inspection details and JACK IN action', () => {
+      render(
+        <>
+          <MapMarker node={sampleNode1} />
+          <NodeSheet />
+        </>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(sampleNode1.name, 'i') }));
+
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(sampleNode1.name);
+      expect(screen.getByTestId('specs-row')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'JACK IN' })).toBeInTheDocument();
+    });
   });
 
   describe('2. Bottom Sheet Data Binding & Hydration', () => {

@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/Button';
 
 function DuelLoadingSkeleton() {
   return (
-    <div className="flex-1 w-full flex items-center justify-center p-8 bg-panel font-data">
-      <div className="max-w-md w-full bg-panel-light border border-line rounded-md p-6 flex flex-col items-center gap-3">
+    <div className="scene-ground flex-1 w-full flex items-center justify-center p-8 font-data">
+      <div className="max-w-md w-full bg-panel-light border border-line rounded-md p-6 flex flex-col items-center gap-3 shadow-card">
         <div className="w-8 h-8 rounded-full border-2 border-line border-t-accent animate-spin" />
         <span className="text-xs uppercase tracking-widest text-ink-muted">
           SYNCHRONIZING SEC-NET FEED...
@@ -45,7 +45,7 @@ export default function DuelPage() {
   const isUnlocked = unlocks.onlinePlay || devBypassUnlock;
 
   return (
-    <main className="flex h-full w-full min-h-0 flex-col bg-panel text-ink overflow-hidden">
+    <main className="scene-ground scene-arrive flex h-full w-full min-h-0 flex-col text-ink overflow-hidden">
       {/* Top Tab Bar (Segmented Control) */}
       <div className="bg-panel-light border-b border-line px-4 py-2 shrink-0">
         <SegmentedControl
@@ -62,7 +62,7 @@ export default function DuelPage() {
       {activeTab === 'turf' ? (
         <TurfWarBoard />
       ) : !isUnlocked ? (
-        <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-panel-light text-ink text-center">
+        <div className="scene-ground w-full h-full flex flex-col items-center justify-center p-6 text-ink text-center">
           <div className="max-w-md w-full p-6 bg-panel rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-panel-light border border-line flex items-center justify-center text-ink-muted">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -17,6 +17,7 @@ export interface ShopkeeperSceneProps {
 export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
   vendorName = 'GLITCH',
   vendorTitle = 'BLACK MARKET BROKER',
+  portraitSlot,
   dialogue = "You walked right past the precinct scanners to get down here. Respect. Nix told me you've got fast hands on the terminal keys. I've got hot tools, clean memory buffers, and raw exploits straight out of the corporate backplanes. Credits or coins — make your choice.",
   onOpenShop,
   onLeave,
@@ -56,11 +57,11 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-4 bg-panel-light text-ink overflow-y-auto">
+    <div className="scene-ground w-full h-full flex flex-col justify-between p-4 text-ink overflow-y-auto">
       {/* Top Banner / Vendor Ambience */}
       <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-accent" />
           <span className="font-data text-[10px] tracking-widest uppercase text-ink-muted">
             UNDERGROUND ACCESS // LEVEL B-2
           </span>
@@ -70,36 +71,49 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
         </span>
       </div>
 
-      {/* Main Vendor Stage */}
-      <div className="flex-1 flex flex-col items-center justify-center my-4 gap-4">
-        {/* Character Portrait Slot */}
-        <div className="relative">
-          <div className="w-36 h-36 rounded-[12px] bg-panel border border-line overflow-hidden shadow-card flex items-center justify-center relative">
-            {/* Cybernetic Glitch portrait SVG art */}
-            <svg viewBox="0 0 100 100" className="w-full h-full text-accent" fill="none">
-              <rect width="100" height="100" fill="var(--surface-dark)" />
-              {/* Shoulders */}
-              <path d="M15 95 Q50 60 85 95" fill="var(--surface-panel)" stroke="var(--line)" strokeWidth="2" />
-              {/* Head / Collar */}
-              <circle cx="50" cy="45" r="22" fill="var(--surface-panel-light)" stroke="var(--line)" strokeWidth="2" />
-              {/* Cyber Visor */}
-              <rect x="34" y="38" width="32" height="10" rx="3" fill="var(--accent)" fillOpacity="0.9" />
-              <line x1="36" y1="43" x2="64" y2="43" stroke="var(--on-accent)" strokeWidth="1.5" />
-              {/* Tech Headset */}
-              <path d="M26 40 L28 50 L34 52" stroke="var(--ink-muted)" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="26" cy="40" r="3" fill="var(--ink-muted)" />
-            </svg>
-          </div>
-
-          {/* Name Tab pinned to portrait */}
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap bg-ink text-panel-light px-3 py-0.5 rounded-full border border-line text-center">
-            <span className="font-heading text-xs font-bold tracking-wider">{vendorName}</span>
-          </div>
+      {/* Main Vendor Stage: Shop Interior Environment */}
+      <div className="flex-1 relative flex flex-col items-center justify-center my-3 rounded-[12px] overflow-hidden border border-line bg-panel shadow-card">
+        {/* Atmospheric Shop Interior Background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Shop and scenes/shop-interior.png"
+            alt="Glitch's Shop Interior"
+            className="w-full h-full object-cover brightness-60 contrast-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-panel-light/95 via-panel/60 to-black/40" />
         </div>
 
-        <div className="text-center mt-1">
-          <div className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
-            {vendorTitle}
+        {/* Ambient Shop Tag */}
+        <div className="absolute top-2.5 left-3 px-2 py-0.5 rounded-[4px] bg-panel/85 backdrop-blur-xs border border-line text-[10px] font-data text-ink-muted uppercase tracking-wider z-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block mr-1.5 animate-pulse" />
+          <span>LOCATION // GLITCH’S WORKBENCH</span>
+        </div>
+
+        {/* Character Portrait Slot */}
+        <div className="relative z-10 flex flex-col items-center gap-3 py-4">
+          <div className="relative">
+            <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-[12px] bg-panel border-2 border-line/90 overflow-hidden shadow-sheet flex items-center justify-center relative">
+              {portraitSlot || (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={vendorName.toUpperCase() === 'ALEX' ? '/Character portraits/Alex.png' : '/Character portraits/Glitch.png'}
+                  alt={vendorName}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+
+            {/* Name Tab pinned to portrait */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap bg-ink text-panel-light px-3 py-0.5 rounded-full border border-line text-center shadow-sm">
+              <span className="font-heading text-xs font-bold tracking-wider">{vendorName}</span>
+            </div>
+          </div>
+
+          <div className="text-center mt-1">
+            <div className="font-data text-[11px] uppercase tracking-[1.5px] text-ink font-semibold drop-shadow-sm px-2 py-0.5 rounded bg-panel/70 border border-line/50">
+              {vendorTitle}
+            </div>
           </div>
         </div>
       </div>

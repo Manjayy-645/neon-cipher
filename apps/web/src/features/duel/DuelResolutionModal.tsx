@@ -20,7 +20,7 @@ export function DuelResolutionModal() {
       role="dialog"
       aria-modal="true"
       aria-label="Duel Resolution"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/75 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80 animate-fade-in"
     >
       <div className="w-full max-w-sm bg-panel-light border border-line rounded-lg shadow-sheet p-6 flex flex-col gap-5 text-center relative overflow-hidden">
         {/* Glow Header Accent Line */}
@@ -33,7 +33,7 @@ export function DuelResolutionModal() {
         {/* Status Icon */}
         <div className="flex justify-center mt-1">
           <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl border-2 ${
+            className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
               isPlayerWinner
                 ? 'bg-accent/15 border-accent text-accent'
                 : isRivalWinner
@@ -41,7 +41,31 @@ export function DuelResolutionModal() {
                 : 'bg-heat-track/30 border-line text-ink-muted'
             }`}
           >
-            {isPlayerWinner ? '🏆' : isRivalWinner ? '💀' : '⚖️'}
+            {isPlayerWinner ? (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34" />
+                <path d="M6 4h12v6c0 3.31-2.69 6-6 6s-6-2.69-6-6V4Z" />
+              </svg>
+            ) : isRivalWinner ? (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="9" cy="12" r="1" />
+                <circle cx="15" cy="12" r="1" />
+                <path d="M8 20v2h8v-2" />
+                <path d="m12.5 17-.5-1-.5 1h1z" />
+                <path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20" />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                <path d="M7 21h10" />
+                <path d="M12 3v18" />
+                <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+              </svg>
+            )}
           </div>
         </div>
 
@@ -107,8 +131,13 @@ export function DuelResolutionModal() {
 
         {/* Cheat / Exploit Flag if active */}
         {activeSession.player.cheatUsed && (
-          <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-sm font-data text-[10px] text-amber-800 font-bold uppercase tracking-wider">
-            ⚠️ NOTICE: EXPLOIT USED IN CASUAL SESSION
+          <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-sm font-data text-[10px] text-amber-800 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>NOTICE: EXPLOIT USED IN CASUAL SESSION</span>
           </div>
         )}
 
@@ -122,8 +151,12 @@ export function DuelResolutionModal() {
             disabled={isLoading}
             loading={isLoading}
             data-testid="double-or-nothing-button"
+            className="flex items-center justify-center gap-1.5"
           >
-            ⚡ DOUBLE OR NOTHING
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>DOUBLE OR NOTHING</span>
           </Button>
 
           {/* Exit Duel */}

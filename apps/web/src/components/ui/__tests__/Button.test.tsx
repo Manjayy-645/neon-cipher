@@ -74,6 +74,17 @@ describe('STYLE B1: Unified Button Component', () => {
     expect(btn.className).toContain('w-full');
   });
 
+  it('preserves the button layout for rich card content', () => {
+    render(
+      <Button fullWidth className="flex-col items-stretch">
+        <span>HARDWARE SLOT</span>
+        <span>ONLINE</span>
+      </Button>
+    );
+    const btn = screen.getByRole('button');
+    expect(btn.firstElementChild).toHaveClass('contents');
+  });
+
   it('handles disabled state with heat.track fill, ink.muted text, and reason linked via aria-describedby', () => {
     render(
       <Button

@@ -57,6 +57,7 @@ export interface ChapterData {
   unlocksReward?: 'blackMarket' | 'bridge' | 'onlinePlay';
   unlockRewardLabel?: string;
   tutorialSteps?: TutorialStep[];
+  sceneImage?: string;
 }
 
 export const INITIAL_DEBT = 10000;
@@ -71,6 +72,7 @@ export const CHAPTERS: ChapterData[] = [
     mapNodeId: 'n1',
     mapLocation: 'Slums, near the water tower',
     district: 'slums',
+    sceneImage: '/Shop and scenes/briefing-ch1.png',
     lesson: 'Pot, Pan and elimination',
     rules: {
       digits: 3,
@@ -188,6 +190,7 @@ export const CHAPTERS: ChapterData[] = [
     mapNodeId: 'n4',
     mapLocation: 'Eastern edge of the Slums',
     district: 'slums',
+    sceneImage: '/Shop and scenes/briefing-ch2.png',
     lesson: 'Timers and lockout; unlocks market',
     unlocksReward: 'blackMarket',
     unlockRewardLabel: 'UNLOCKS BLACK MARKET',
@@ -289,6 +292,7 @@ export const CHAPTERS: ChapterData[] = [
     mapNodeId: 'n7',
     mapLocation: 'Industrial pocket',
     district: 'slums',
+    sceneImage: '/Shop and scenes/briefing-ch3.png',
     lesson: 'Tools and Firewall Patch',
     unlocksReward: 'bridge',
     unlockRewardLabel: 'UNLOCKS RIVER BRIDGE ACCESS',
@@ -352,6 +356,7 @@ export const CHAPTERS: ChapterData[] = [
     mapNodeId: 'n10',
     mapLocation: 'Commercial, across the bridge',
     district: 'commercial',
+    sceneImage: '/Shop and scenes/briefing-ch4.png',
     lesson: 'Reading the shared feed, sabotage',
     unlocksReward: 'onlinePlay',
     unlockRewardLabel: 'UNLOCKS ONLINE PLAY (DUEL)',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateDeadKeys } from './rookieAssist';
+import { calculateDeadKeys, checkContradiction, isGuessConsistent } from './rookieAssist';
 
 describe('calculateDeadKeys', () => {
   it('returns empty array when there are no guesses', () => {
@@ -44,3 +44,26 @@ describe('calculateDeadKeys', () => {
     expect(calculateDeadKeys(guesses, true)).toEqual([]);
   });
 });
+
+describe('checkContradiction & isGuessConsistent', () => {
+  it('identifies contradictory guesses against known clues', () => {
+    const history = [
+      { guess: '123', pots: 0, pans: 0 },
+    ];
+    // Re-using digit '1' directly conflicts with 0 pots / 0 pans clue
+    expect(isGuessConsistent('145', history)).toBe(false);
+    const result = checkContradiction('145', history);
+    expect(result.isConsistent).toBe(false);
+    expect(result.conflictingGuess?.guess).toBe('123');
+  });
+
+  it('approves consistent guesses against history', () => {
+    const history = [
+      { guess: '123', pots: 1, pans: 0 },
+    ];
+    // Guess 145 is consistent with 1 being the pot
+    expect(isGuessConsistent('145', history)).toBe(true);
+    expect(checkContradiction('145', history).isConsistent).toBe(true);
+  });
+});
+

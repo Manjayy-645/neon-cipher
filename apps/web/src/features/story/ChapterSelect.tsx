@@ -29,7 +29,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
   return (
     <div
       data-testid="chapter-select-screen"
-      className="w-full h-full flex flex-col px-4 py-4 sm:py-6 bg-panel-light text-ink overflow-y-auto overflow-x-hidden"
+      className="scene-ground w-full h-full flex flex-col px-4 py-4 sm:py-6 text-ink overflow-y-auto overflow-x-hidden"
     >
       <div className="max-w-2xl mx-auto w-full flex flex-col gap-4">
         {/* Header */}
@@ -99,31 +99,61 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
           {/* Unlocks Summary Badges (stacked on mobile to eliminate horizontal scroll) */}
           <div className="pt-3 border-t border-line/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
             <div
-              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase ${
+              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase flex items-center justify-center gap-1.5 ${
                 unlocks.blackMarket
                   ? 'bg-accent/15 border-accent text-accent-text font-bold'
                   : 'bg-panel border-line text-ink-muted opacity-60'
               }`}
             >
-              {unlocks.blackMarket ? '✓ BLACK MARKET OPEN' : '🔒 BLACK MARKET (CH 2)'}
+              {unlocks.blackMarket ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
+              <span>{unlocks.blackMarket ? 'BLACK MARKET OPEN' : 'BLACK MARKET (CH 2)'}</span>
             </div>
             <div
-              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase ${
+              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase flex items-center justify-center gap-1.5 ${
                 unlocks.bridge
                   ? 'bg-accent/15 border-accent text-accent-text font-bold'
                   : 'bg-panel border-line text-ink-muted opacity-60'
               }`}
             >
-              {unlocks.bridge ? '✓ RIVER BRIDGE OPEN' : '🔒 BRIDGE ACCESS (CH 3)'}
+              {unlocks.bridge ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
+              <span>{unlocks.bridge ? 'RIVER BRIDGE OPEN' : 'BRIDGE ACCESS (CH 3)'}</span>
             </div>
             <div
-              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase ${
+              className={`p-2 rounded-[6px] border text-[10px] font-data uppercase flex items-center justify-center gap-1.5 ${
                 unlocks.onlinePlay
                   ? 'bg-accent/15 border-accent text-accent-text font-bold'
                   : 'bg-panel border-line text-ink-muted opacity-60'
               }`}
             >
-              {unlocks.onlinePlay ? '✓ ONLINE PLAY UNLOCKED' : '🔒 ONLINE DUEL (CH 4)'}
+              {unlocks.onlinePlay ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
+              <span>{unlocks.onlinePlay ? 'ONLINE PLAY UNLOCKED' : 'ONLINE DUEL (CH 4)'}</span>
             </div>
           </div>
         </div>
@@ -159,7 +189,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
                 }}
                 data-testid={`chapter-card-${ch.id}`}
                 aria-label={`Chapter ${ch.number}: ${ch.title}. ${isLocked ? `Locked: Finish Chapter ${ch.number - 1} to open this` : status}`}
-                className={`p-3.5 sm:p-4 rounded-[12px] border border-line bg-panel-light shadow-card flex flex-col gap-3 transition-all cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none ${
+                className={`scene-card p-3.5 sm:p-4 rounded-[12px] border border-line bg-panel-light shadow-card flex flex-col gap-3 transition-all cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none ${
                   isCompleted
                     ? 'border-accent/50'
                     : isActive
@@ -202,6 +232,27 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Target Location Scene Thumbnail */}
+                {ch.sceneImage && (
+                  <div className="relative w-full h-24 sm:h-28 rounded-[8px] overflow-hidden border border-line/60">
+                    <img
+                      src={ch.sceneImage}
+                      alt={`${ch.title} location`}
+                      className={`w-full h-full object-cover ${
+                        isLocked
+                          ? 'grayscale opacity-35 contrast-125'
+                          : 'brightness-95 contrast-105'
+                      }`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-panel-light via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-1.5 left-2 font-data text-[10px] uppercase tracking-wider font-semibold flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isLocked ? 'bg-ink-muted' : 'bg-accent'}`} />
+                      <span className={isLocked ? 'text-ink-muted' : 'text-ink'}>{ch.target}</span>
+                      <span className="text-[9px] text-ink-muted font-normal">({ch.mapLocation})</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Target & Lesson as Label/Value Pairs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line bg-panel p-2.5 rounded-[8px] border border-line font-data">

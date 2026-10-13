@@ -36,28 +36,28 @@ export const FogLayer: React.FC = () => {
   return (
     <div
       data-testid="fog-layer-root"
-      className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-[6]"
+      className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-[7]"
     >
-      {/* 1. Base Feathered Haze: 55-70% opacity, 14% river ramp-in, overlay.hazeLocked token */}
+      {/* Broad shore transition blends the locked side into the map instead of cutting at the river. */}
       <div
         data-testid="locked-zone-haze"
-        className="absolute top-0 bottom-0 right-0 w-1/2 pointer-events-none transition-opacity duration-[1200ms] ease-out motion-reduce:transition-none z-[1]"
+        className="absolute top-0 bottom-0 left-[42%] right-0 pointer-events-none transition-opacity duration-[1200ms] ease-out motion-reduce:transition-none z-[1]"
         style={{
-          opacity: bridgeUnlocked ? 0 : 0.62,
+          opacity: bridgeUnlocked ? 0 : 0.48,
           background:
-            'linear-gradient(to right, transparent 0%, var(--overlay-haze-locked, #919190) 14%, var(--overlay-haze-locked, #919190) 100%)',
+            'linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--overlay-haze-locked, #919190) 22%, transparent) 20%, color-mix(in srgb, var(--overlay-haze-locked, #919190) 52%, transparent) 48%, color-mix(in srgb, var(--overlay-haze-locked, #919190) 78%, transparent) 100%)',
         }}
       />
 
-      {/* 2. Drifting Soft Cloud Fog Layers (over the Commercial side, feathered along river) */}
+      {/* 2. Slowly shifting cloud banks feather over the east-side streets. */}
       <div
         data-testid="fog-drifting-container"
-        className={`absolute top-0 bottom-0 right-0 w-1/2 pointer-events-none transition-all duration-[1200ms] ease-out motion-reduce:transition-none z-[2] ${
+        className={`absolute top-0 bottom-0 left-[42%] right-0 pointer-events-none transition-all duration-[1200ms] ease-out motion-reduce:transition-none z-[2] ${
           bridgeUnlocked ? 'opacity-0 translate-x-12 -translate-y-4' : 'opacity-70 translate-x-0 translate-y-0'
         }`}
         style={{
-          maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 100%)',
-          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 100%)',
+          maskImage: 'linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.14) 18%, rgba(0, 0, 0, 0.58) 48%, black 76%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.14) 18%, rgba(0, 0, 0, 0.58) 48%, black 76%)',
         }}
       >
         {/* Cloud Layer 1: Leftward drift loop (44s linear infinite, transform only) */}
@@ -70,7 +70,7 @@ export const FogLayer: React.FC = () => {
                               radial-gradient(ellipse 70% 50% at 75% 65%, var(--overlay-fog-tint, #7E878C) 0%, transparent 75%),
                               radial-gradient(ellipse 55% 45% at 20% 80%, var(--overlay-fog-tint, #7E878C) 0%, transparent 65%)`,
             animation: shouldAnimate ? 'fogDriftLeft 44s linear infinite' : 'none',
-            opacity: 0.75,
+            opacity: 0.48,
             willChange: 'transform',
           }}
         />
@@ -85,7 +85,7 @@ export const FogLayer: React.FC = () => {
                               radial-gradient(ellipse 55% 55% at 25% 60%, var(--overlay-fog-tint, #7E878C) 0%, transparent 70%),
                               radial-gradient(ellipse 80% 60% at 80% 85%, var(--overlay-fog-tint, #7E878C) 0%, transparent 80%)`,
             animation: shouldAnimate ? 'fogDriftRight 56s linear infinite' : 'none',
-            opacity: 0.65,
+            opacity: 0.38,
             willChange: 'transform',
           }}
         />

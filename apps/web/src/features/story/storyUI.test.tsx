@@ -156,6 +156,32 @@ describe('Task 10: Guided Tutorial Overlay Component', () => {
     expect(screen.getByTestId('nix-tutorial-bubble')).toBeInTheDocument();
     expect(screen.getByText(/NIX \/\/ TACTICAL GUIDE/i)).toBeInTheDocument();
     expect(screen.getByText(step1.nixDialogue)).toBeInTheDocument();
+    expect(screen.getByTestId('tutorial-overlay').className).toContain('pointer-events-none');
+    expect(screen.getAllByTestId('tutorial-backdrop-guard')).toHaveLength(4);
+    expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
+      'aria-label',
+      `Nix target: ${step1.title}`
+    );
+  });
+
+  it('spots the JACK IN control for the establish-link step', () => {
+    const step2 = chapter1.tutorialSteps![1];
+    document.body.innerHTML = '<button data-tutorial="jack-in">JACK IN</button>';
+
+    render(
+      <TutorialOverlay
+        chapter={chapter1}
+        activeStep={step2}
+        currentStepIndex={1}
+        onAdvanceStep={vi.fn()}
+        onSkipTutorial={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
+      'aria-label',
+      'Nix target: ESTABLISH LINK'
+    );
   });
 
   it('provides an escape hatch ("Skip tutorial") that triggers onSkipTutorial', () => {
@@ -187,7 +213,36 @@ describe('Task 10: MapTutorialHost Component', () => {
       tutorialStepIndex: 0,
     });
     useMapStore.setState({
+      view: 'overview',
+      selectedDistrict: null,
+      activeNodeId: null,
       selectedNodeId: null,
+    });
+  });
+
+  it('opens the target node district before asking the player to tap its marker', async () => {
+    await act(async () => {
+      render(<MapTutorialHost />);
+    });
+
+    await waitFor(() => {
+      expect(useMapStore.getState().view).toBe('district');
+      expect(useMapStore.getState().selectedDistrict).toBe('slums');
+    });
+  });
+
+  it('restores and expands the target node sheet when resuming at the JACK IN step', async () => {
+    useCampaignStore.setState({ tutorialStepIndex: 1 });
+
+    await act(async () => {
+      render(<MapTutorialHost />);
+    });
+
+    await waitFor(() => {
+      expect(useMapStore.getState().activeNodeId).toBe('n1');
+      expect(useMapStore.getState().selectedNodeId).toBe('n1');
+      expect(useMapStore.getState().view).toBe('node');
+      expect(useMapStore.getState().sheetState).toBe('half');
     });
   });
 
@@ -228,4 +283,3 @@ describe('Task 10: MapTutorialHost Component', () => {
     expect(containerEl).toBeEmptyDOMElement();
   });
 });
-

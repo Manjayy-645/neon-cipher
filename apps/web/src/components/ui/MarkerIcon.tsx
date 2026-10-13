@@ -146,22 +146,18 @@ export const MarkerIcon: React.FC<MarkerIconProps> = ({
         {PlateShape}
       </svg>
       {locked ? (
-        <svg
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src="/icons/icon-lock.svg"
+          alt="lock"
           data-testid="lock-glyph"
-          viewBox="0 0 24 24"
-          width={glyphSize}
-          height={glyphSize}
-          fill="none"
-          stroke={cInk}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
           className="relative z-10 pointer-events-none"
-          aria-hidden="true"
-        >
-          <rect x="5" y="11" width="14" height="10" rx="2" ry="2" />
-          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-        </svg>
+          style={{
+            width: `${glyphSize}px`,
+            height: `${glyphSize}px`,
+            objectFit: 'contain',
+          }}
+        />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img

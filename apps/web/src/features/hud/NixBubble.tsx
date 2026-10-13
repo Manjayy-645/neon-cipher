@@ -87,13 +87,19 @@ export const NixBubble: React.FC<NixBubbleProps> = ({
         >
           {/* surface.panelLight, 1px line, radius 14, card shadow, padding 8px 10px, gap 10px, solid fill */}
           <div className="bg-panel-light border border-line rounded-[14px] shadow-card px-[10px] py-[8px] flex items-center gap-[10px] w-full">
-            {/* Portrait slot 36px round (radius 999), 1px line, placeholder fill accent with initial "N" in serif */}
+            {/* Portrait slot 36px round (radius 999), 1px line, Nix character portrait */}
             <div
               data-testid="nix-portrait"
-              className="w-[36px] h-[36px] rounded-full border border-line bg-accent flex items-center justify-center shrink-0 select-none overflow-hidden"
+              className="w-[36px] h-[36px] rounded-full border border-line bg-accent flex items-center justify-center shrink-0 select-none overflow-hidden relative"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/Character portraits/Nix.png"
+                alt="Nix"
+                className="w-full h-full object-cover"
+              />
               <span
-                className="font-heading text-white text-[18px] font-bold leading-none select-none"
+                className="font-heading text-white text-[18px] font-bold leading-none select-none sr-only"
                 aria-hidden="true"
               >
                 N

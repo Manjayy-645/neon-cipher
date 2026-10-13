@@ -19,7 +19,7 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
   const [simSeconds, setSimSeconds] = useState(42);
 
   return (
-    <div className="bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
+    <div className="scene-card bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-4">
       {/* Header with seeded date and target info */}
       <div className="border-b border-line pb-3 flex justify-between items-start gap-2">
         <div>

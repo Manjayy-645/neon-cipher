@@ -87,12 +87,12 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   return (
     <div
       data-testid="tutorial-overlay"
-      className="fixed inset-0 z-50 pointer-events-auto select-none overflow-hidden"
+      className="fixed inset-0 z-50 pointer-events-none select-none overflow-hidden"
     >
       {/* Dark backdrop cutout with SVG mask */}
       <svg
-        className="absolute inset-0 w-full h-full pointer-events-auto"
-        onClick={handleBackdropClick}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        aria-hidden="true"
       >
         <defs>
           <mask id="tutorial-spotlight-mask">
@@ -123,23 +123,68 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         />
       </svg>
 
+      {isTargetVisible ? (
+        <>
+          <div
+            aria-hidden="true"
+            data-testid="tutorial-backdrop-guard"
+            className="absolute left-0 right-0 top-0 pointer-events-auto"
+            style={{ height: top }}
+            onClick={handleBackdropClick}
+          />
+          <div
+            aria-hidden="true"
+            data-testid="tutorial-backdrop-guard"
+            className="absolute bottom-0 left-0 right-0 pointer-events-auto"
+            style={{ top: top + height }}
+            onClick={handleBackdropClick}
+          />
+          <div
+            aria-hidden="true"
+            data-testid="tutorial-backdrop-guard"
+            className="absolute left-0 pointer-events-auto"
+            style={{ top, width: left, height }}
+            onClick={handleBackdropClick}
+          />
+          <div
+            aria-hidden="true"
+            data-testid="tutorial-backdrop-guard"
+            className="absolute right-0 pointer-events-auto"
+            style={{ top, left: left + width, height }}
+            onClick={handleBackdropClick}
+          />
+        </>
+      ) : (
+        <div
+          aria-hidden="true"
+          data-testid="tutorial-backdrop-guard"
+          className="absolute inset-0 pointer-events-auto"
+          onClick={handleBackdropClick}
+        />
+      )}
+
       {/* Target spotlight highlight ring (pointer-events-none so target underneath receives click) */}
       {isTargetVisible && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2 }}
-          className="absolute border-2 border-accent rounded-md pointer-events-none shadow-[0_0_15px_rgba(66,105,71,0.6)]"
+          role="img"
+          aria-label={`Nix target: ${activeStep.title}`}
+          data-testid="tutorial-target-highlight"
+          className="absolute rounded-md border-2 border-accent pointer-events-none"
           style={{
             top,
             left,
             width,
             height,
+            outline: '2px solid var(--surface-panel-light)',
+            outlineOffset: '2px',
           }}
         >
-          {/* Pulsing beacon in top corner */}
-          <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-accent animate-ping" />
-          <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-accent border-2 border-white" />
+          <span className="absolute -top-3 -right-2 rounded-sm border border-panel-light bg-accent px-2 py-1 font-data text-[10px] font-semibold tracking-[1px] text-on-accent shadow-card">
+            NIX TARGET
+          </span>
         </motion.div>
       )}
 
@@ -170,13 +215,12 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         <div className="flex items-start gap-3">
           {/* Round Nix portrait slot (Style Guide 36px round) */}
           <div className="w-10 h-10 rounded-full bg-panel border-2 border-accent overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-accent" fill="none">
-              <rect width="100" height="100" fill="var(--surface-panel)" />
-              <circle cx="50" cy="45" r="22" fill="var(--surface-panel-light)" stroke="var(--line)" strokeWidth="2" />
-              <circle cx="43" cy="42" r="3.5" fill="var(--accent)" />
-              <circle cx="57" cy="42" r="3.5" fill="var(--accent)" />
-              <rect x="38" y="52" width="24" height="3" rx="1.5" fill="var(--accent)" />
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Character portraits/Nix.png"
+              alt="Nix"
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -241,10 +285,12 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           onClick={onSkipTutorial}
           data-testid="skip-tutorial-button"
           aria-label="Skip guided tutorial"
-          className="bg-panel-light border border-line text-ink font-semibold shadow-card hover:text-danger hover:border-danger hover:bg-panel px-3 py-2 text-[11px] tracking-[1px]"
+          className="bg-panel-light border border-line text-ink font-semibold shadow-card hover:text-danger hover:border-danger hover:bg-panel px-3 py-2 text-[11px] tracking-[1px] flex items-center gap-1.5"
         >
           <span>SKIP TUTORIAL</span>
-          <span className="text-danger font-bold ml-1.5" aria-hidden="true">✕</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-danger shrink-0" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
         </Button>
       </div>
     </div>

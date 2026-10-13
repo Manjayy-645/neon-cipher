@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RigHardwareItem } from '@/app/api/mock/db';
+import { getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
 
 interface PartDetailDrawerProps {
@@ -61,39 +62,48 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
             variant="icon"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-2.5 bg-transparent border-transparent hover:border-transparent text-ink text-xs"
+            className="-mr-2 bg-transparent border-transparent hover:border-transparent text-ink text-xs p-1"
           >
-            <span className="w-6 h-6 rounded-full bg-ink/10 flex items-center justify-center hover:bg-ink/20">
-              ✕
+            <span className="w-7 h-7 rounded-full bg-ink/10 flex items-center justify-center hover:bg-ink/20">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
             </span>
           </Button>
         </div>
 
         {/* Part Title and Status */}
-        <div>
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading text-xl font-bold text-ink">{item.name}</h2>
-            {item.burned ? (
-              <span className="bg-danger/20 text-danger-text border border-danger/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                OVERVOLT BURN
-              </span>
-            ) : item.installed ? (
-              <span className="bg-accent/20 text-accent-text border border-accent/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                OPERATIONAL
-              </span>
-            ) : (
-              <span className="bg-ink/10 text-ink-muted border border-ink-muted/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                NOT INSTALLED
-              </span>
-            )}
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-[8px] bg-panel-dark/10 border border-line p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={getItemIcon(item.id)} alt={item.name} className="w-full h-full object-contain" />
           </div>
-          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading text-xl font-bold text-ink">{item.name}</h2>
+              {item.burned ? (
+                <span className="bg-danger/20 text-danger-text border border-danger/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                  OVERVOLT BURN
+                </span>
+              ) : item.installed ? (
+                <span className="bg-accent/20 text-accent-text border border-accent/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                  OPERATIONAL
+                </span>
+              ) : (
+                <span className="bg-ink/10 text-ink-muted border border-ink-muted/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                  NOT INSTALLED
+                </span>
+              )}
+            </div>
+            <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+          </div>
         </div>
 
         {/* Nix Plain-Language Explanation */}
         <div className="bg-panel-dark/10 p-3.5 rounded-md border border-ink-muted/30 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-ink border border-accent flex items-center justify-center font-bold text-accent text-xs shrink-0">
-            NX
+          <div className="w-8 h-8 rounded-full border border-accent overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 text-xs font-data">
             <span className="font-bold text-accent uppercase tracking-wider text-[10px] block mb-0.5">
@@ -109,6 +119,15 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
             <div className="flex justify-between items-center">
               <span className="text-danger-text font-bold">REPAIR DIAGNOSTIC:</span>
               <span className="text-danger-text">Bus traces severed from Tier 5 counter-hack</span>
+            </div>
+            <div className="flex items-center gap-2.5 pt-1 border-t border-danger/20">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-line shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/Character portraits/Alex.png" alt="Alex" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-[11px] text-ink-muted leading-tight">
+                Alex&apos;s Tech Bench: Certified soldering & overvolt circuit recovery
+              </span>
             </div>
             <div className="flex justify-between items-center border-t border-danger/20 pt-2">
               <span className="text-ink-muted">Repair Fee:</span>

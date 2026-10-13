@@ -63,10 +63,12 @@ export const Toast: React.FC<ToastProps> = ({ toast: propToast, onDismiss: propO
                 e.stopPropagation();
                 handleDismiss();
               }}
-              className="!min-h-[44px] !w-[44px] !p-0 border-0 text-ink-muted hover:text-ink text-sm font-bold shrink-0 bg-transparent"
+              className="!min-h-[44px] !w-[44px] !p-0 border-0 text-ink-muted hover:text-ink shrink-0 bg-transparent flex items-center justify-center"
               aria-label="Dismiss toast"
             >
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
             </Button>
           </div>
         </motion.div>

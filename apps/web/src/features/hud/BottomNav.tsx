@@ -1,12 +1,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/Button';
 
-const ICONS = {
-  map: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/><circle cx="12" cy="10" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></>,
-  rig: <><rect x="4" y="4" width="16" height="16" rx="2" ry="2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/><path d="M9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></>,
-  market: <><circle cx="9" cy="21" r="1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/><circle cx="20" cy="21" r="1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></>,
-  comms: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>,
-  duel: <path d="M14.5 4L20 9.5l-3 3-5.5-5.5 3-3zM9.5 14.5L4 20l3 3 5.5-5.5-3-3zM16 16l4 4M4 4l4 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+const ICONS: Record<string, string> = {
+  map: '/icons/nav-map.svg',
+  rig: '/icons/nav-rig.svg',
+  market: '/icons/nav-market.svg',
+  comms: '/icons/nav-comms.svg',
+  duel: '/icons/nav-duel.svg',
 };
 
 export const BottomNav: React.FC = () => {
@@ -29,13 +29,11 @@ export const BottomNav: React.FC = () => {
           }`}
           aria-label={tab.label}
         >
-          <svg 
-            width="22" height="22" viewBox="0 0 24 24" 
-            stroke="currentColor" 
-            className="mb-1"
-          >
-            {ICONS[tab.id as keyof typeof ICONS]}
-          </svg>
+          <img
+            src={ICONS[tab.id]}
+            alt=""
+            className="w-[22px] h-[22px] mb-1 object-contain pointer-events-none"
+          />
           <span className="text-[10px] font-bold tracking-wider leading-none">{tab.label}</span>
         </Button>
       ))}

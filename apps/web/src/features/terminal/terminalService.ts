@@ -19,11 +19,14 @@ export interface SessionData {
 export interface GuessResult {
   pots?: number;
   pans?: number;
+  totalHits?: number;
+  ice?: IceType;
   attemptsLeft?: number;
   status: 'active' | 'won' | 'lost';
   secret?: string;
   payout?: number;
   fine?: number;
+  burnedHardware?: string;
   error?: string;
 }
 
@@ -54,3 +57,5 @@ export const terminalService = {
     return res.json();
   }
 };
+
+export { useTerminalSession } from './useTerminalSession';

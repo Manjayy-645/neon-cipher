@@ -103,9 +103,9 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-panel-light text-ink overflow-hidden">
+    <div className="scene-ground w-full h-full flex flex-col text-ink overflow-hidden">
       {/* Market Header */}
-      <header className="px-4 py-4 sm:py-5 border-b border-line bg-panel-light shrink-0">
+      <header className="px-4 py-4 sm:py-5 border-b border-line bg-panel-light/90 shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button
@@ -271,22 +271,30 @@ function ItemCard({
   const isCoinCurrency = item.currency === 'coins';
 
   return (
-    <div className="bg-panel-light border border-line rounded-[12px] p-3.5 sm:p-4 shadow-card flex flex-col gap-3">
+    <div className="scene-card bg-panel-light border border-line rounded-[12px] p-3.5 sm:p-4 shadow-card flex flex-col gap-3">
       {/* Title & description */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="font-heading text-base font-bold text-ink leading-tight">
-            {item.name}
-          </h3>
-          {ownedCount > 0 && (
-            <span className="bg-panel border border-line text-ink text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold">
-              x{ownedCount}
-            </span>
-          )}
+      <div className="flex items-start gap-3 min-w-0">
+        {item.icon && (
+          <div className="w-12 h-12 rounded-[8px] bg-panel border border-line p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-heading text-base font-bold text-ink leading-tight">
+              {item.name}
+            </h3>
+            {ownedCount > 0 && (
+              <span className="bg-panel border border-line text-ink text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold">
+                x{ownedCount}
+              </span>
+            )}
+          </div>
+          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">
+            {item.effect}
+          </p>
         </div>
-        <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">
-          {item.effect}
-        </p>
       </div>
 
       {/* Data Rows: Label above value, 1px line divider between columns */}
@@ -409,15 +417,25 @@ function ConfirmPurchaseSheet({
             variant="icon"
             onClick={onCancel}
             aria-label="Close"
-            className="w-7 h-7 min-w-[32px] min-h-[32px] rounded-full text-xs"
+            className="w-7 h-7 min-w-[32px] min-h-[32px] rounded-full text-xs p-1"
           >
-            ✕
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
 
-        <div>
-          <h2 className="font-heading text-[24px] leading-[28px] font-normal text-ink">{item.name}</h2>
-          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+        <div className="flex items-center gap-3">
+          {item.icon && (
+            <div className="w-14 h-14 rounded-[10px] bg-panel border border-line p-1.5 shrink-0 flex items-center justify-center overflow-hidden shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-[24px] leading-[28px] font-normal text-ink">{item.name}</h2>
+            <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+          </div>
         </div>
 
         {/* Pricing & Balance Verification Card */}
@@ -551,10 +569,12 @@ function EquipDrawer({
             variant="icon"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-2 bg-transparent border-transparent hover:border-transparent text-ink text-xs"
+            className="-mr-2 bg-transparent border-transparent hover:border-transparent text-ink text-xs p-1"
           >
             <span className="w-7 h-7 rounded-full bg-panel border border-line flex items-center justify-center hover:bg-panel-dark/5">
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
             </span>
           </Button>
         </div>
@@ -575,9 +595,17 @@ function EquipDrawer({
                 </span>
                 {tool ? (
                   <div className="flex items-center justify-between mt-1">
-                    <span className="font-heading text-xs font-bold text-ink truncate">
-                      {tool.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {tool.icon && (
+                        <div className="w-6 h-6 rounded bg-panel border border-line p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+                        </div>
+                      )}
+                      <span className="font-heading text-xs font-bold text-ink truncate">
+                        {tool.name}
+                      </span>
+                    </div>
                     <Button
                       variant="ghost"
                       compact
@@ -620,18 +648,26 @@ function EquipDrawer({
                       : 'bg-panel-light border-line'
                   }`}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-heading text-sm font-bold text-ink truncate">
-                        {tool.name}
-                      </span>
-                      <span className="font-data text-[10px] bg-panel border border-line px-1.5 py-0.5 rounded-[4px] font-bold text-ink">
-                        x{count}
-                      </span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {tool.icon && (
+                      <div className="w-10 h-10 rounded-[6px] bg-panel border border-line p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-heading text-sm font-bold text-ink truncate">
+                          {tool.name}
+                        </span>
+                        <span className="font-data text-[10px] bg-panel border border-line px-1.5 py-0.5 rounded-[4px] font-bold text-ink">
+                          x{count}
+                        </span>
+                      </div>
+                      <p className="font-data text-xs text-ink-muted truncate mt-0.5">
+                        {tool.effect}
+                      </p>
                     </div>
-                    <p className="font-data text-xs text-ink-muted truncate mt-0.5">
-                      {tool.effect}
-                    </p>
                   </div>
 
                   <Button

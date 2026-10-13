@@ -10,7 +10,7 @@ import {
   transferNodeOwnership,
   activeAccountId,
 } from '../db';
-import { validateGuess, calculateScore, getChapterById } from '@neon-cipher/game-rules/src/index';
+import { validateGuess, calculateScore, calculateScoreWithIce, driftSecret, getChapterById } from '@neon-cipher/game-rules/src/index';
 
 // MOCK: replace with Supabase edge function.
 export async function POST(request: Request) {
@@ -58,9 +58,11 @@ export async function POST(request: Request) {
     if (!isValid) return NextResponse.json({ error: 'Invalid guess format' }, { status: 400 });
 
     session.attemptsLeft--;
-    const score = calculateScore(session.secret, guess);
+    const ice = session.ice || 'None';
+    const rawScore = calculateScore(session.secret, guess);
+    const isWin = rawScore.pots === session.node.digits;
 
-    if (score.pots === session.node.digits) {
+    if (isWin) {
       session.status = 'won';
       recordTransaction(`Breach: ${session.node.name}`, session.node.bounty, 'credits', 'payout');
 
@@ -78,14 +80,26 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json({
-        pots: score.pots,
-        pans: score.pans,
+        pots: rawScore.pots,
+        pans: rawScore.pans,
         attemptsLeft: session.attemptsLeft,
         status: 'won',
         secret: session.secret,
         payout: session.node.bounty,
         campaign: campaignResult,
+        ice,
       });
+    }
+
+    // Liar ICE: 35% chance to falsify feedback
+    const isLiarFalsified = ice === 'Liar' && Math.random() < 0.35;
+    const iceScore = calculateScoreWithIce(session.secret, guess, ice, {
+      isFalsified: isLiarFalsified,
+    });
+
+    // Drift ICE: Mutate 1 digit of the secret after an unsuccessful attempt if game continues
+    if (ice === 'Drift' && session.attemptsLeft > 0) {
+      session.secret = driftSecret(session.secret, session.node.allowDuplicates);
     }
 
     if (session.attemptsLeft <= 0) {
@@ -105,8 +119,10 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json({
-        pots: score.pots,
-        pans: score.pans,
+        pots: iceScore.pots,
+        pans: iceScore.pans,
+        totalHits: iceScore.totalHits,
+        ice,
         attemptsLeft: 0,
         status: 'lost',
         secret: session.secret,
@@ -116,8 +132,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      pots: score.pots,
-      pans: score.pans,
+      pots: iceScore.pots,
+      pans: iceScore.pans,
+      totalHits: iceScore.totalHits,
+      ice,
       attemptsLeft: session.attemptsLeft,
       status: 'active',
     });

@@ -98,9 +98,9 @@ export function TurfWarBoard() {
   };
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-panel-light text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
+    <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
       {/* Header */}
-      <div className="bg-panel border-b border-line px-4 py-4 sm:py-5 flex items-center justify-between shrink-0">
+      <div className="bg-panel/90 border-b border-line px-4 py-4 sm:py-5 flex items-center justify-between shrink-0">
         <div>
           <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
             CITYWIDE TURF WAR // DISTRICT BOARD
@@ -152,7 +152,7 @@ export function TurfWarBoard() {
               }}
               data-testid={`district-card-${dist.id}`}
               aria-label={`Filter by ${dist.name}`}
-              className={`p-3.5 sm:p-4 rounded-[12px] border border-line shadow-card flex flex-col justify-between gap-3 bg-panel-light cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none border-l-4 ${
+              className={`scene-card p-3.5 sm:p-4 rounded-[12px] border border-line shadow-card flex flex-col justify-between gap-3 bg-panel-light cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none border-l-4 ${
                 dist.id === 'slums' ? 'border-l-accent' : 'border-l-danger'
               } ${selectedDistrict === dist.id ? 'ring-2 ring-accent' : ''}`}
             >

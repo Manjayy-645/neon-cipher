@@ -136,10 +136,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             type="button"
             variant="icon"
             onClick={() => setErrorMsg(null)}
-            className="text-danger-text"
+            className="text-danger-text p-1"
             aria-label="Dismiss error"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
       )}
@@ -263,9 +265,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           disabled={isLoading || !canAfford}
           loading={isLoading}
           data-testid="quick-jack-in-button"
-          className="flex-1"
+          className="flex-1 flex items-center justify-center gap-2"
         >
-          ⚡ QUICK JACK-IN (VS NULL_BYTE)
+          <div className="w-5 h-5 rounded-full overflow-hidden border border-panel-light/60 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Character portraits/Null_Byte.png" alt="Null_Byte" className="w-full h-full object-cover" />
+          </div>
+          <span>QUICK JACK-IN (VS NULL_BYTE)</span>
         </Button>
 
         <Button
@@ -380,8 +386,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 variant="icon"
                 onClick={() => setIsCreateModalOpen(false)}
                 aria-label="Close modal"
+                className="p-1"
               >
-                ✕
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </Button>
             </div>
 

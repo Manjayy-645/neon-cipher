@@ -19,7 +19,7 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="h-full w-full bg-panel flex flex-col justify-between p-6 font-data text-ink">
+    <div className="scene-ground scene-arrive h-full w-full flex flex-col justify-between p-6 font-data text-ink">
       <div className="bg-panel-light border border-line p-3.5 rounded-md flex items-center justify-between">
         <span className="type-label text-[10px] text-money-text font-bold">
           SCHEDULED SUB-GRID INTERRUPT

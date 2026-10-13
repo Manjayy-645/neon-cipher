@@ -5,9 +5,9 @@ export default function TerminalHistory({
   digits, 
   ice 
 }: { 
-  guesses: { guess: string, pots: number, pans: number }[], 
-  digits: number,
-  ice?: string
+  guesses: { guess: string; pots: number; pans: number; totalHits?: number }[]; 
+  digits: number;
+  ice?: string;
 }) {
   const colorBlindMode = useSettingsStore((s) => s.colorBlindMode);
 
@@ -28,8 +28,8 @@ export default function TerminalHistory({
           const showPans = ice !== 'Pot-only';
           const isGhost = ice === 'Ghost';
           const displayedPans = showPans ? g.pans : 0;
-          const totalHits = g.pots + displayedPans;
-          const displayedMisses = digits - totalHits;
+          const totalHits = g.totalHits !== undefined ? g.totalHits : (g.pots + displayedPans);
+          const displayedMisses = Math.max(0, digits - totalHits);
 
           return (
             <div key={i} className="flex items-center justify-between bg-panel-dark px-4 py-3 rounded-lg border border-ink-muted">

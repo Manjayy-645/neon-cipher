@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    include: [
+      'src/**/*.{test,spec}.{ts,tsx}',
+      '../../packages/game-rules/src/**/*.{test,spec}.{ts,tsx}',
+    ],
     alias: {
       '@': resolve(__dirname, './src'),
     },

@@ -16,7 +16,7 @@ export const FactionView: React.FC<FactionViewProps> = ({
   acceptingContractId,
 }) => {
   return (
-    <div className="bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-5">
+    <div className="scene-card bg-panel-light border border-line rounded-md p-4 text-ink font-data shadow-card space-y-5">
       {/* Header */}
       <div className="border-b border-line pb-3">
         <h2 className="font-heading text-title tracking-wide">FACTION DIPLOMACY</h2>

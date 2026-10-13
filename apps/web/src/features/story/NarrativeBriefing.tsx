@@ -79,7 +79,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
   return (
     <div
       data-testid="narrative-briefing-screen"
-      className="w-full h-full flex flex-col justify-between p-4 sm:p-6 bg-panel-light text-ink overflow-y-auto"
+      className="scene-ground w-full h-full flex flex-col justify-between p-4 sm:p-6 text-ink overflow-y-auto"
     >
       {/* Top Bar: Chapter number & Back button */}
       <div className="flex items-center justify-between border-b border-line pb-3 shrink-0">
@@ -147,30 +147,12 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
         {/* Large Portrait (1:1 aspect ratio, min 120px) */}
         <div className="relative shrink-0" data-testid="briefing-portrait">
           <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-md bg-panel-dark border border-line overflow-hidden shadow-card flex items-center justify-center relative">
-            {speakerConfig.id === 'glitch' ? (
-              // Cybernetic Glitch portrait SVG
-              <svg viewBox="0 0 100 100" className="w-full h-full text-money" fill="none">
-                <rect width="100" height="100" fill="var(--surface-dark)" />
-                <path d="M15 95 Q50 60 85 95" fill="var(--surface-panel)" stroke="var(--line)" strokeWidth="2" />
-                <circle cx="50" cy="45" r="22" fill="var(--surface-panel-light)" stroke="var(--line)" strokeWidth="2" />
-                <rect x="34" y="38" width="32" height="10" rx="3" fill="var(--money)" fillOpacity="0.85" />
-                <line x1="36" y1="43" x2="64" y2="43" stroke="var(--on-accent)" strokeWidth="1.5" />
-                <path d="M26 40 L28 50 L34 52" stroke="var(--money-text)" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="26" cy="40" r="3" fill="var(--money-text)" />
-              </svg>
-            ) : (
-              // Cybernetic Nix portrait SVG
-              <svg viewBox="0 0 100 100" className="w-full h-full text-accent" fill="none">
-                <rect width="100" height="100" fill="var(--surface-dark)" />
-                <path d="M15 95 Q50 60 85 95" fill="var(--surface-panel)" stroke="var(--line)" strokeWidth="2" />
-                <circle cx="50" cy="45" r="22" fill="var(--surface-panel-light)" stroke="var(--line)" strokeWidth="2" />
-                <circle cx="43" cy="42" r="3.5" fill="var(--accent)" />
-                <circle cx="57" cy="42" r="3.5" fill="var(--accent)" />
-                <rect x="38" y="52" width="24" height="3" rx="1.5" fill="var(--accent)" fillOpacity="0.6" />
-                <path d="M72 40 L70 50 L64 52" stroke="var(--accent-text)" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="74" cy="40" r="3" fill="var(--accent-text)" />
-              </svg>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={speakerConfig.id === 'glitch' ? '/Character portraits/Glitch.png' : '/Character portraits/Nix.png'}
+              alt={speakerConfig.name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-ink text-panel-light px-3 py-0.5 rounded-pill border border-line text-center whitespace-nowrap">
             <span className="font-heading text-xs font-bold tracking-wider uppercase">
@@ -247,6 +229,26 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
             LOC: {chapter.mapLocation}
           </span>
         </div>
+
+        {/* Optical Surveillance / Target Location Feed */}
+        {chapter.sceneImage && (
+          <div className="relative w-full h-40 sm:h-48 rounded-[8px] overflow-hidden border border-line shadow-card">
+            <img
+              src={chapter.sceneImage}
+              alt={`${chapter.target} at ${chapter.mapLocation}`}
+              className="w-full h-full object-cover brightness-95 contrast-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-panel/90 via-panel/20 to-transparent pointer-events-none" />
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-panel/90 backdrop-blur-xs border border-line text-[10px] font-data text-ink font-semibold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+              <span>SURVEILLANCE FEED // {chapter.mapLocation}</span>
+            </div>
+            <div className="absolute bottom-2 left-2 font-data text-[11px] text-ink font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span>TARGET RECON: {chapter.target}</span>
+            </div>
+          </div>
+        )}
 
         {/* Specs Grid */}
         <div className="grid grid-cols-4 gap-2">

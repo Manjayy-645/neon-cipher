@@ -218,28 +218,28 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
       {/* 1. STATUS BAR: Opponent handle, attempts left, server clock, shield */}
       <header
         data-testid="duel-status-bar"
-        className="flex justify-between items-center px-3 py-2 bg-ink border-b border-line shrink-0 z-20"
+        className="flex justify-between items-center px-2.5 sm:px-3 py-2 bg-ink border-b border-line shrink-0 z-20 gap-2"
       >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-panel-dark border border-line flex items-center justify-center text-sm">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-panel-dark border border-line flex items-center justify-center text-sm shrink-0">
             {session.rival.avatar}
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-data text-xs font-bold text-panel-light truncate">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <span className="font-data text-xs font-bold text-panel-light truncate max-w-[85px] sm:max-w-[140px]">
                 {session.rival.handle}
               </span>
-              <span className="font-data text-[9px] uppercase px-1 py-0.2 rounded bg-danger/20 text-danger border border-danger/30">
-                MOCK_AI
+              <span className="font-data text-[8px] sm:text-[9px] uppercase px-1 py-0.2 rounded bg-danger/20 text-danger border border-danger/30 shrink-0">
+                AI
               </span>
             </div>
-            <span className="font-data text-[9px] text-ink-muted uppercase tracking-wider">
-              {session.matchType.toUpperCase()} DUEL • POT {session.totalPot.toLocaleString()} CR
+            <span className="font-data text-[8px] sm:text-[9px] text-ink-muted uppercase tracking-wider truncate">
+              {session.matchType.toUpperCase()} • {session.totalPot.toLocaleString()} CR
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Shield status */}
           <ShieldAlert shieldActive={isShielded} />
 
@@ -249,31 +249,32 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
           {/* Shared Attempts Pool */}
           <div
             data-testid="shared-attempts-pool"
-            className="flex flex-col items-end px-2 py-1 bg-panel-dark/80 rounded border border-line"
+            className="flex flex-col items-end px-1.5 sm:px-2 py-0.5 sm:py-1 bg-panel-dark/80 rounded border border-line"
           >
-            <span className="font-data text-[8px] text-ink-muted uppercase tracking-wider">
-              ATTEMPTS POOL
+            <span className="font-data text-[7px] sm:text-[8px] text-ink-muted uppercase tracking-wider">
+              ATTEMPTS
             </span>
             <span
               data-testid="shared-attempts-indicator"
-              className={`font-data text-xs font-black ${
+              className={`font-data text-[11px] sm:text-xs font-black ${
                 session.sharedAttempts <= 3 ? 'text-danger animate-pulse' : 'text-accent'
               }`}
             >
-              {session.sharedAttempts} LEFT ({session.sharedAttempts} / 12)
+              {session.sharedAttempts} LEFT
+              <span className="hidden sm:inline"> ({session.sharedAttempts}/12)</span>
             </span>
           </div>
 
           {/* Turn Clock */}
           <div
             data-testid="turn-clock"
-            className="flex flex-col items-end px-2.5 py-1 bg-panel-dark/80 rounded border border-line"
+            className="flex flex-col items-end px-2 sm:px-2.5 py-0.5 sm:py-1 bg-panel-dark/80 rounded border border-line"
           >
-            <span className="font-data text-[8px] text-ink-muted uppercase tracking-wider">
-              TURN CLOCK
+            <span className="font-data text-[7px] sm:text-[8px] text-ink-muted uppercase tracking-wider">
+              CLOCK
             </span>
             <span
-              className={`font-data text-xs font-black ${
+              className={`font-data text-[11px] sm:text-xs font-black ${
                 turnClock <= 5 ? 'text-danger animate-pulse' : 'text-money'
               }`}
             >
@@ -289,9 +290,11 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
             data-testid="surrender-button"
             aria-label="Surrender or Exit Duel"
             title="Surrender / Exit Duel"
-            className="border-line text-ink-muted hover:text-danger hover:border-danger"
+            className="border-line text-ink-muted hover:text-danger hover:border-danger p-1 sm:p-2"
           >
-            ✕
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
       </header>
@@ -309,6 +312,10 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
               : 'text-ink-muted hover:text-panel-light border-b-0'
           }`}
         >
+          <div className="w-4 h-4 rounded-full overflow-hidden border border-accent/40 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={session.player.avatar || '/Character portraits/Player avatars.png'} alt="You" className="w-full h-full object-cover" />
+          </div>
           <span data-testid="toggle-tab-you">YOU</span>
           <span className="text-[10px] opacity-75">({session.player.guesses.length})</span>
           {session.player.cheatUsed && (
@@ -329,6 +336,10 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
               : 'text-ink-muted hover:text-panel-light border-b-0'
           }`}
         >
+          <div className="w-4 h-4 rounded-full overflow-hidden border border-danger/40 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Character portraits/Null_Byte.png" alt="Rival" className="w-full h-full object-cover" />
+          </div>
           <span data-testid="toggle-tab-rival">RIVAL [{session.rival.handle}]</span>
           <span className="text-[10px] opacity-75">({session.rival.guesses.length})</span>
         </Button>
@@ -344,7 +355,17 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
           }`}
         >
           <div className="px-3 py-1.5 bg-ink/40 border-b border-line/40 flex justify-between items-center text-xs font-data text-accent">
-            <span className="uppercase font-bold tracking-wider">YOUR CRACK STREAM</span>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-accent/40 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={session.player.avatar || '/Character portraits/Player avatars.png'}
+                  alt="You"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="uppercase font-bold tracking-wider">YOUR CRACK STREAM</span>
+            </div>
             <span className="text-[10px] text-ink-muted">
               {session.player.guesses.length} TRIES
             </span>
@@ -412,9 +433,19 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
           }`}
         >
           <div className="px-3 py-1.5 bg-ink/40 border-b border-line/40 flex justify-between items-center text-xs font-data text-danger-text">
-            <span className="uppercase font-bold tracking-wider">
-              RIVAL STREAM [{session.rival.handle}]
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-danger/40 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/Character portraits/Null_Byte.png"
+                  alt={session.rival.handle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="uppercase font-bold tracking-wider">
+                RIVAL STREAM [{session.rival.handle}]
+              </span>
+            </div>
             <span className="text-[10px] text-ink-muted">
               {session.rival.guesses.length} TRIES
             </span>
@@ -457,9 +488,16 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
               compact
               data-testid="casual-exploit-toggle"
               onClick={() => setActiveCheat(!activeCheat)}
-              className="text-[11px]"
+              className="text-[11px] flex items-center gap-1.5"
             >
-              <span>{activeCheat ? '⚠️ CHEAT ARMED' : 'ARM CASUAL CHEAT'}</span>
+              {activeCheat && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+              <span>{activeCheat ? 'CHEAT ARMED' : 'ARM CASUAL CHEAT'}</span>
             </Button>
             <span className="text-[10px] text-ink-muted hidden sm:inline">
               (Permitted in casual with &apos;cheat used&apos; flag)
@@ -470,7 +508,10 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
             data-testid="exploits-disabled-badge"
             className="flex items-center gap-1.5 text-ink-muted text-[10px] uppercase tracking-wider"
           >
-            <span>🔒</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
             <span>EXPLOITS STRICTLY DISABLED IN RANKED MATCHES</span>
           </div>
         )}

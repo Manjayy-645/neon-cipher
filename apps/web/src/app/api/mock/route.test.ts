@@ -35,6 +35,7 @@ describe('Mock Server Routes', () => {
       expect(session).toBeDefined();
       expect(session?.nodeId).toBe('n1');
       expect(session?.secret).toBeDefined(); // Server should know it
+      expect(session?.ice).toBe(data.config.ice); // Server session retains ICE
     });
 
     it('returns 404 for invalid node', async () => {
@@ -146,6 +147,61 @@ describe('Mock Server Routes', () => {
       expect(data.status).toBe('lost');
       expect(data.error).toBe('Time expired');
       expect(data.secret).toBe('123');
+    });
+
+    it('evaluates Pot-only ICE by suppressing pans to zero', async () => {
+      const session = mockSessions.get(testSessionId)!;
+      session.ice = 'Pot-only';
+      // secret is 123. Guess 132 would normally give 1 pot, 2 pans.
+      const request = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: testSessionId, guess: '132' }),
+      });
+
+      const response = await guessPOST(request);
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      expect(data.pots).toBe(1);
+      expect(data.pans).toBe(0); // Pans suppressed by Pot-only ICE
+      expect(data.ice).toBe('Pot-only');
+    });
+
+    it('evaluates Ghost ICE by returning totalHits instead of pots and pans', async () => {
+      const session = mockSessions.get(testSessionId)!;
+      session.ice = 'Ghost';
+      // secret is 123. Guess 132 would normally give 1 pot, 2 pans -> totalHits 3
+      const request = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: testSessionId, guess: '132' }),
+      });
+
+      const response = await guessPOST(request);
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      expect(data.totalHits).toBe(3);
+      expect(data.pots).toBe(0);
+      expect(data.pans).toBe(0);
+      expect(data.ice).toBe('Ghost');
+    });
+
+    it('mutates the secret when an attempt fails against Drift ICE', async () => {
+      const session = mockSessions.get(testSessionId)!;
+      session.ice = 'Drift';
+      const initialSecret = session.secret; // '123'
+
+      const request = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: testSessionId, guess: '456' }),
+      });
+
+      const response = await guessPOST(request);
+      expect(response.status).toBe(200);
+
+      const updatedSession = mockSessions.get(testSessionId);
+      expect(updatedSession?.secret).not.toBe(initialSecret);
+      expect(updatedSession?.secret).toHaveLength(initialSecret.length);
     });
   });
 });
