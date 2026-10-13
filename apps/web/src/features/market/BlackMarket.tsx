@@ -1,0 +1,725 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CATALOG, CatalogItem, ItemCategory } from './catalog';
+import { walletService } from './walletService';
+import { usePlayerStore } from '@/stores/player-store';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { Button } from '@/components/ui/Button';
+
+interface BlackMarketProps {
+  onBackToDialogue: () => void;
+}
+
+export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) => {
+  const { credits, coins, inventory, equippedTools, syncWallet } = usePlayerStore();
+
+  const [activeTab, setActiveTab] = useState<ItemCategory>('tools');
+  const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<CatalogItem | null>(null);
+  const [purchaseFeedback, setPurchaseFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isEquipDrawerOpen, setIsEquipDrawerOpen] = useState(false);
+  const [isCoinStoreModalOpen, setIsCoinStoreModalOpen] = useState(false);
+
+  // Sync balances and inventory on mount from mock server
+  useEffect(() => {
+    walletService
+      .getWallet()
+      .then((data) => {
+        syncWallet(data);
+      })
+      .catch((err) => {
+        console.error('Wallet fetch error:', err);
+      });
+  }, [syncWallet]);
+
+  // Filter items by active tab
+  const itemsInTab = useMemo(() => {
+    return CATALOG.filter((it) => it.category === activeTab);
+  }, [activeTab]);
+
+  // Consumable tools owned for equip flow
+  const ownedTools = useMemo(() => {
+    return CATALOG.filter((it) => it.category === 'tools' && (inventory[it.id] || 0) > 0);
+  }, [inventory]);
+
+  const handleOpenConfirm = (item: CatalogItem) => {
+    setPurchaseFeedback(null);
+    setSelectedItemForPurchase(item);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedItemForPurchase) return;
+    setIsPurchasing(true);
+    setPurchaseFeedback(null);
+
+    const result = await walletService.purchaseItem(selectedItemForPurchase.id);
+    setIsPurchasing(false);
+
+    if (result.success && result.balances && result.inventory) {
+      syncWallet({
+        credits: result.balances.credits,
+        coins: result.balances.coins,
+        inventory: result.inventory,
+      });
+      setPurchaseFeedback({
+        type: 'success',
+        message: result.message || `Acquired ${selectedItemForPurchase.name}!`,
+      });
+      // Close sheet after brief confirmation
+      setTimeout(() => {
+        setSelectedItemForPurchase(null);
+      }, 1100);
+    } else {
+      setPurchaseFeedback({
+        type: 'error',
+        message: result.error || 'Transaction rejected by vendor.',
+      });
+    }
+  };
+
+  const handleToggleEquipTool = async (toolId: string) => {
+    let nextEquipped = [...equippedTools];
+    if (nextEquipped.includes(toolId)) {
+      nextEquipped = nextEquipped.filter((id) => id !== toolId);
+    } else {
+      if (nextEquipped.length >= 2) {
+        // Replace second tool or notify
+        nextEquipped = [nextEquipped[0], toolId];
+      } else {
+        nextEquipped.push(toolId);
+      }
+    }
+
+    const res = await walletService.equipTools(nextEquipped);
+    if (res.success && res.equippedTools) {
+      syncWallet({
+        credits,
+        coins,
+        equippedTools: res.equippedTools,
+      });
+    }
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col bg-panel-light text-ink overflow-hidden">
+      {/* Market Header */}
+      <header className="px-4 py-4 sm:py-5 border-b border-line bg-panel-light shrink-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="icon"
+              onClick={onBackToDialogue}
+              aria-label="Back to vendor dialogue"
+              className="shrink-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </Button>
+            <div>
+              <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
+                Broker Glitch // Underground
+              </span>
+              <h1 className="font-heading text-[28px] leading-[32px] font-normal text-ink">
+                Black Market
+              </h1>
+            </div>
+          </div>
+
+          {/* Currency & Equip Quick Actions */}
+          <div className="flex items-center gap-2 pt-1 font-data text-xs shrink-0">
+            {/* Credits display */}
+            <div className="hidden xs:flex items-center px-2.5 py-1.5 bg-panel border border-line rounded-[8px] text-xs font-bold text-money-text">
+              ${credits.toLocaleString()}
+            </div>
+
+            {/* Equip drawer trigger */}
+            <Button
+              variant="secondary"
+              compact
+              onClick={() => setIsEquipDrawerOpen(true)}
+              className="px-2.5 py-1.5 min-h-[44px] text-[11px] font-bold gap-1.5"
+              aria-label="Manage equipped breach tools"
+            >
+              <span className="text-ink-muted uppercase">Rig:</span>
+              <span className="text-accent-text font-bold">{equippedTools.length}/2</span>
+            </Button>
+
+            {/* Coin Store trigger */}
+            <Button
+              variant="secondary"
+              compact
+              onClick={() => setIsCoinStoreModalOpen(true)}
+              className="px-2.5 py-1.5 min-h-[44px] bg-money/10 border-money/30 text-[11px] font-bold text-money-text gap-1.5"
+              title="Buy Coins (Stub)"
+              aria-label="Open coin exchange"
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-money inline-block" />
+              <span>{coins}</span>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* 4 Category Tabs */}
+      <div className="px-4 pt-3 pb-2 shrink-0">
+        <SegmentedControl<ItemCategory>
+          layout="grid"
+          options={[
+            { id: 'tools', label: 'TOOLS' },
+            { id: 'exploits', label: 'EXPLOITS' },
+            { id: 'rig', label: 'RIG HARDWARE' },
+            { id: 'leases', label: 'DISTRICT LEASES' },
+          ]}
+          value={activeTab}
+          onChange={(tab) => setActiveTab(tab)}
+          ariaLabel="Market categories"
+        />
+      </div>
+
+      {/* Tab Notice Banner */}
+      <div className="px-4 py-2 bg-panel/40 border-b border-line text-xs font-data text-ink-muted shrink-0">
+        {activeTab === 'tools' && (
+          <span>Consumable sabotage tools for solo and duel hacks. Max 2 equipped.</span>
+        )}
+        {activeTab === 'exploits' && (
+          <span className="text-danger-text font-medium">
+            Solo hacks only. Coins required. Reduces breach bounty by ~15%.
+          </span>
+        )}
+        {activeTab === 'rig' && (
+          <span>Permanent hardware upgrades wired into your terminal deck.</span>
+        )}
+        {activeTab === 'leases' && (
+          <span>Syndicate territorial leases yielding passive revenue.</span>
+        )}
+      </div>
+
+      {/* Item Catalog List */}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+        {itemsInTab.map((item) => {
+          const owned = inventory[item.id] || 0;
+          const isMaxed = item.maxOwned !== undefined && owned >= item.maxOwned;
+
+          return (
+            <ItemCard
+              key={item.id}
+              item={item}
+              ownedCount={owned}
+              isMaxed={isMaxed}
+              onBuyClick={() => handleOpenConfirm(item)}
+            />
+          );
+        })}
+      </div>
+
+      {/* Confirm Purchase Bottom Sheet */}
+      <AnimatePresence>
+        {selectedItemForPurchase && (
+          <ConfirmPurchaseSheet
+            item={selectedItemForPurchase}
+            playerCredits={credits}
+            playerCoins={coins}
+            isPurchasing={isPurchasing}
+            feedback={purchaseFeedback}
+            onConfirm={handleConfirmPurchase}
+            onCancel={() => setSelectedItemForPurchase(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Equip Flow Drawer */}
+      <AnimatePresence>
+        {isEquipDrawerOpen && (
+          <EquipDrawer
+            ownedTools={ownedTools}
+            equippedTools={equippedTools}
+            inventory={inventory}
+            onToggleEquip={handleToggleEquipTool}
+            onClose={() => setIsEquipDrawerOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Coin Store Offline Stub Modal */}
+      <AnimatePresence>
+        {isCoinStoreModalOpen && (
+          <CoinStoreStubModal onClose={() => setIsCoinStoreModalOpen(false)} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+/* =========================================================================
+   COMPONENTS
+   ========================================================================= */
+
+function ItemCard({
+  item,
+  ownedCount,
+  isMaxed,
+  onBuyClick,
+}: {
+  item: CatalogItem;
+  ownedCount: number;
+  isMaxed: boolean;
+  onBuyClick: () => void;
+}) {
+  const isCoinCurrency = item.currency === 'coins';
+
+  return (
+    <div className="bg-panel-light border border-line rounded-[12px] p-3.5 sm:p-4 shadow-card flex flex-col gap-3">
+      {/* Title & description */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-heading text-base font-bold text-ink leading-tight">
+            {item.name}
+          </h3>
+          {ownedCount > 0 && (
+            <span className="bg-panel border border-line text-ink text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold">
+              x{ownedCount}
+            </span>
+          )}
+        </div>
+        <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">
+          {item.effect}
+        </p>
+      </div>
+
+      {/* Data Rows: Label above value, 1px line divider between columns */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2.5 px-3 bg-panel rounded-[8px] border border-line/60">
+        <div className="flex flex-col">
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+            Cost
+          </span>
+          <span className="font-data text-[15px] font-bold text-money-text flex items-center gap-1">
+            {isCoinCurrency ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full bg-money inline-block shrink-0" />
+                <span>{item.price} Coins</span>
+              </>
+            ) : (
+              <span>${item.price.toLocaleString()}</span>
+            )}
+          </span>
+        </div>
+
+        <div className="flex flex-col border-l border-line/60 pl-3">
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+            Inventory
+          </span>
+          <span className="font-data text-[15px] font-bold text-ink">
+            {item.maxOwned !== undefined ? `${ownedCount} / ${item.maxOwned}` : `${ownedCount} owned`}
+          </span>
+        </div>
+
+        <div className="flex flex-col col-span-2 sm:col-span-1 pt-1.5 sm:pt-0 border-t sm:border-t-0 sm:border-l border-line/60 sm:pl-3">
+          {item.bountyPenaltyPercent ? (
+            <>
+              <span className="font-data text-[11px] uppercase tracking-[1.5px] text-danger-text font-medium">
+                Penalty
+              </span>
+              <span className="font-data text-[15px] font-bold text-danger-text">
+                -{item.bountyPenaltyPercent}% Bounty
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+                Category
+              </span>
+              <span className="font-data text-[15px] font-bold text-ink uppercase">
+                {item.category}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Card footer: compact action button, never overlaps text */}
+      <div className="border-t border-line/40 pt-2.5 mt-auto flex items-center justify-between gap-2">
+        <span className="font-data text-[11px] text-ink-muted truncate">
+          {isMaxed
+            ? 'Capacity reached'
+            : item.maxOwned
+            ? `Permanent (max ${item.maxOwned})`
+            : 'Consumable tool'}
+        </span>
+
+        <Button
+          variant={isMaxed ? 'secondary' : 'compact'}
+          compact
+          onClick={onBuyClick}
+          disabled={isMaxed}
+        >
+          {isMaxed ? 'OWNED' : 'BUY'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmPurchaseSheet({
+  item,
+  playerCredits,
+  playerCoins,
+  isPurchasing,
+  feedback,
+  onConfirm,
+  onCancel,
+}: {
+  item: CatalogItem;
+  playerCredits: number;
+  playerCoins: number;
+  isPurchasing: boolean;
+  feedback: { type: 'success' | 'error'; message: string } | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const currentBalance = item.currency === 'credits' ? playerCredits : playerCoins;
+  const isShort = currentBalance < item.price;
+  const shortfall = item.price - currentBalance;
+  const shortfallFormatted =
+    item.currency === 'credits' ? `$${shortfall.toLocaleString()} credits` : `${shortfall} coins`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[480px] bg-panel-light border-t border-line rounded-t-[16px] p-4 sm:p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between border-b border-line pb-2.5">
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+            Confirm Transaction
+          </span>
+          <Button
+            variant="icon"
+            onClick={onCancel}
+            aria-label="Close"
+            className="w-7 h-7 min-w-[32px] min-h-[32px] rounded-full text-xs"
+          >
+            ✕
+          </Button>
+        </div>
+
+        <div>
+          <h2 className="font-heading text-[24px] leading-[28px] font-normal text-ink">{item.name}</h2>
+          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+        </div>
+
+        {/* Pricing & Balance Verification Card */}
+        <div className="bg-panel p-3.5 rounded-[10px] border border-line flex flex-col gap-2.5 font-data text-xs">
+          <div className="flex justify-between items-center">
+            <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+              Item Cost
+            </span>
+            <span className="font-bold text-money-text text-sm">
+              {item.currency === 'coins' ? `${item.price} Coins` : `$${item.price.toLocaleString()}`}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center border-t border-line/60 pt-2">
+            <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+              Your Balance
+            </span>
+            <span className="font-bold text-ink">
+              {item.currency === 'coins'
+                ? `${playerCoins} Coins`
+                : `$${playerCredits.toLocaleString()}`}
+            </span>
+          </div>
+
+          {/* Exploit specific reduced bounty warning */}
+          {item.category === 'exploits' && item.bountyPenaltyPercent && (
+            <div className="mt-1 p-2.5 bg-danger/10 border border-danger/30 rounded-[8px] text-danger-text text-xs leading-snug">
+              <span className="font-bold">EXPLOIT PENALTY:</span> Using this reduces the target
+              node’s bounty payout by {item.bountyPenaltyPercent}% (e.g. a $6,500 node payout becomes $
+              {Math.round(6500 * (1 - item.bountyPenaltyPercent / 100)).toLocaleString()}).
+            </div>
+          )}
+
+          {/* Insufficient funds warning with exact shortfall */}
+          {isShort && (
+            <div className="mt-1 p-2.5 bg-danger/10 border border-danger/30 rounded-[8px] text-danger-text text-xs font-medium">
+              INSUFFICIENT FUNDS: You are short by {shortfallFormatted}. Complete more node
+              infiltrations to earn credits!
+            </div>
+          )}
+        </div>
+
+        {/* Feedback message */}
+        {feedback && (
+          <div
+            className={`p-3 rounded-[8px] text-xs font-data ${
+              feedback.type === 'success'
+                ? 'bg-accent/15 text-accent-text border border-accent/40 font-bold'
+                : 'bg-danger/15 text-danger-text border border-danger/40'
+            }`}
+          >
+            {feedback.message}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2.5 mt-1">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            CANCEL
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={onConfirm}
+            disabled={isShort || isPurchasing}
+            loading={isPurchasing}
+            className="flex-1"
+          >
+            {isPurchasing ? 'PROCESSING...' : isShort ? 'CANNOT AFFORD' : 'CONFIRM PURCHASE'}
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function EquipDrawer({
+  ownedTools,
+  equippedTools,
+  inventory,
+  onToggleEquip,
+  onClose,
+}: {
+  ownedTools: CatalogItem[];
+  equippedTools: string[];
+  inventory: Record<string, number>;
+  onToggleEquip: (toolId: string) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[480px] bg-panel-light border-t border-line rounded-t-[16px] p-4 sm:p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between border-b border-line pb-2.5">
+          <div>
+            <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
+              Loadout Config
+            </span>
+            <h2 className="font-heading text-[24px] leading-[28px] font-normal text-ink">
+              Equip Breach Tools
+            </h2>
+            <p className="font-data text-xs text-ink-muted mt-0.5">
+              Choose up to two consumable tools to arm your intrusion rig.
+            </p>
+          </div>
+          <Button
+            variant="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-2 bg-transparent border-transparent hover:border-transparent text-ink text-xs"
+          >
+            <span className="w-7 h-7 rounded-full bg-panel border border-line flex items-center justify-center hover:bg-panel-dark/5">
+              ✕
+            </span>
+          </Button>
+        </div>
+
+        {/* Active Tool Slots */}
+        <div className="grid grid-cols-2 gap-2.5 bg-panel p-3 rounded-[10px] border border-line">
+          {[0, 1].map((slotIdx) => {
+            const equippedId = equippedTools[slotIdx];
+            const tool = CATALOG.find((it) => it.id === equippedId);
+
+            return (
+              <div
+                key={slotIdx}
+                className="bg-panel-light border border-line p-2.5 rounded-[8px] flex flex-col justify-between min-h-[64px]"
+              >
+                <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+                  Slot {slotIdx + 1}
+                </span>
+                {tool ? (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="font-heading text-xs font-bold text-ink truncate">
+                      {tool.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      compact
+                      onClick={() => onToggleEquip(tool.id)}
+                      className="text-xs text-danger-text hover:underline ml-1 h-auto min-h-[28px] border-none px-1"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="font-data text-xs text-ink-muted italic mt-1">
+                    [Empty Slot]
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Available Owned Tools List */}
+        <div className="flex flex-col gap-2">
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+            Owned Inventory
+          </span>
+          {ownedTools.length === 0 ? (
+            <p className="font-data text-xs text-ink-muted italic py-3 text-center">
+              No consumable tools in inventory. Purchase tools from the market first!
+            </p>
+          ) : (
+            ownedTools.map((tool) => {
+              const isEquipped = equippedTools.includes(tool.id);
+              const count = inventory[tool.id] || 0;
+
+              return (
+                <div
+                  key={tool.id}
+                  className={`p-3 rounded-[10px] border flex items-center justify-between gap-2 transition-all ${
+                    isEquipped
+                      ? 'bg-accent/10 border-accent'
+                      : 'bg-panel-light border-line'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-heading text-sm font-bold text-ink truncate">
+                        {tool.name}
+                      </span>
+                      <span className="font-data text-[10px] bg-panel border border-line px-1.5 py-0.5 rounded-[4px] font-bold text-ink">
+                        x{count}
+                      </span>
+                    </div>
+                    <p className="font-data text-xs text-ink-muted truncate mt-0.5">
+                      {tool.effect}
+                    </p>
+                  </div>
+
+                  <Button
+                    variant={isEquipped ? 'danger' : 'primary'}
+                    compact
+                    onClick={() => onToggleEquip(tool.id)}
+                  >
+                    {isEquipped ? 'UNEQUIP' : 'EQUIP'}
+                  </Button>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={onClose}
+          className="mt-1"
+        >
+          DONE
+        </Button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function CoinStoreStubModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 15 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 15 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-panel-light border border-line rounded-[12px] p-6 max-w-sm w-full flex flex-col gap-4 text-center shadow-card"
+      >
+        <div className="w-12 h-12 rounded-full bg-money/15 border border-money/40 flex items-center justify-center text-money-text mx-auto">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v12M15 9.5a3.5 3.5 0 0 0-7 0c0 2 1.5 3 3.5 3s3.5 1 3.5 3a3.5 3.5 0 0 1-7 0" />
+          </svg>
+        </div>
+
+        <div>
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
+            Testnet Protocol
+          </span>
+          <h2 className="font-heading text-[28px] leading-[32px] font-normal text-ink mt-1">
+            COIN EXCHANGE OFFLINE
+          </h2>
+          <p className="font-data text-xs sm:text-sm text-ink-muted leading-relaxed mt-2">
+            Payments are not enabled in this build. Coins are testnet simulation tokens earned
+            through daily breach streaks and high-tier node incursions. Real payment gateways
+            will activate in public launch.
+          </p>
+        </div>
+
+        <div className="bg-panel p-3 rounded-[8px] border border-line font-data text-xs text-ink flex items-center justify-between">
+          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+            Balance
+          </span>
+          <span className="font-bold text-money-text">45 Coins Available</span>
+        </div>
+
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={onClose}
+        >
+          RETURN TO MARKET
+        </Button>
+      </motion.div>
+    </motion.div>
+  );
+}

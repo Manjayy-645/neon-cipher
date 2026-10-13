@@ -1,0 +1,91 @@
+:root {
+  --ink: #37332E;
+  --ink-muted: #6B645A;
+  --ink-on-dark: #E2D6C6;
+
+  --surface-panel: #E2D6C6;
+  --surface-panel-light: #EFE7DA;
+  --surface-dark: #37332E;
+
+  --line: #C9BBA6;
+
+  --accent: #426947;
+  --accent-text: #35583A;
+  --on-accent: #FFFFFF;
+
+  --money: #C48C36;
+  --money-text: #74500F;
+
+  --danger: #A8593F;
+  --danger-text: #99412C;
+
+  --status-available: #426947;
+  --status-owned: #426947;
+  --status-contested: #A8593F;
+  --status-cooldown: #6B645A;
+
+  --heat-fill: #A8593F;
+  --heat-track: #CBBFAE;
+
+  --overlay-slums: #B98A5E;
+  --overlay-commercial: #A9B4BC;
+  --overlay-haze-locked: #919190;
+  --overlay-fog-tint: #7E878C;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --shadow-marker: 0 1px 1px rgba(40,30,20,0.45);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.25);
+  --shadow-sheet: 0 -4px 14px rgba(0,0,0,0.25);
+
+  --touch-min: 44px;
+  --nav-height: 64px;
+  --hud-height: 56px;
+
+  --time-tint: #FFFFFF;
+  --time-tint-opacity: 0;
+}
+
+/* Dark mode values from Style Guide Section 4a (explicit data-theme="dark" only) */
+[data-theme="dark"] {
+  --surface-panel: #2B2824;
+  --surface-panel-light: #35312C;
+  --ink: #E2D6C6;
+  --line: #4A443C;
+  --accent-text: #8FC196;
+  --money-text: #E0AE5C;
+  --danger-text: #E58A6E;
+}
+
+[data-time="dusk"]  { --time-tint: #B5703A; --time-tint-opacity: 0.18; }
+[data-time="night"] { --time-tint: #1E2A3A; --time-tint-opacity: 0.42; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient { animation: none !important; }
+}
+
+/* HACKING TERMINAL THEME (DARK SCREEN) */
+[data-surface="terminal"] {
+  --terminal-bg: #1B1915;
+  --terminal-panel: #26231E;
+  --terminal-line: #3A362F;
+  --terminal-ink: #E2D6C6;
+  --terminal-muted: #9A9183;
+  --terminal-phosphor: #6FBF7A;
+  --terminal-amber: #E0AE5C;
+  --terminal-danger: #D0765A;
+  
+  --ink: var(--terminal-ink);
+  --ink-muted: var(--terminal-muted);
+  --surface-panel: var(--terminal-panel);
+  --surface-panel-light: var(--terminal-panel);
+  --surface-dark: var(--terminal-bg);
+  --line: var(--terminal-line);
+  --accent: var(--terminal-phosphor);
+  --accent-text: var(--terminal-phosphor);
+  --danger: var(--terminal-danger);
+  --danger-text: var(--terminal-danger);
+}

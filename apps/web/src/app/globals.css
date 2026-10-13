@@ -1,0 +1,212 @@
+@import '@neon-cipher/tokens/tokens.css';
+
+@theme {
+  --color-panel: var(--surface-panel);
+  --color-panel-light: var(--surface-panel-light);
+  --color-panel-dark: var(--surface-dark);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-on-dark: var(--ink-on-dark);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-money: var(--money);
+  --color-money-text: var(--money-text);
+  --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
+  --color-status-available: var(--status-available);
+  --color-status-owned: var(--status-owned);
+  --color-status-contested: var(--status-contested);
+  --color-status-cooldown: var(--status-cooldown);
+  --color-heat-fill: var(--heat-fill);
+  --color-heat-track: var(--heat-track);
+  --color-overlay-slums: var(--overlay-slums);
+  --color-overlay-commercial: var(--overlay-commercial);
+  --color-overlay-haze-locked: var(--overlay-haze-locked);
+  --color-overlay-fog-tint: var(--overlay-fog-tint);
+  --color-terminal-bg: var(--terminal-bg);
+  --color-terminal-panel: var(--terminal-panel);
+  --color-terminal-line: var(--terminal-line);
+  --color-terminal-ink: var(--terminal-ink);
+  --color-terminal-muted: var(--terminal-muted);
+  --color-terminal-phosphor: var(--terminal-phosphor);
+  --color-terminal-amber: var(--terminal-amber);
+  --color-terminal-danger: var(--terminal-danger);
+
+  --font-heading: var(--font-heading), Georgia, serif;
+  --font-data: var(--font-data), ui-monospace, monospace;
+
+  --shadow-marker: var(--shadow-marker);
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--surface-panel);
+    color: var(--ink);
+    font-family: var(--font-data), ui-monospace, monospace;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), Georgia, serif;
+    font-weight: 400;
+  }
+
+  /* Neutral button reset: remove browser-default background, border, and font */
+  button {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Interactive elements: cursor pointer, no text selection on buttons, tap highlight removed */
+  button, [role="button"], [role="tab"], a {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:disabled, [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  input, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* 2px accent focus ring with 2px offset on every interactive element */
+  :focus-visible,
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Type scale utilities per Style Guide */
+  .type-label {
+    font-family: var(--font-data), ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--ink-muted);
+  }
+  .type-body {
+    font-family: var(--font-data), ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
+  }
+  .type-value {
+    font-family: var(--font-data), ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .type-title {
+    font-family: var(--font-heading), Georgia, serif;
+    font-size: 21px;
+    line-height: 23px;
+    color: var(--ink);
+  }
+  .type-screen-title {
+    font-family: var(--font-heading), Georgia, serif;
+    font-size: 28px;
+    line-height: 32px;
+    color: var(--ink);
+  }
+
+  /* Core Design Tokens Utilities */
+  .bg-panel { background-color: var(--surface-panel); }
+  .bg-panel-light { background-color: var(--surface-panel-light); }
+  .bg-panel-dark { background-color: var(--surface-dark); }
+  .text-ink { color: var(--ink); }
+  .text-ink-muted { color: var(--ink-muted); }
+  .text-ink-on-dark { color: var(--ink-on-dark); }
+  .border-line { border-color: var(--line); }
+  .bg-line { background-color: var(--line); }
+  .bg-accent { background-color: var(--accent); }
+  .text-accent { color: var(--accent); }
+  .text-accent-text { color: var(--accent-text); }
+  .text-on-accent { color: var(--on-accent); }
+  .bg-money { background-color: var(--money); }
+  .text-money { color: var(--money); }
+  .text-money-text { color: var(--money-text); }
+  .bg-danger { background-color: var(--danger); }
+  .text-danger { color: var(--danger); }
+  .text-danger-text { color: var(--danger-text); }
+  .bg-heat-track { background-color: var(--heat-track); }
+  .bg-heat-fill { background-color: var(--heat-fill); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-sheet { box-shadow: var(--shadow-sheet); }
+  .shadow-marker { box-shadow: var(--shadow-marker); }
+  .font-heading { font-family: var(--font-heading), Georgia, serif; }
+  .font-data { font-family: var(--font-data), ui-monospace, monospace; }
+  .rounded-sm { border-radius: var(--radius-sm); }
+  .rounded-md { border-radius: var(--radius-md); }
+  .rounded-lg { border-radius: var(--radius-lg); }
+  .rounded-pill { border-radius: var(--radius-pill); }
+}
+
+/* Prefers reduced motion: no bounce, no ambient animation, transitions under 80ms */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="false"]) *,
+  :root:not([data-reduced-motion="false"]) ::before,
+  :root:not([data-reduced-motion="false"]) ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.08s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] ::before,
+[data-reduced-motion="true"] ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.08s !important;
+  scroll-behavior: auto !important;
+}

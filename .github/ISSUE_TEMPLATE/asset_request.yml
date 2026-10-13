@@ -1,0 +1,45 @@
+name: Asset request
+description: Request or propose a project asset.
+title: "[Asset]: "
+labels:
+  - assets
+body:
+  - type: input
+    id: filename
+    attributes:
+      label: File name
+      description: Proposed or existing asset file name.
+    validations:
+      required: true
+  - type: input
+    id: size
+    attributes:
+      label: Size
+      description: Expected dimensions and file size.
+    validations:
+      required: true
+  - type: input
+    id: format
+    attributes:
+      label: Format
+      description: For example, SVG, PNG, or WOFF2.
+    validations:
+      required: true
+  - type: textarea
+    id: license-source
+    attributes:
+      label: License and source
+      description: Include the license and source; unapproved licensed assets are out of scope.
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Proposed
+        - Approved
+        - In progress
+        - Complete
+    validations:
+      required: true

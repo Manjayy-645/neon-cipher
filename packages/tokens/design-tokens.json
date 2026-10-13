@@ -1,0 +1,62 @@
+{
+  "_notes": [
+    "Source of truth. tokens.css and tailwind.tokens.ts mirror these values.",
+    "Colors come from the Canva mood-board vector shapes (one value chosen per role). Contrast ratios were calculated against surface.panel (#E2D6C6).",
+    "Fonts are placeholders: Canva exported text as outlines, so the real font names were not recoverable. Confirm in Canva, then replace.",
+    "District overlay colors are unvalidated placeholders. The painted map supplies the real map colors."
+  ],
+  "color": {
+    "ink":        { "default": "#37332E", "muted": "#6B645A", "onDark": "#E2D6C6" },
+    "surface":    { "panel": "#E2D6C6", "panelLight": "#EFE7DA", "dark": "#37332E" },
+    "line":       "#C9BBA6",
+    "accent":     { "default": "#426947", "text": "#35583A", "onAccent": "#FFFFFF" },
+    "money":      { "default": "#C48C36", "text": "#74500F" },
+    "danger":     { "default": "#A8593F", "text": "#99412C" },
+    "status": {
+      "available": "#426947",
+      "owned":     "#426947",
+      "contested": "#A8593F",
+      "cooldown":  "#6B645A"
+    },
+    "heat":       { "fill": "#A8593F", "track": "#CBBFAE" },
+    "overlay": {
+      "slums": "#B98A5E",
+      "commercial": "#A9B4BC",
+      "hazeLocked": "#919190",
+      "fogTint": "#7E878C"
+    }
+  },
+  "shadow": {
+    "marker": "0 1px 1px rgba(40,30,20,0.45)",
+    "card": "0 2px 8px rgba(0,0,0,0.25)",
+    "sheet": "0 -4px 14px rgba(0,0,0,0.25)"
+  },
+  "dark": {
+    "surface": { "panel": "#2B2824", "panelLight": "#35312C" },
+    "ink": "#E2D6C6",
+    "line": "#4A443C",
+    "accent": { "text": "#8FC196" },
+    "money": { "text": "#E0AE5C" },
+    "danger": { "text": "#E58A6E" }
+  },
+  "contrast_on_panel": {
+    "ink": 8.75, "accent.text": 5.62, "money.text": 5.06, "danger.text": 4.66,
+    "warning": "accent.default (4.39) and money.default (2.05) fail for small text. Use .text variants for words; use defaults only for fills, icons and large shapes."
+  },
+  "font": {
+    "heading": "PLACEHOLDER: high-contrast serif (candidates: DM Serif Display, Fraunces)",
+    "data": "PLACEHOLDER: monospace for numbers (candidates: IBM Plex Mono, Space Mono)",
+    "body": "PLACEHOLDER: same as data, or one clean sans"
+  },
+  "fontSize": { "xs": 12, "sm": 14, "base": 16, "lg": 20, "xl": 28, "xxl": 40 },
+  "radius": { "sm": 6, "md": 12, "lg": 24, "pill": 999 },
+  "spacing": { "1": 4, "2": 8, "3": 12, "4": 16, "5": 24, "6": 32 },
+  "size": { "touchMin": 44, "markerPlate": 44, "navHeight": 64, "hudHeight": 56 },
+  "sheet": { "peekHeight": 72, "halfHeight": 280, "expandedMaxFraction": 0.78 },
+  "motion": { "fast": 120, "base": 220, "slow": 400, "reducedMotion": "disable ambient animation" },
+  "time": {
+    "day":  { "tint": "#FFFFFF", "opacity": 0 },
+    "dusk": { "tint": "#B5703A", "opacity": 0.18 },
+    "night":{ "tint": "#1E2A3A", "opacity": 0.42 }
+  }
+}

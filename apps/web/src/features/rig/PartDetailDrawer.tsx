@@ -1,0 +1,174 @@
+'use client';
+
+import React from 'react';
+import { motion } from 'framer-motion';
+import { RigHardwareItem } from '@/app/api/mock/db';
+import { Button } from '@/components/ui/Button';
+
+interface PartDetailDrawerProps {
+  slotId: string;
+  hardware: Record<string, RigHardwareItem>;
+  credits: number;
+  isRepairing: boolean;
+  onRepair: (hardwareId: string) => void;
+  onClose: () => void;
+  onNavigateToMarket?: () => void;
+}
+
+export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
+  slotId,
+  hardware,
+  credits,
+  isRepairing,
+  onRepair,
+  onClose,
+  onNavigateToMarket,
+}) => {
+  const item = hardware[slotId];
+  if (!item) return null;
+
+  const canAffordRepair = credits >= item.repairCost;
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[480px] bg-panel border-t border-line rounded-t-lg p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2">
+          <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted">
+            HARDWARE DIAGNOSTICS // {item.slot.toUpperCase()}
+          </span>
+          <Button
+            variant="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-2.5 bg-transparent border-transparent hover:border-transparent text-ink text-xs"
+          >
+            <span className="w-6 h-6 rounded-full bg-ink/10 flex items-center justify-center hover:bg-ink/20">
+              ✕
+            </span>
+          </Button>
+        </div>
+
+        {/* Part Title and Status */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-xl font-bold text-ink">{item.name}</h2>
+            {item.burned ? (
+              <span className="bg-danger/20 text-danger-text border border-danger/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                OVERVOLT BURN
+              </span>
+            ) : item.installed ? (
+              <span className="bg-accent/20 text-accent-text border border-accent/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                OPERATIONAL
+              </span>
+            ) : (
+              <span className="bg-ink/10 text-ink-muted border border-ink-muted/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                NOT INSTALLED
+              </span>
+            )}
+          </div>
+          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
+        </div>
+
+        {/* Nix Plain-Language Explanation */}
+        <div className="bg-panel-dark/10 p-3.5 rounded-md border border-ink-muted/30 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-ink border border-accent flex items-center justify-center font-bold text-accent text-xs shrink-0">
+            NX
+          </div>
+          <div className="flex-1 text-xs font-data">
+            <span className="font-bold text-accent uppercase tracking-wider text-[10px] block mb-0.5">
+              Nix Field Briefing
+            </span>
+            <p className="italic text-ink leading-snug">&quot;{item.nixTip}&quot;</p>
+          </div>
+        </div>
+
+        {/* State-specific actions */}
+        {item.burned ? (
+          <div className="bg-danger/10 border border-danger/30 rounded-md p-4 flex flex-col gap-3 font-data text-xs">
+            <div className="flex justify-between items-center">
+              <span className="text-danger-text font-bold">REPAIR DIAGNOSTIC:</span>
+              <span className="text-danger-text">Bus traces severed from Tier 5 counter-hack</span>
+            </div>
+            <div className="flex justify-between items-center border-t border-danger/20 pt-2">
+              <span className="text-ink-muted">Repair Fee:</span>
+              <span className="font-bold text-money-text text-sm">
+                ${item.repairCost.toLocaleString()} Credits
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-ink-muted">Available Balance:</span>
+              <span className="font-bold text-ink">${credits.toLocaleString()} Credits</span>
+            </div>
+
+            <Button
+              variant="danger"
+              fullWidth
+              onClick={() => onRepair(item.id)}
+              disabled={!canAffordRepair || isRepairing}
+              loading={isRepairing}
+              className="mt-1"
+            >
+              {isRepairing
+                ? 'REPAIRING CIRCS...'
+                : canAffordRepair
+                ? `REPAIR FOR $${item.repairCost.toLocaleString()}`
+                : `CANNOT AFFORD REPAIR (SHORT BY $${(item.repairCost - credits).toLocaleString()})`}
+            </Button>
+          </div>
+        ) : !item.installed ? (
+          <div className="bg-panel-dark/5 border border-ink-muted/30 rounded-md p-4 flex flex-col gap-2 font-data text-xs text-center">
+            <p className="text-ink-muted">
+              This bus slot is currently vacant. Acquire permanent upgrades from the Black Market
+              to slot into your deck.
+            </p>
+            {onNavigateToMarket && (
+              <Button
+                variant="primary"
+                fullWidth
+                arrow
+                onClick={onNavigateToMarket}
+                className="mt-2 text-xs"
+              >
+                BROWSE HARDWARE AT BLACK MARKET
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-accent/10 border border-accent/30 rounded-md p-3 font-data text-xs text-accent-text flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span>Bus online. This upgrade automatically applies to eligible terminal infiltrations.</span>
+          </div>
+        )}
+
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={onClose}
+        >
+          CLOSE
+        </Button>
+      </motion.div>
+    </motion.div>
+  );
+};

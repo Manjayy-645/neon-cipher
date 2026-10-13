@@ -1,0 +1,134 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Guard server-only Supabase credentials
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          root = Path("apps/web/src")
+          failed = False
+          server_directive = re.compile(
+              r"""^\s*(?:(?://[^\n]*|/\*.*?\*/)\s*)*['"]use server['"]\s*;?""",
+              re.DOTALL,
+          )
+
+          for source_file in root.rglob("*"):
+              if not source_file.is_file():
+                  continue
+              relative = source_file.as_posix()
+              parts = source_file.parts
+              is_api_route = any(
+                  parts[index:index + 2] in (("app", "api"), ("pages", "api"))
+                  for index in range(len(parts) - 1)
+              )
+              if is_api_route or source_file.name.endswith(".server.ts"):
+                  continue
+
+              content = source_file.read_text(encoding="utf-8", errors="replace")
+              if server_directive.search(content):
+                  continue
+              for line_number, line in enumerate(content.splitlines(), start=1):
+                  if "SUPABASE_SERVICE_ROLE_KEY" in line or "service_role" in line:
+                      print(
+                          f"::error file={relative},line={line_number}::"
+                          "Server-only Supabase credential reference outside a server-only file."
+                      )
+                      failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Guard client imports of generateCode
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          root = Path("apps/web/src")
+          import_pattern = re.compile(
+              r"""\bimport\s+(?P<bindings>[\s\S]*?)\s+from\s+['"](?P<module>[^'"]+)['"]"""
+          )
+          failed = False
+
+          for source_file in root.rglob("*"):
+              if not source_file.is_file():
+                  continue
+              content = source_file.read_text(encoding="utf-8", errors="replace")
+              if '"use client"' not in content and "'use client'" not in content:
+                  continue
+              for match in import_pattern.finditer(content):
+                  if (
+                      "generateCode" in match.group("bindings")
+                      and "game-rules" in match.group("module")
+                  ):
+                      relative = source_file.as_posix()
+                      line_number = content.count("\n", 0, match.start()) + 1
+                      print(
+                          f"::error file={relative},line={line_number}::"
+                          "Client components must not import generateCode from game-rules."
+                      )
+                      failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Check icons when configured
+        shell: bash
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['check:icons'] ? 0 : 1)"; then
+            pnpm run check:icons
+          fi
+          if node -e "process.exit(require('./apps/web/package.json').scripts?.['check:icons'] ? 0 : 1)"; then
+            pnpm --filter web run check:icons
+          fi
+
+      - name: Lint
+        run: pnpm --filter web exec eslint .
+
+      - name: Typecheck
+        run: pnpm --filter web exec tsc --noEmit
+
+      - name: Test
+        run: pnpm --filter web exec vitest run
+
+      - name: Build
+        run: pnpm --filter web build

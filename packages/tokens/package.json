@@ -1,0 +1,6 @@
+{
+  "name": "@neon-cipher/tokens",
+  "version": "1.0.0",
+  "private": true,
+  "main": "tailwind.tokens.ts"
+}

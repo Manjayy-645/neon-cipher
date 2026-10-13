@@ -1,0 +1,52 @@
+import { NextResponse } from 'next/server';
+import { mockRigHardware, mockWallet, recordTransaction } from '../../db';
+
+// MOCK: replace with Supabase edge function.
+export async function POST(request: Request) {
+  try {
+    const { hardwareId } = await request.json();
+
+    if (!hardwareId) {
+      return NextResponse.json({ error: 'Missing hardwareId parameter.' }, { status: 400 });
+    }
+
+    const item = mockRigHardware[hardwareId];
+    if (!item) {
+      return NextResponse.json({ error: 'Hardware part not found.' }, { status: 404 });
+    }
+
+    if (!item.burned) {
+      return NextResponse.json(
+        { error: `${item.name} is in nominal operational condition and does not require repair.` },
+        { status: 400 }
+      );
+    }
+
+    if (mockWallet.credits < item.repairCost) {
+      const shortfall = item.repairCost - mockWallet.credits;
+      return NextResponse.json(
+        {
+          error: `Insufficient credits to repair ${item.name}. Short by $${shortfall.toLocaleString()} credits.`,
+          shortfall,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Deduct repair cost and restore item
+    recordTransaction(`Repair: ${item.name}`, -item.repairCost, 'credits', 'repair');
+    item.burned = false;
+
+    return NextResponse.json({
+      success: true,
+      hardware: item,
+      balances: {
+        credits: mockWallet.credits,
+        coins: mockWallet.coins,
+      },
+      message: `Repaired ${item.name}. Bus rails restored to full operational status.`,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Repair failed.' }, { status: 500 });
+  }
+}
