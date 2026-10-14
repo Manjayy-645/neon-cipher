@@ -7,10 +7,15 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { NIX_GUIDE_LINES, NixSituation } from './nixGuideLines';
 import { getNodes } from './nodeService';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 export const NixGuide: React.FC = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
   const activeChapterId = useCampaignStore((s) => s.activeChapterId);
+  const campaignTutorialActive = useCampaignStore((s) => s.tutorialActive);
+  const onboardingTourActive = useOnboardingStore(
+    (s) => !s.skipped && ['map.overview', 'map.district', 'map.node'].includes(s.step)
+  );
 
   const view = useMapStore((s) => s.view);
   const activeNodeId = useMapStore((s) => s.activeNodeId);
@@ -58,11 +63,22 @@ export const NixGuide: React.FC = () => {
 
   // Auto-open if situation has not been seen yet, and sheet is not being dragged
   useEffect(() => {
+    if (campaignTutorialActive || onboardingTourActive) {
+      setNixBubbleOpen(false);
+      return;
+    }
     if (!isCurrentSeen) {
       setNixBubbleOpen(true);
       markNixSituationSeen(currentSituation);
     }
-  }, [currentSituation, isCurrentSeen, setNixBubbleOpen, markNixSituationSeen]);
+  }, [
+    campaignTutorialActive,
+    onboardingTourActive,
+    currentSituation,
+    isCurrentSeen,
+    setNixBubbleOpen,
+    markNixSituationSeen,
+  ]);
 
   // Typewriter effect state
   const isInstant = prefersReducedMotion || process.env.NODE_ENV === 'test';
@@ -156,6 +172,8 @@ export const NixGuide: React.FC = () => {
         top: topPos,
         bottom: 'auto',
       };
+
+  if (campaignTutorialActive || onboardingTourActive) return null;
 
   return (
     <div

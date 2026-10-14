@@ -107,9 +107,15 @@ export function Keypad({
           aria-live="polite"
           className="w-full max-w-[360px] p-2.5 rounded-[8px] bg-terminal-panel border border-terminal-amber/50 text-terminal-amber font-data text-xs flex items-center justify-between gap-2 shadow-card"
         >
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-terminal-ink">NIX:</span>
-            <span>Dead number. I grayed that key out so you do not touch it again.</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full overflow-hidden border border-terminal-amber/60 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <span className="font-bold text-terminal-ink">NIX: </span>
+              <span>Dead number. I grayed that key out so you do not touch it again.</span>
+            </div>
           </div>
           <button
             onClick={() => setShowNixBubble(false)}

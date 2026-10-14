@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { POST as sessionPOST } from './session/route';
 import { POST as guessPOST } from './guess/route';
-import { mockSessions, Session } from './db';
+import { mockSessions, mockTransactions, mockWallet } from './db';
+import type { Session } from './db';
 
 // Mock getNodes
 import { getNodes } from '@/features/map/nodeService';
@@ -46,6 +47,45 @@ describe('Mock Server Routes', () => {
 
       const response = await sessionPOST(request);
       expect(response.status).toBe(404);
+    });
+
+    it('creates a server-only, no-stakes Nix recovery practice session', async () => {
+      const request = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: 'nix-recovery' }),
+      });
+
+      const response = await sessionPOST(request);
+      expect(response.status).toBe(200);
+
+      const data = await response.json();
+      const session = mockSessions.get(data.sessionId);
+      if (!session) throw new Error('Recovery session was not stored');
+      expect(data.secret).toBeUndefined();
+      expect(data.config).toMatchObject({
+        digits: 3,
+        attempts: 999,
+        timerSeconds: 0,
+        tier: 1,
+        ice: 'None',
+      });
+      expect(session?.recovery).toBe(true);
+      expect(session?.node.bounty).toBe(0);
+      expect(session?.node.traceRisk).toBe(0);
+
+      const transactionCount = mockTransactions.length;
+      const creditBalance = mockWallet.credits;
+      const guessResponse = await guessPOST(
+        new Request('http://localhost/api/mock/guess', {
+          method: 'POST',
+          body: JSON.stringify({ sessionId: data.sessionId, guess: session.secret }),
+        })
+      );
+      const guessData = await guessResponse.json();
+      expect(guessData.status).toBe('won');
+      expect(guessData.payout).toBe(0);
+      expect(mockTransactions).toHaveLength(transactionCount);
+      expect(mockWallet.credits).toBe(creditBalance);
     });
   });
 

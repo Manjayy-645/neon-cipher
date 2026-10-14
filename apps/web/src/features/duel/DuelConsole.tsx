@@ -225,8 +225,17 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
         className="flex justify-between items-center px-2.5 sm:px-3 py-2 bg-ink border-b border-line shrink-0 z-20 gap-2"
       >
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-panel-dark border border-line flex items-center justify-center text-sm shrink-0">
-            {session.rival.avatar}
+          <div className="w-8 h-8 rounded-full bg-panel-dark border border-line flex items-center justify-center text-sm shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={
+                session.rival.avatar && session.rival.avatar.startsWith('/')
+                  ? session.rival.avatar
+                  : '/Character portraits/Null_Byte.png'
+              }
+              alt={session.rival.handle}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1 sm:gap-1.5">

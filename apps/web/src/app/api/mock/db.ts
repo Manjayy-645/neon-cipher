@@ -76,6 +76,7 @@ export interface Session {
   node: GameNode;
   eliminatedDigits?: string[];
   ice?: IceType;
+  recovery?: boolean;
 }
 
 export type TransactionCategory =
@@ -1389,7 +1390,7 @@ export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
     },
     rival: {
       handle: 'Null_Byte',
-      avatar: '🤖',
+      avatar: '/Character portraits/Null_Byte.png',
       guesses: [],
       activeEffects: [],
       shieldActive: false,
@@ -2198,4 +2199,3 @@ export function markNotificationRead(id: string): AppNotification[] {
   if (notif) notif.read = true;
   return mockTask13.notifications;
 }
-

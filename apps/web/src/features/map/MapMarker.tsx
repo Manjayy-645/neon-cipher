@@ -9,6 +9,7 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 import { triggerToast } from '../../stores/toast-store';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { CH2_NODE_ID } from '@/features/onboarding/steps';
 import { emit } from '@/features/onboarding/events';
 
 function formatCountdown(seconds?: number): string {
@@ -29,7 +30,7 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   const step = useOnboardingStore((s) => s.step);
   const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
 
-  const isDimmed = step === 'map.district' && node.id !== 's5' && node.id !== 's1';
+  const isDimmed = step === 'map.district' && node.id !== CH2_NODE_ID;
   const crackedRecord = crackedNodes[node.id];
   const isCooldownFromCracked = Boolean(
     crackedRecord && Date.now() - crackedRecord.crackedAt < crackedRecord.cooldownMs
@@ -76,7 +77,7 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
 
   return (
     <motion.button
-      data-tour={node.id === 's5' ? 'node-s5' : undefined}
+      data-tour={node.id === CH2_NODE_ID ? `node-${CH2_NODE_ID}` : undefined}
       className={`relative flex flex-col items-center justify-center cursor-pointer select-none rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:shadow-[0_0_0_5px_var(--accent)] transition-all ${
         isSelected ? 'drop-shadow-[0_0_8px_rgba(66,105,71,0.85)]' : ''
       }`}

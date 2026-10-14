@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // Check timer if applicable
     if (session.node.timerSeconds > 0) {
       const elapsed = (Date.now() - session.startedAt) / 1000;
-      if (elapsed > session.node.timerSeconds) {
+      if (elapsed > session.node.timerSeconds || guess === 'timeout') {
         session.status = 'lost';
         const isCourtesy = Boolean((session as any).courtesy && !(session as any).courtesyUsed);
         if (isCourtesy) {
@@ -70,7 +70,9 @@ export async function POST(request: Request) {
 
     if (isWin) {
       session.status = 'won';
-      recordTransaction(`Breach: ${session.node.name}`, session.node.bounty, 'credits', 'payout');
+      if (!session.recovery) {
+        recordTransaction(`Breach: ${session.node.name}`, session.node.bounty, 'credits', 'payout');
+      }
 
       const defense = getNodeDefense(session.nodeId);
       if (defense && defense.ownerHandle && defense.ownerHandle !== activeAccountId) {

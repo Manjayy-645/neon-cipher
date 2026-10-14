@@ -35,6 +35,15 @@ describe('Onboarding Tour Director & Mechanics (Task O-B)', () => {
       expect(next).toBe('ch2.result');
     });
 
+    it('does not advance the campaign when the Nix recovery practice is won', () => {
+      const next = getNextStepOnEvent('ch2.hack', {
+        type: 'terminal:won',
+        nodeId: 'nix-recovery',
+        guesses: 1,
+      });
+      expect(next).toBeNull();
+    });
+
     it('advances map.overview to map.district only on slums district tag tap', () => {
       const wrong = getNextStepOnEvent('map.overview', {
         type: 'map:districtTagTapped',
@@ -49,30 +58,30 @@ describe('Onboarding Tour Director & Mechanics (Task O-B)', () => {
       expect(correct).toBe('map.district');
     });
 
-    it('advances map.district to map.node only on s5 node select', () => {
+    it('advances map.district to map.node only on the corner-store node', () => {
       const wrong = getNextStepOnEvent('map.district', {
         type: 'map:nodeSelected',
-        nodeId: 's1',
+        nodeId: 'n1',
       });
       expect(wrong).toBeNull();
 
       const correct = getNextStepOnEvent('map.district', {
         type: 'map:nodeSelected',
-        nodeId: 's5',
+        nodeId: CH2_NODE_ID,
       });
       expect(correct).toBe('map.node');
     });
 
-    it('advances map.node to ch2.hack only on s5 jack-in', () => {
+    it('advances map.node to ch2.hack only on the corner-store jack-in', () => {
       const wrong = getNextStepOnEvent('map.node', {
         type: 'map:jackIn',
-        nodeId: 's2',
+        nodeId: 'n1',
       });
       expect(wrong).toBeNull();
 
       const correct = getNextStepOnEvent('map.node', {
         type: 'map:jackIn',
-        nodeId: 's5',
+        nodeId: CH2_NODE_ID,
       });
       expect(correct).toBe('ch2.hack');
     });

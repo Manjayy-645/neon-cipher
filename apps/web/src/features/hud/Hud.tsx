@@ -35,7 +35,7 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
           <div className="w-[36px] h-[36px] rounded-[6px] border border-line bg-panel-light flex items-center justify-center overflow-hidden shrink-0">
             {avatarUrl && avatarUrl !== '/icons/glyph-camera.svg' ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="" className="w-5 h-5 object-contain" />
+              <img src={avatarUrl} alt={handle || 'Decker Avatar'} className="w-full h-full object-cover" />
             ) : (
               <span
                 data-testid="avatar-fallback"

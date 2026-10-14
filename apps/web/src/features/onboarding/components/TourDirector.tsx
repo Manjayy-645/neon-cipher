@@ -25,14 +25,21 @@ export function getNextStepOnEvent(
   if (currentStep === 'cold.play' && event.type === 'terminal:won') {
     return 'cold.breach';
   }
-  if (currentStep === 'ch2.hack' && event.type === 'terminal:won') {
+  if (
+    currentStep === 'ch2.hack' &&
+    event.type === 'terminal:won' &&
+    event.nodeId === CH2_NODE_ID
+  ) {
     return 'ch2.result';
+  }
+  if (currentStep === 'ch2.hack' && event.type === 'terminal:won') {
+    return null;
   }
 
   if (stepDef.advance === 'event' && stepDef.event === event.type) {
     if (event.type === 'map:districtTagTapped' && event.district !== 'slums') return null;
-    if (event.type === 'map:nodeSelected' && event.nodeId !== 's5') return null;
-    if (event.type === 'map:jackIn' && event.nodeId !== 's5') return null;
+    if (event.type === 'map:nodeSelected' && event.nodeId !== CH2_NODE_ID) return null;
+    if (event.type === 'map:jackIn' && event.nodeId !== CH2_NODE_ID) return null;
     if (event.type === 'market:bought' && event.itemId !== 'firewall-patch') return null;
     if (event.type === 'market:equipped' && event.itemId !== 'firewall-patch') return null;
 
@@ -73,8 +80,6 @@ export function TourDirector() {
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [deadKeyTarget, setDeadKeyTarget] = useState<string | null>(null);
   const [activeStallHint, setActiveStallHint] = useState<string | null>(null);
-  const [ch2FailPrompt, setCh2FailPrompt] = useState(false);
-
   const lastStallHintIndexRef = useRef<number>(-1);
   const lastGuessTimeRef = useRef<number>(Date.now());
   const firstGuessTrackedRef = useRef(false);
@@ -126,7 +131,7 @@ export function TourDirector() {
           return;
         }
 
-        if (step === 'ch2.hack') {
+        if (step === 'ch2.hack' && e.nodeId === CH2_NODE_ID) {
           const elapsed = startedAt ? Date.now() - startedAt : 0;
           recordWin();
           track('ch2_win', { ms: elapsed, guesses: e.guesses });
@@ -136,10 +141,9 @@ export function TourDirector() {
       }
 
       // 4. Chapter 2 failure
-      if (e.type === 'terminal:lost' && step === 'ch2.hack') {
+      if (e.type === 'terminal:lost' && step === 'ch2.hack' && e.nodeId === CH2_NODE_ID) {
         recordCh2Fail();
         track('ch2_fail');
-        setCh2FailPrompt(true);
         return;
       }
 
@@ -205,39 +209,6 @@ export function TourDirector() {
         showSkip={true}
         onSkip={handleSkipTour}
       />
-    );
-  }
-
-  // Handle Chapter 2 fail prompt
-  if (ch2FailPrompt && step === 'ch2.hack') {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#37332E]/60 flex items-center justify-center p-4">
-        <div className="bg-panel-light border border-line rounded-[14px] p-5 shadow-card max-w-sm w-full flex flex-col gap-4 text-center">
-          <div className="w-10 h-10 rounded-[8px] bg-panel border border-line mx-auto flex items-center justify-center font-bold text-xs text-ink">
-            NX
-          </div>
-          <div>
-            <span className="font-data text-[10px] font-bold tracking-wider uppercase text-ink-muted block mb-1">
-              NIX
-            </span>
-            <p className="font-data text-xs sm:text-sm text-ink leading-relaxed">
-              That one bit back. First fine is on me. Try again.
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            size="full"
-            onClick={() => {
-              setCh2FailPrompt(false);
-              // Reload terminal route to retry
-              router.refresh();
-              window.location.reload();
-            }}
-          >
-            RETRY
-          </Button>
-        </div>
-      </div>
     );
   }
 

@@ -161,6 +161,27 @@
   .bg-panel { background-color: var(--surface-panel); }
   .bg-panel-light { background-color: var(--surface-panel-light); }
   .bg-panel-dark { background-color: var(--surface-dark); }
+  .terminal-result-card {
+    background-color: var(--terminal-panel);
+    color: var(--terminal-ink);
+    border-color: var(--terminal-line);
+  }
+  .terminal-result-subpanel {
+    background-color: var(--terminal-bg);
+    border-color: var(--terminal-line);
+  }
+  .terminal-result-muted { color: var(--terminal-muted); }
+  .terminal-result-ink { color: var(--terminal-ink); }
+  .terminal-result-success { color: var(--terminal-phosphor); }
+  .terminal-result-danger { color: var(--terminal-danger); }
+  .terminal-result-primary {
+    background-color: var(--terminal-phosphor);
+    color: var(--terminal-bg);
+  }
+  .terminal-result-secondary {
+    border-color: var(--terminal-phosphor);
+    color: var(--terminal-phosphor);
+  }
   .text-ink { color: var(--ink); }
   .text-ink-muted { color: var(--ink-muted); }
   .text-ink-on-dark { color: var(--ink-on-dark); }

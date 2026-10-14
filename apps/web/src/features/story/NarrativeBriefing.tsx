@@ -149,7 +149,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
           <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-md bg-panel-dark border border-line overflow-hidden shadow-card flex items-center justify-center relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={speakerConfig.id === 'glitch' ? '/Character portraits/Glitch.png' : '/Character portraits/Nix.png'}
+              src={speakerConfig.portrait}
               alt={speakerConfig.name}
               className="w-full h-full object-cover"
             />

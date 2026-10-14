@@ -106,6 +106,7 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'done',
         skipped: false,
         callsign: 'ROOKIE',
+        ch2Fails: 0,
       });
       expect(redirect).toBeNull();
     });
@@ -115,6 +116,7 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'splash',
         skipped: true,
         callsign: 'ROOKIE',
+        ch2Fails: 0,
       });
       expect(redirect).toBeNull();
     });
@@ -124,6 +126,7 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'splash',
         skipped: false,
         callsign: null,
+        ch2Fails: 0,
       });
       expect(redirect).toBe('/');
     });
@@ -133,6 +136,7 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'cold.intro',
         skipped: false,
         callsign: null,
+        ch2Fails: 0,
       });
       expect(redirect).toBe('/terminal/tutorial-soda');
     });
@@ -142,6 +146,7 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'cold.intro',
         skipped: false,
         callsign: null,
+        ch2Fails: 0,
       });
       expect(redirect).toBeNull();
     });
@@ -151,8 +156,29 @@ describe('Onboarding Foundation (Task O-A)', () => {
         step: 'map.district',
         skipped: false,
         callsign: 'ROOKIE',
+        ch2Fails: 0,
       });
       expect(redirect).toBe('/map');
+    });
+
+    it('allows returning to the map after a failed Chapter 2 hack', () => {
+      const redirect = getOnboardingRedirect('/map', {
+        step: 'ch2.hack',
+        skipped: false,
+        callsign: 'ROOKIE',
+        ch2Fails: 1,
+      });
+      expect(redirect).toBeNull();
+    });
+
+    it('keeps guiding the active Chapter 2 hack until it is failed', () => {
+      const redirect = getOnboardingRedirect('/map', {
+        step: 'ch2.hack',
+        skipped: false,
+        callsign: 'ROOKIE',
+        ch2Fails: 0,
+      });
+      expect(redirect).toBe('/terminal/n4');
     });
   });
 

@@ -9,6 +9,7 @@ export interface GateState {
   step: StepId;
   skipped: boolean;
   callsign: string | null;
+  ch2Fails: number;
 }
 
 export function getOnboardingRedirect(
@@ -20,6 +21,11 @@ export function getOnboardingRedirect(
 
   // Never redirect when skipped with a profile
   if (state.skipped && state.callsign) return null;
+
+  // After a failed Chapter 2 hack, let the player leave the terminal for the map.
+  if (state.step === 'ch2.hack' && state.ch2Fails > 0 && pathname === '/map') {
+    return null;
+  }
 
   const targetRoute = STEPS[state.step]?.route;
   if (!targetRoute) return null;
@@ -48,7 +54,7 @@ export function getOnboardingRedirect(
 export function OnboardingGate() {
   const pathname = usePathname();
   const router = useRouter();
-  const { step, skipped, callsign } = useOnboardingStore();
+  const { step, skipped, callsign, ch2Fails } = useOnboardingStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -58,11 +64,11 @@ export function OnboardingGate() {
   useEffect(() => {
     if (!mounted || !pathname) return;
 
-    const target = getOnboardingRedirect(pathname, { step, skipped, callsign });
+    const target = getOnboardingRedirect(pathname, { step, skipped, callsign, ch2Fails });
     if (target && target !== pathname) {
       router.replace(target);
     }
-  }, [mounted, pathname, step, skipped, callsign, router]);
+  }, [mounted, pathname, step, skipped, callsign, ch2Fails, router]);
 
   return null;
 }

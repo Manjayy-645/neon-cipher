@@ -25,6 +25,8 @@ import { emit } from '@/features/onboarding/events';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { TUTORIAL, CH2_NODE_ID } from '@/features/onboarding/steps';
 import { campaignService } from '@/features/story/campaignService';
+import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
+import { triggerToast } from '@/stores/toast-store';
 
 export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const router = useRouter();
@@ -57,12 +59,14 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     tutorialActive,
     tutorialStepIndex,
     nextTutorialStep,
+    setTutorialActive,
     skipTutorial,
     completeChapter,
   } = useCampaignStore();
 
   const chapter = activeChapterId ? getChapterById(activeChapterId) : null;
-  const isCampaignNode = chapter && chapter.mapNodeId === nodeId && tutorialActive;
+  const isCampaignTarget = chapter && chapter.mapNodeId === nodeId;
+  const isCampaignNode = isCampaignTarget && tutorialActive;
   const activeTutorialStep =
     isCampaignNode && chapter.tutorialSteps ? chapter.tutorialSteps[tutorialStepIndex] : null;
 
@@ -98,15 +102,27 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
       setElapsedSeconds(elapsed);
 
       if (elapsed >= (session.config.timerSeconds ?? 0)) {
+        clearInterval(interval);
         setStatus('lost');
         setAttemptsLeft(0);
         setValidationError('Time expired');
-        clearInterval(interval);
+        emit({ type: 'terminal:lost', nodeId });
+
+        terminalService
+          .submitGuess(session.sessionId, 'timeout')
+          .then((res) => {
+            if (res.secret) setSecret(res.secret);
+            if (res.fine) {
+              setFine(res.fine);
+              subtractCredits(res.fine);
+            }
+          })
+          .catch(() => {});
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, status]);
+  }, [session, status, nodeId, subtractCredits]);
 
   // Auto-advance tutorial if input completed
   useEffect(() => {
@@ -198,7 +214,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
     try {
       const res = await terminalService.submitGuess(session.sessionId, guessStr);
-      if (res.error) {
+      if (res.error && res.status !== 'won' && res.status !== 'lost') {
         setValidationError(res.error);
         setShakeKey((k) => k + 1);
         return;
@@ -270,6 +286,9 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
             subtractCredits(res.fine);
           }
           if (res.secret) setSecret(res.secret);
+          if (isCampaignTarget) {
+            setTutorialActive(false);
+          }
         }
       }
     } catch (err: any) {
@@ -285,7 +304,9 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     subtractCredits,
     activeTutorialStep,
     nextTutorialStep,
+    setTutorialActive,
     chapter,
+    isCampaignTarget,
     nodeId,
     completeChapter,
   ]);
@@ -333,7 +354,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
         {/* 1. Header (72px) */}
         <TerminalHeader
-          nodeName={`Node: ${nodeId}`}
+          nodeName={nodeId === NIX_RECOVERY_NODE_ID ? "Nix's Recovery Run" : `Node: ${nodeId}`}
           config={config}
           usedAttempts={usedAttempts}
           elapsedSeconds={elapsedSeconds}
@@ -388,14 +409,40 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
             secret={secret}
             payout={payout}
             fine={fine}
+            isRecoveryRun={nodeId === NIX_RECOVERY_NODE_ID}
+            onStartRecovery={
+              status === 'lost' &&
+              (nodeId === NIX_RECOVERY_NODE_ID || isCampaignTarget)
+                ? () => router.push(`/terminal/${NIX_RECOVERY_NODE_ID}`)
+                : undefined
+            }
+            recoveryActionLabel={
+              nodeId === NIX_RECOVERY_NODE_ID
+                ? 'TRY PRACTICE AGAIN'
+                : "START NIX'S RECOVERY RUN"
+            }
+            returnActionLabel={
+              nodeId === NIX_RECOVERY_NODE_ID && status === 'won'
+                ? 'RETURN TO CAMPAIGN'
+                : 'RETURN TO MAP'
+            }
             onReturnToMap={() => {
-              if (nodeId === TUTORIAL.terminalId || nodeId === 'tutorial-soda') {
+              if (nodeId === NIX_RECOVERY_NODE_ID && status === 'won') {
+                router.push(chapter ? `/terminal/${chapter.mapNodeId}` : '/map');
+              } else if (nodeId === TUTORIAL.terminalId || nodeId === 'tutorial-soda') {
                 useOnboardingStore.getState().advance('glitch.intro');
                 router.push('/onboarding/glitch');
               } else if (nodeId === CH2_NODE_ID && status === 'won') {
+                triggerToast('Black Market unlocked');
+                campaignService.completeChapter(2).catch(() => {});
                 useOnboardingStore.getState().advance('market.gate');
                 router.push('/market');
               } else {
+                if (status === 'won' && payout) {
+                  triggerToast(`Breached: +$${payout}`);
+                } else if (status === 'lost' && fine) {
+                  triggerToast(`Trace penalty: -$${fine}`);
+                }
                 router.push('/map');
               }
             }}

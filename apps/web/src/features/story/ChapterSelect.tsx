@@ -57,15 +57,26 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
           data-tour="debt-tracker"
         >
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  isDebtFree ? 'bg-accent' : 'bg-danger animate-pulse'
-                }`}
-              />
-              <span className="font-data text-xs font-bold uppercase tracking-wider text-ink">
-                KOVACS SYNDICATE DEBT TRACKER
-              </span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full border border-line bg-panel overflow-hidden shrink-0 shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/Character portraits/Glitch.png" alt="Glitch" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-data text-xs font-bold uppercase tracking-wider text-ink">
+                    KOVACS SYNDICATE DEBT
+                  </span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isDebtFree ? 'bg-accent' : 'bg-danger animate-pulse'
+                    }`}
+                  />
+                </div>
+                <span className="text-[10px] text-ink-muted font-data uppercase block mt-0.5">
+                  Liaison: Broker Glitch
+                </span>
+              </div>
             </div>
             <span
               className={`font-data text-xs font-bold ${
@@ -201,12 +212,24 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
                 }`}
               >
                 {/* Chapter Card Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-pill bg-panel border border-line text-ink-muted font-data text-[10px] font-bold uppercase tracking-wider">
-                        CH 0{ch.number}
-                      </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-full border border-line bg-panel overflow-hidden shrink-0 shadow-xs mt-0.5"
+                      title={ch.briefingDialogue[0]?.speaker === 'glitch' ? 'Contract Broker: Glitch' : 'Tactical Guide: Nix'}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={ch.briefingDialogue[0]?.speaker === 'glitch' ? '/Character portraits/Glitch.png' : '/Character portraits/Nix.png'}
+                        alt={ch.briefingDialogue[0]?.speaker === 'glitch' ? 'Glitch' : 'Nix'}
+                        className={`w-full h-full object-cover ${isLocked ? 'grayscale opacity-60' : ''}`}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-pill bg-panel border border-line text-ink-muted font-data text-[10px] font-bold uppercase tracking-wider">
+                          CH 0{ch.number}
+                        </span>
                       {isCompleted && (
                         <span className="px-2 py-0.5 rounded-pill bg-accent/15 text-accent-text border border-accent/40 font-data text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                           <span>✓</span>
@@ -233,6 +256,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
 
                 {/* Target Location Scene Thumbnail */}
                 {ch.sceneImage && (

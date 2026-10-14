@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 
 interface BreachBannerProps {
@@ -9,6 +10,10 @@ interface BreachBannerProps {
   payout?: number;
   fine?: number;
   onReturnToMap: () => void;
+  isRecoveryRun?: boolean;
+  onStartRecovery?: () => void;
+  recoveryActionLabel?: string;
+  returnActionLabel?: string;
 }
 
 export function BreachBanner({
@@ -17,20 +22,33 @@ export function BreachBanner({
   payout,
   fine,
   onReturnToMap,
+  isRecoveryRun = false,
+  onStartRecovery,
+  recoveryActionLabel = "START NIX'S RECOVERY RUN",
+  returnActionLabel = 'RETURN TO MAP',
 }: BreachBannerProps) {
   const shouldReduceMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isWon = status === 'won';
 
-  return (
+  const content = (
     <div
       role="alert"
-      className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+      data-testid="breach-banner"
+      data-surface="terminal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs select-none"
     >
       <motion.div
+        data-tour="breach-banner"
         initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
-        className={`w-full max-w-sm p-6 rounded-[12px] border bg-terminal-panel shadow-sheet flex flex-col items-center text-center gap-4 ${
+        className={`terminal-result-card w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 rounded-[12px] border shadow-sheet flex flex-col items-center text-center gap-4 ${
           isWon
             ? 'border-terminal-phosphor shadow-[0_0_24px_rgba(111,191,122,0.2)]'
             : 'border-terminal-danger shadow-[0_0_24px_rgba(208,118,90,0.2)]'
@@ -58,25 +76,31 @@ export function BreachBanner({
         <div>
           <h2
             className={`font-heading text-2xl font-bold tracking-wider ${
-              isWon ? 'text-terminal-phosphor' : 'text-terminal-danger'
+              isWon ? 'terminal-result-success' : 'terminal-result-danger'
             }`}
           >
-            {isWon ? 'BREACHED' : 'CONNECTION SEVERED'}
+            {isRecoveryRun && isWon
+              ? 'PRACTICE COMPLETE'
+              : isWon
+                ? 'BREACHED'
+                : 'CONNECTION SEVERED'}
           </h2>
-          <p className="font-data text-xs text-terminal-muted mt-1">
-            {isWon
-              ? 'Node defense bypassed. Cipher cracked successfully.'
-              : 'Maximum trace threshold reached. Trace lock engaged.'}
+          <p className="font-data text-xs terminal-result-muted mt-1">
+            {isRecoveryRun && isWon
+              ? 'Your assignment is waiting. Head back when you are ready.'
+              : isWon
+                ? 'Node defense bypassed. Cipher cracked successfully.'
+                : 'Maximum trace threshold reached. Trace lock engaged.'}
           </p>
         </div>
 
         {/* Revealed secret if lost */}
         {!isWon && secret && (
-          <div className="w-full p-3 rounded-[6px] bg-terminal-bg border border-terminal-line/40 font-data">
-            <span className="text-[11px] text-terminal-muted uppercase tracking-wider block">
+          <div className="terminal-result-subpanel w-full p-3 rounded-[6px] border font-data">
+            <span className="text-[11px] terminal-result-muted uppercase tracking-wider block">
               TARGET CIPHER CODE
             </span>
-            <span className="text-xl font-bold text-terminal-ink tracking-[0.25em] mt-1 block">
+            <span className="text-xl font-bold terminal-result-ink tracking-[0.25em] mt-1 block">
               {secret}
             </span>
           </div>
@@ -84,26 +108,47 @@ export function BreachBanner({
 
         {/* Payout or fine */}
         {isWon && payout !== undefined && (
-          <div className="w-full p-2.5 rounded-[6px] bg-terminal-bg border border-terminal-phosphor/30 font-data text-xs">
-            <span className="text-terminal-muted">PAYOUT CREDITED: </span>
-            <span className="text-terminal-phosphor font-bold">+${payout}</span>
+          <div className="terminal-result-subpanel w-full p-2.5 rounded-[6px] border font-data text-xs">
+            <span className="terminal-result-muted">PAYOUT CREDITED: </span>
+            <span className="terminal-result-success font-bold">+${payout}</span>
           </div>
         )}
         {!isWon && fine !== undefined && (
-          <div className="w-full p-2.5 rounded-[6px] bg-terminal-bg border border-terminal-danger/30 font-data text-xs">
-            <span className="text-terminal-muted">TRACE PENALTY: </span>
-            <span className="text-terminal-danger font-bold">-${fine}</span>
+          <div className="terminal-result-subpanel w-full p-2.5 rounded-[6px] border font-data text-xs">
+            <span className="terminal-result-muted">TRACE PENALTY: </span>
+            <span className="terminal-result-danger font-bold">-${fine}</span>
+          </div>
+        )}
+
+        {!isWon && onStartRecovery && (
+          <div className="w-full flex flex-col gap-3">
+            <p className="font-data text-xs terminal-result-ink leading-relaxed">
+              Nix has a quiet practice lock ready. No clock and no fine. Crack it, then come back to this assignment together.
+            </p>
+            <button
+              type="button"
+              onClick={onStartRecovery}
+              className="terminal-result-secondary w-full min-h-[44px] rounded-[8px] border font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] flex items-center justify-center"
+            >
+              {recoveryActionLabel}
+            </button>
           </div>
         )}
 
         <button
           type="button"
           onClick={onReturnToMap}
-          className="w-full h-12 min-h-[44px] rounded-[8px] bg-terminal-phosphor text-terminal-bg font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] hover:brightness-105 flex items-center justify-center shadow-card"
+          className="terminal-result-primary w-full h-12 min-h-[44px] rounded-[8px] font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] hover:brightness-105 flex items-center justify-center shadow-card"
         >
-          RETURN TO MAP
+          {returnActionLabel}
         </button>
       </motion.div>
     </div>
   );
+
+  if (!mounted || typeof document === 'undefined') {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 }

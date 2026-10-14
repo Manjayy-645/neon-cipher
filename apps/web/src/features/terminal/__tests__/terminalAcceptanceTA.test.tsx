@@ -6,15 +6,18 @@ import { terminalService } from '../terminalService';
 import { useSettingsStore } from '@/stores/settings-store';
 import { useCampaignStore } from '@/stores/campaign-store';
 
+const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockPush,
   }),
 }));
 
 describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockPush.mockClear();
     useSettingsStore.setState({ rookieAssist: true });
     useCampaignStore.setState({
       activeChapterId: null,
@@ -103,6 +106,105 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
       expect(screen.getByText('BREACHED')).toBeInTheDocument();
       expect(screen.getByText('RETURN TO MAP')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('breach-banner')).toHaveAttribute(
+      'data-surface',
+      'terminal'
+    );
+  });
+
+  it('offers Nix recovery practice after a campaign target is lost', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'sess-campaign-loss',
+      startedAt: Date.now(),
+      config: {
+        digits: 4,
+        allowDuplicates: false,
+        attempts: 7,
+        timerSeconds: 60,
+        tier: 2,
+        ice: 'None',
+      },
+    });
+    vi.spyOn(terminalService, 'submitGuess').mockResolvedValueOnce({
+      pots: 0,
+      pans: 0,
+      attemptsLeft: 0,
+      status: 'lost',
+      secret: '9876',
+      fine: 0,
+    });
+    useCampaignStore.setState({
+      activeChapterId: 'chapter-2',
+      tutorialActive: true,
+      tutorialStepIndex: 0,
+    });
+
+    render(<TerminalScreen nodeId="n4" />);
+    await screen.findByText(/Node: n4/i);
+
+    for (const digit of ['0', '1', '2', '3']) {
+      fireEvent.click(screen.getByRole('button', { name: digit }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Submit Guess/i }));
+
+    const recoveryButton = await screen.findByRole('button', {
+      name: /START NIX'S RECOVERY RUN/i,
+    });
+    expect(screen.getByText(/No clock and no fine/i)).toBeInTheDocument();
+    expect(screen.getByTestId('breach-banner').querySelector('[data-tour="breach-banner"]'))
+      .toHaveClass('terminal-result-card');
+    expect(useCampaignStore.getState().tutorialActive).toBe(false);
+    expect(recoveryButton).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'RETURN TO MAP' }));
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/map');
+    });
+  });
+
+  it('returns to the active campaign target after the recovery run is breached', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'sess-nix-recovery',
+      startedAt: Date.now(),
+      config: {
+        digits: 3,
+        allowDuplicates: false,
+        attempts: 999,
+        timerSeconds: 0,
+        tier: 1,
+        ice: 'None',
+      },
+    });
+    vi.spyOn(terminalService, 'submitGuess').mockResolvedValueOnce({
+      pots: 0,
+      pans: 3,
+      attemptsLeft: 998,
+      status: 'won',
+      secret: '123',
+      payout: 0,
+    });
+    useCampaignStore.setState({
+      activeChapterId: 'chapter-2',
+      tutorialActive: true,
+      tutorialStepIndex: 0,
+    });
+
+    render(<TerminalScreen nodeId="nix-recovery" />);
+    await screen.findByText(/Nix's Recovery Run/i);
+
+    for (const digit of ['1', '2', '3']) {
+      fireEvent.click(screen.getByRole('button', { name: digit }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Submit Guess/i }));
+
+    const returnButton = await screen.findByRole('button', {
+      name: /RETURN TO CAMPAIGN/i,
+    });
+    expect(screen.getByText(/Your assignment is waiting/i)).toBeInTheDocument();
+    fireEvent.click(returnButton);
+
+    expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
+    expect(useCampaignStore.getState().activeChapterId).toBe('chapter-2');
   });
 
   it('highlights the rendered keypad and advances after the guided digits are entered', async () => {
@@ -355,5 +457,50 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
       expect(screen.getByText('BREACHED')).toBeInTheDocument();
       expect(screen.getByText('RETURN TO MAP')).toBeInTheDocument();
     });
+  });
+
+  it('displays connection severed banner with revealed cipher and trace penalty on timeout loss', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'sess-timeout',
+      startedAt: Date.now() - 95000,
+      config: {
+        digits: 3,
+        allowDuplicates: false,
+        attempts: 8,
+        timerSeconds: 90,
+        tier: 1,
+        ice: 'None',
+      },
+    });
+
+    vi.spyOn(terminalService, 'submitGuess').mockResolvedValueOnce({
+      status: 'lost',
+      secret: '849',
+      fine: 60,
+      error: 'Time expired',
+    });
+
+    render(<TerminalScreen nodeId="n-timeout" />);
+    await screen.findByText(/Node: n-timeout/i);
+
+    // Type 1, 2, 3 and submit
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit Guess/i }));
+
+    // Severed banner appears with target cipher code and trace penalty
+    await waitFor(() => {
+      expect(screen.getByText('CONNECTION SEVERED')).toBeInTheDocument();
+      expect(screen.getByText('TARGET CIPHER CODE')).toBeInTheDocument();
+      expect(screen.getByText('849')).toBeInTheDocument();
+      expect(screen.getByText('TRACE PENALTY:')).toBeInTheDocument();
+      expect(screen.getByText('-$60')).toBeInTheDocument();
+      expect(screen.getByText('RETURN TO MAP')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('breach-banner')).toHaveAttribute(
+      'data-surface',
+      'terminal'
+    );
   });
 });

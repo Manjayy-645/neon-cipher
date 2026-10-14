@@ -12,6 +12,7 @@ import { NixGuide } from '../NixGuide';
 import { DISTRICT_DEFINITIONS } from '../districtConfig';
 import { DISTRICT_ZOOM_THRESHOLD } from '../camera';
 import { NIX_GUIDE_LINES } from '../nixGuideLines';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 // Mock maplibre-gl map
 const mockMap = {
@@ -41,6 +42,7 @@ describe('TASK: Map page states (overview, district, node)', () => {
       useMapStore.getState().resetMapState();
       useToastStore.setState({ toast: null });
     });
+    useOnboardingStore.getState().reset();
     vi.clearAllMocks();
   });
 
@@ -352,6 +354,14 @@ describe('TASK: Map page states (overview, district, node)', () => {
       const container = screen.getByTestId('nix-guide-container');
       expect(container.style.bottom).toBe('262px'); // 250 + 12px
       expect(container.style.left).toBe('16px');
+    });
+
+    it('hides the contextual Nix bubble while the onboarding tour is showing its guide', () => {
+      useOnboardingStore.setState({ step: 'map.district', skipped: false });
+
+      render(<NixGuide />);
+
+      expect(screen.queryByTestId('nix-guide-container')).not.toBeInTheDocument();
     });
   });
 });

@@ -107,7 +107,12 @@ export function GlitchIntroScene() {
         {/* Character Tab & Portrait */}
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-[12px] bg-panel-light border border-line flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-            <span className="font-heading text-xl font-bold text-ink-muted">GL</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Character portraits/Glitch.png"
+              alt="Glitch"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="inline-block px-2 py-0.5 rounded-[4px] bg-panel-light border border-line">

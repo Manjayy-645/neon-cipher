@@ -1,13 +1,65 @@
 import { NextResponse } from 'next/server';
 import { mockSessions, mockRigHardware, mockCampaign, getNodeDefense } from '../db';
+import type { Session } from '../db';
 import { generateCode, getChapterById } from '@neon-cipher/game-rules/src/index';
 import { getNodes } from '@/features/map/nodeService';
+import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
 
 // MOCK: replace with Supabase edge function.
 export async function POST(request: Request) {
   try {
     const { nodeId, courtesy } = await request.json();
     if (!nodeId) return NextResponse.json({ error: 'Missing nodeId' }, { status: 400 });
+
+    if (nodeId === NIX_RECOVERY_NODE_ID) {
+      const sessionId = Math.random().toString(36).substring(2, 15);
+      const session: Session = {
+        id: sessionId,
+        nodeId: NIX_RECOVERY_NODE_ID,
+        secret: generateCode(3, false),
+        attemptsLeft: 999,
+        startedAt: Date.now(),
+        status: 'active',
+        node: {
+          id: NIX_RECOVERY_NODE_ID,
+          name: "Nix's Recovery Run",
+          type: 'vending',
+          tier: 1,
+          district: 'slums',
+          x: 20,
+          y: 12,
+          digits: 3,
+          allowDuplicates: false,
+          attempts: 999,
+          timerSeconds: 0,
+          bounty: 0,
+          traceRisk: 0,
+          status: 'available',
+          requiresUnlock: false,
+        },
+        eliminatedDigits: [],
+        ice: 'None',
+        recovery: true,
+      };
+
+      mockSessions.set(sessionId, session);
+
+      return NextResponse.json({
+        sessionId,
+        config: {
+          length: 3,
+          digits: 3,
+          allowDuplicates: false,
+          attempts: 999,
+          maxAttempts: 999,
+          timerSeconds: 0,
+          tier: 1,
+          ice: 'None',
+          eliminatedDigits: [],
+        },
+        startedAt: session.startedAt,
+      });
+    }
 
     if (nodeId === 'tutorial-soda') {
       const sessionId = Math.random().toString(36).substring(2, 15);

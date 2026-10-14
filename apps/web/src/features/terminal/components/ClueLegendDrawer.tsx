@@ -29,12 +29,23 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
             className="relative w-full max-w-sm rounded-t-[16px] sm:rounded-[12px] bg-terminal-panel border border-terminal-line p-5 shadow-sheet flex flex-col gap-4 text-terminal-ink z-10"
           >
             <div className="flex items-center justify-between border-b border-terminal-line/60 pb-3">
-              <h2
-                id="legend-title"
-                className="font-heading text-lg text-terminal-ink font-semibold"
-              >
-                Clue Legend
-              </h2>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full border border-terminal-phosphor/60 overflow-hidden shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h2
+                    id="legend-title"
+                    className="font-heading text-lg text-terminal-ink font-semibold leading-none"
+                  >
+                    Clue Legend
+                  </h2>
+                  <span className="text-[10px] text-terminal-phosphor uppercase font-data tracking-wider block mt-0.5">
+                    Field Guide by Nix
+                  </span>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={onClose}

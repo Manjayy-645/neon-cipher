@@ -13,6 +13,7 @@
         "@neon-cipher/tokens": "workspace:*",
         "@supabase/supabase-js": "latest",
         "@tailwindcss/postcss": "^4.3.3",
+        "@vercel/analytics": "^2.0.1",
         "framer-motion": "latest",
         "maplibre-gl": "^6.13.0",
         "next": "latest",

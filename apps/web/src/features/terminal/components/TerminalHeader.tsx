@@ -48,14 +48,21 @@ export function TerminalHeader({
             <AttemptPips total={config.attempts} used={usedAttempts} />
           )}
 
-          {/* "?" Button for Clue Legend */}
+          {/* Nix Pip Button for Clue Legend */}
           <button
             type="button"
             onClick={onOpenLegend}
             aria-label="Open Clue Legend"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-[6px] border border-terminal-line bg-terminal-bg text-terminal-ink hover:border-terminal-phosphor font-data text-sm font-bold flex items-center justify-center transition-colors"
+            title="Ask Nix: Clue Legend"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-terminal-line bg-terminal-panel hover:border-terminal-phosphor overflow-hidden flex items-center justify-center p-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-terminal-phosphor relative"
           >
-            ?
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Character portraits/Nix.png"
+              alt="Nix"
+              className="w-full h-full rounded-full object-cover"
+            />
+            <span className="sr-only">Open Clue Legend</span>
           </button>
         </div>
       </div>

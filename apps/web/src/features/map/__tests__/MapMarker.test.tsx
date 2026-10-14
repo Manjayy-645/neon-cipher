@@ -4,6 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MapMarker } from '../MapMarker';
 import { MarkerIcon } from '../../../components/ui/MarkerIcon';
 import { useMapStore } from '../../../stores/map-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { GameNode } from '../nodeService';
 
 describe('STYLE S5: Map Marker and MarkerIcon', () => {
@@ -30,6 +31,7 @@ describe('STYLE S5: Map Marker and MarkerIcon', () => {
       selectedNodeId: null,
       unlocks: { bridge: true },
     });
+    useOnboardingStore.getState().reset();
   });
 
   describe('MarkerIcon Plate Shapes, Rings, and Colors', () => {
@@ -156,6 +158,31 @@ describe('STYLE S5: Map Marker and MarkerIcon', () => {
         fireEvent.click(button);
       });
       expect(useMapStore.getState().selectedNodeId).toBe('node-1');
+    });
+
+    it('highlights and keeps the onboarding corner-store target tappable', () => {
+      useOnboardingStore.setState({ step: 'map.district', skipped: false });
+      const targetNode = { ...baseNode, id: 'n4', name: 'Corner Store Register' };
+      const otherNode = { ...baseNode, id: 'n1', name: 'Alley Relay' };
+      render(
+        <>
+          <MapMarker node={targetNode} />
+          <MapMarker node={otherNode} />
+        </>
+      );
+
+      const target = screen.getByRole('button', { name: /Corner Store Register/i });
+      expect(target).toHaveAttribute('data-tour', 'node-n4');
+      expect(target).toHaveStyle({ opacity: '1', pointerEvents: 'auto' });
+      expect(screen.getAllByRole('button')[1]).toHaveStyle({
+        opacity: '0.45',
+        pointerEvents: 'none',
+      });
+
+      act(() => {
+        fireEvent.click(target);
+      });
+      expect(useMapStore.getState().activeNodeId).toBe('n4');
     });
   });
 });

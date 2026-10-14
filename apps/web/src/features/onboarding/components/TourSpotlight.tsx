@@ -255,9 +255,12 @@ export function TourSpotlight({
         <div className="flex items-start gap-3">
           {/* Portrait slot 36px */}
           <div className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-[8px] border border-line bg-panel flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-            <span className="font-heading text-xs font-bold text-ink">
-              {speaker === 'glitch' ? 'GL' : 'NX'}
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={speaker === 'glitch' ? '/Character portraits/Glitch.png' : '/Character portraits/Nix.png'}
+              alt={speaker === 'glitch' ? 'Glitch' : 'Nix'}
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <div className="flex-1 min-w-0">
