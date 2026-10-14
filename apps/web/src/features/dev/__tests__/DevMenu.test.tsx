@@ -173,4 +173,36 @@ describe('DevMenu Component (Acceptance: Every state reachable from dev menu)', 
     });
     expect(useSettingsStore.getState().colorBlindMode).toBe(true);
   });
+
+  it('toggles feature flags and unlocks locked-out features for developer review', async () => {
+    render(<DevMenu />);
+    const openBtn = screen.getByLabelText('Open developer debug menu');
+    await act(async () => {
+      fireEvent.click(openBtn);
+    });
+
+    // Toggle Comms flag
+    const commsToggle = screen.getByTestId('dev-flag-toggle-comms');
+    expect(commsToggle).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(commsToggle);
+    });
+    expect(commsToggle).toHaveTextContent(/ON/i);
+
+    // Click UNLOCK ALL GATES
+    const unlockAllBtn = screen.getByTestId('dev-unlock-all-gates');
+    await act(async () => {
+      fireEvent.click(unlockAllBtn);
+    });
+
+    const duelToggle = screen.getByTestId('dev-flag-toggle-duel');
+    expect(duelToggle).toHaveTextContent(/ON/i);
+
+    // Reset flags
+    const resetBtn = screen.getByTestId('dev-reset-all-flags');
+    await act(async () => {
+      fireEvent.click(resetBtn);
+    });
+  });
 });

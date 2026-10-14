@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { SplashScreen } from '@/features/onboarding/components/SplashScreen';
+import { StartupScreen } from '@/features/splash/StartupScreen';
 
 export default function RootPage() {
-  return <SplashScreen />;
+  return <StartupScreen />;
 }

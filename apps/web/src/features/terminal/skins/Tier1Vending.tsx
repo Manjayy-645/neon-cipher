@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-export default function Tier1VendingSkin() {
+export interface SkinProps {
+  nodeName?: string;
+  nodeType?: string;
+}
+
+export default function Tier1VendingSkin({ nodeName, nodeType }: SkinProps = {}) {
+  const displayTitle = nodeName ? nodeName.toUpperCase() : 'KURA-TEK VEND-LINE';
+  const typeTag = nodeType ? nodeType.toUpperCase() : 'VEND-LINE';
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
       {/* Top Header Framing */}
@@ -14,7 +22,7 @@ export default function Tier1VendingSkin() {
             <line x1="2" y1="5" x2="8" y2="5" stroke="var(--terminal-bg,#1c221e)" strokeWidth="1" />
           </svg>
           <span className="font-bold tracking-wider text-accent-text">KURA-TEK VEND-LINE</span>
-          <span className="opacity-60">SN: KT-09-8832-A</span>
+          <span className="opacity-60">{nodeType ? `SN: KT-09-8832-A // ${typeTag}` : 'SN: KT-09-8832-A'}</span>
         </div>
         <div className="bg-[var(--terminal-line,#2d3b2f)] text-accent-text px-1.5 py-0.2 rounded text-[9px] uppercase tracking-widest border border-accent/20">
           LCD-LOWRES 12V

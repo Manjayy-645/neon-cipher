@@ -1,6 +1,9 @@
 import { calculateScore, Score } from './index';
 
 export type DuelMatchType = 'casual' | 'wager' | 'turf';
+export type DuelPacingMode = 'simultaneous' | 'turn_based';
+
+export const GUESS_CLOCK_MS = 20000; // 20 seconds per-player guess clock
 
 export interface DuelPotResult {
   playerWager: number;

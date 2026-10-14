@@ -1,5 +1,6 @@
 import { GameNode, getNodes } from '@/features/map/nodeService';
 import { AccountSettings } from '@/features/settings/types';
+import { DuelFeedEvent, DuelSession } from '@/features/duel/types';
 import {
   CHAPTERS,
   getChapterById,
@@ -15,6 +16,10 @@ import {
   SABOTAGE_RULES,
   generateNullByteGuess,
   DuelMatchType,
+  DuelPacingMode,
+  GUESS_CLOCK_MS,
+  pickConsistentGuess,
+  GuessRecord,
   STEALTH_GUESS_COST,
   generateFalseFlagClue,
   COOP_STAGE_TEMPLATES,
@@ -183,7 +188,7 @@ const defaultRigHardware: Record<string, RigHardwareItem> = {
   'rig-memory-buffer-1': {
     id: 'rig-memory-buffer-1',
     name: 'Memory Buffer Mk I',
-    installed: true,
+    installed: false,
     burned: false,
     repairCost: 650,
     slot: 'memory-1',
@@ -894,6 +899,7 @@ export interface DuelRoom {
   name: string;
   host: string;
   matchType: DuelMatchType;
+  pacingMode?: DuelPacingMode;
   wager: number;
   ante: number;
   pingMs: number;
@@ -926,6 +932,7 @@ export interface DuelParticipant {
 export interface DuelSessionState {
   id: string;
   matchType: DuelMatchType;
+  pacingMode: DuelPacingMode;
   wager: number;
   ante: number;
   totalPot: number;
@@ -934,6 +941,13 @@ export interface DuelSessionState {
   secret: string; // SERVER ONLY!
   digits: number;
   sharedAttempts: number;
+  playerAttempts: number;
+  rivalAttempts: number;
+  maxAttempts: number;
+  guessClockMs: number;
+  playerLastGuessAt: number;
+  rivalLastGuessAt: number;
+  rivalNextGuessDelayMs: number;
   turnClockSeconds: number;
   overallClockSeconds: number;
   startedAt: number;
@@ -943,6 +957,7 @@ export interface DuelSessionState {
   player: DuelParticipant;
   rival: DuelParticipant;
   currentTurn: 'player' | 'rival';
+  feedEvents: DuelFeedEvent[];
 }
 
 export const mockDuelRooms: DuelRoom[] = [
@@ -1016,8 +1031,259 @@ export function createDuelRoom(data: {
   return newRoom;
 }
 
+export function toSafeDuelSession(session: DuelSessionState): DuelSession {
+  const isFinished = session.status !== 'active';
+  const now = Date.now();
+  const playerClockMs = Math.max(0, session.guessClockMs - (now - session.playerLastGuessAt));
+  const rivalClockMs = Math.max(0, session.guessClockMs - (now - session.rivalLastGuessAt));
+
+  const safeRivalGuesses = session.rival.guesses.map((g) => {
+    if (!isFinished && g.isStealth && !g.unmasked) {
+      return {
+        ...g,
+        guess: '****',
+        pans: 0,
+        pots: 0,
+      };
+    }
+    return g;
+  });
+
+  const safeFeedEvents = session.feedEvents.map((ev) => {
+    if (ev.who === 'rival' && !isFinished && ev.isStealth && !ev.unmasked) {
+      return {
+        ...ev,
+        guess: null,
+        pans: null,
+        pots: null,
+      };
+    }
+    return ev;
+  });
+
+  return {
+    id: session.id,
+    matchType: session.matchType,
+    pacingMode: session.pacingMode,
+    wager: session.wager,
+    ante: session.ante,
+    totalPot: session.totalPot,
+    rake: session.rake,
+    netPot: session.netPot,
+    digits: session.digits,
+    sharedAttempts: session.sharedAttempts,
+    playerAttempts: session.playerAttempts,
+    rivalAttempts: session.rivalAttempts,
+    maxAttempts: session.maxAttempts,
+    guessClockMs: session.guessClockMs,
+    playerClockMs,
+    rivalClockMs,
+    turnClockSeconds: Math.ceil(playerClockMs / 1000),
+    overallClockSeconds: session.overallClockSeconds,
+    startedAt: session.startedAt,
+    status: session.status,
+    winner: session.winner,
+    finishTimeDeltaSeconds: session.finishTimeDeltaSeconds,
+    player: session.player,
+    rival: {
+      ...session.rival,
+      guesses: safeRivalGuesses,
+    },
+    currentTurn: session.currentTurn,
+    feedEvents: safeFeedEvents,
+    ...(isFinished ? { secret: session.secret } : {}),
+  };
+}
+
+export function syncDuelClocks(duelId: string): DuelSession | undefined {
+  const session = mockDuelSessions.get(duelId);
+  if (!session) return undefined;
+  if (session.status !== 'active') return toSafeDuelSession(session);
+
+  const now = Date.now();
+
+  if (session.pacingMode === 'simultaneous') {
+    // 1. Check player inactivity timeout
+    const playerElapsed = now - session.playerLastGuessAt;
+    if (playerElapsed >= session.guessClockMs) {
+      session.playerAttempts = Math.max(0, session.playerAttempts - 1);
+      session.playerLastGuessAt = now;
+      session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+      session.feedEvents.push({
+        id: `ev-to-p-${now}`,
+        who: 'player',
+        guess: null,
+        pans: null,
+        pots: null,
+        timestamp: now - session.startedAt,
+        sabotageEvent: {
+          toolName: 'CLOCK TIMEOUT',
+          description: '20s guess clock expired! 1 attempt burned.',
+        },
+      });
+
+      if (session.playerAttempts <= 0) {
+        session.status = 'rival_won';
+        session.winner = 'rival';
+        session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+        return toSafeDuelSession(session);
+      }
+    }
+
+    // 2. Check rival AI reaction
+    const rivalElapsed = now - session.rivalLastGuessAt;
+    if (session.rivalAttempts > 0 && rivalElapsed >= session.rivalNextGuessDelayMs) {
+      const previousRivalGuesses = session.rival.guesses.map((g) => g.guess);
+      const rivalGuessStr = generateNullByteGuess(session.digits, previousRivalGuesses, session.secret);
+      const rivalScore = calculateScore(session.secret, rivalGuessStr);
+      const rivalIsStealth = Math.random() < 0.12;
+      const rivalIsUnmasked = rivalIsStealth && !!session.player.snoopActive;
+      if (rivalIsUnmasked) {
+        session.player.snoopActive = false;
+      }
+
+      const rivalRecord: DuelGuessRecord = {
+        guess: rivalGuessStr,
+        pots: rivalScore.pots,
+        pans: rivalScore.pans,
+        timestamp: now,
+        isStealth: rivalIsStealth,
+        unmasked: rivalIsUnmasked,
+      };
+      session.rival.guesses.push(rivalRecord);
+      session.rivalAttempts = Math.max(0, session.rivalAttempts - 1);
+      session.rivalLastGuessAt = now;
+      session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+      session.rivalNextGuessDelayMs = Math.floor(Math.random() * 5000) + 4000;
+
+      session.feedEvents.push({
+        id: `ev-r-${now}-${Math.random().toString(36).slice(2, 6)}`,
+        who: 'rival',
+        guess: rivalIsStealth && !rivalIsUnmasked ? null : rivalGuessStr,
+        pans: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pans,
+        pots: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pots,
+        timestamp: now - session.startedAt,
+        isStealth: rivalIsStealth,
+        unmasked: rivalIsUnmasked,
+      });
+
+      if (rivalScore.pans === session.digits) {
+        session.status = 'rival_won';
+        session.winner = 'rival';
+        session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+      } else if (session.rivalAttempts <= 0) {
+        session.status = 'player_won';
+        session.winner = 'player';
+        session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+      }
+    } else if (rivalElapsed >= session.guessClockMs) {
+      session.rivalAttempts = Math.max(0, session.rivalAttempts - 1);
+      session.rivalLastGuessAt = now;
+      session.feedEvents.push({
+        id: `ev-to-r-${now}`,
+        who: 'rival',
+        guess: null,
+        pans: null,
+        pots: null,
+        timestamp: now - session.startedAt,
+        sabotageEvent: {
+          toolName: 'CLOCK TIMEOUT',
+          description: 'Rival turn clock expired (20s)! 1 attempt forfeited.',
+        },
+      });
+
+      if (session.rivalAttempts <= 0) {
+        session.status = 'player_won';
+        session.winner = 'player';
+        session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+      }
+    }
+  } else {
+    // Turn-based mode
+    if (session.currentTurn === 'player') {
+      const playerElapsed = now - session.playerLastGuessAt;
+      if (playerElapsed >= session.guessClockMs) {
+        session.playerAttempts = Math.max(0, session.playerAttempts - 1);
+        session.currentTurn = 'rival';
+        session.rivalLastGuessAt = now;
+        session.playerLastGuessAt = now;
+        session.feedEvents.push({
+          id: `ev-to-p-${now}`,
+          who: 'player',
+          guess: null,
+          pans: null,
+          pots: null,
+          timestamp: now - session.startedAt,
+          sabotageEvent: {
+            toolName: 'TURN TIMEOUT',
+            description: 'Turn clock expired (20s)! Turn yielded to opponent.',
+          },
+        });
+
+        if (session.playerAttempts <= 0) {
+          session.status = 'rival_won';
+          session.winner = 'rival';
+          session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+        }
+      }
+    } else if (session.currentTurn === 'rival') {
+      const rivalElapsed = now - session.rivalLastGuessAt;
+      const thinkDelay = Math.min(session.rivalNextGuessDelayMs, 3000);
+      if (rivalElapsed >= thinkDelay && session.rivalAttempts > 0) {
+        const previousRivalGuesses = session.rival.guesses.map((g) => g.guess);
+        const rivalGuessStr = generateNullByteGuess(session.digits, previousRivalGuesses, session.secret);
+        const rivalScore = calculateScore(session.secret, rivalGuessStr);
+        const rivalIsStealth = Math.random() < 0.12;
+        const rivalIsUnmasked = rivalIsStealth && !!session.player.snoopActive;
+        if (rivalIsUnmasked) {
+          session.player.snoopActive = false;
+        }
+
+        const rivalRecord: DuelGuessRecord = {
+          guess: rivalGuessStr,
+          pots: rivalScore.pots,
+          pans: rivalScore.pans,
+          timestamp: now,
+          isStealth: rivalIsStealth,
+          unmasked: rivalIsUnmasked,
+        };
+        session.rival.guesses.push(rivalRecord);
+        session.rivalAttempts = Math.max(0, session.rivalAttempts - 1);
+        session.rivalLastGuessAt = now;
+        session.playerLastGuessAt = now;
+        session.currentTurn = 'player';
+        session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+
+        session.feedEvents.push({
+          id: `ev-r-${now}-${Math.random().toString(36).slice(2, 6)}`,
+          who: 'rival',
+          guess: rivalIsStealth && !rivalIsUnmasked ? null : rivalGuessStr,
+          pans: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pans,
+          pots: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pots,
+          timestamp: now - session.startedAt,
+          isStealth: rivalIsStealth,
+          unmasked: rivalIsUnmasked,
+        });
+
+        if (rivalScore.pans === session.digits) {
+          session.status = 'rival_won';
+          session.winner = 'rival';
+          session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+        } else if (session.rivalAttempts <= 0) {
+          session.status = 'player_won';
+          session.winner = 'player';
+          session.finishTimeDeltaSeconds = Math.round((now - session.startedAt) / 1000);
+        }
+      }
+    }
+  }
+
+  return toSafeDuelSession(session);
+}
+
 export function startDuelSession(data: {
   matchType: DuelMatchType;
+  pacingMode?: DuelPacingMode;
   wager: number;
   ante?: number;
   roomId?: string;
@@ -1051,6 +1317,7 @@ export function startDuelSession(data: {
   const session: DuelSessionState = {
     id: sessionId,
     matchType: data.matchType,
+    pacingMode: data.pacingMode ?? 'simultaneous',
     wager,
     ante,
     totalPot: potCalc.totalPot,
@@ -1059,7 +1326,14 @@ export function startDuelSession(data: {
     secret,
     digits: 4,
     sharedAttempts: 12,
-    turnClockSeconds: 30,
+    playerAttempts: 7,
+    rivalAttempts: 7,
+    maxAttempts: 7,
+    guessClockMs: GUESS_CLOCK_MS,
+    playerLastGuessAt: Date.now(),
+    rivalLastGuessAt: Date.now(),
+    rivalNextGuessDelayMs: Math.floor(Math.random() * 5000) + 4000,
+    turnClockSeconds: 20,
     overallClockSeconds: 90,
     startedAt: Date.now(),
     status: 'active',
@@ -1080,6 +1354,7 @@ export function startDuelSession(data: {
       cheatUsed: false,
     },
     currentTurn: 'player',
+    feedEvents: [],
   };
 
   mockDuelSessions.set(sessionId, session);
@@ -1092,7 +1367,7 @@ export function submitDuelGuess(data: {
   exploitUsed?: string;
   isStealth?: boolean;
 }): {
-  session: Omit<DuelSessionState, 'secret'> & { secret?: string };
+  session: DuelSession;
   playerGuess: DuelGuessRecord;
   rivalGuess?: DuelGuessRecord;
 } {
@@ -1151,6 +1426,10 @@ export function submitDuelGuess(data: {
     session.player.falseFlagActive = false;
   }
 
+  if (session.pacingMode === 'turn_based' && session.currentTurn !== 'player') {
+    throw new Error('Not your turn. Rival is currently calculating.');
+  }
+
   const isStealth = !!data.isStealth;
   const isUnmasked = isStealth && !!session.rival.snoopActive;
   if (isUnmasked) {
@@ -1168,7 +1447,23 @@ export function submitDuelGuess(data: {
     unmasked: isUnmasked,
   };
   session.player.guesses.push(playerRecord);
+  session.playerAttempts = Math.max(0, session.playerAttempts - 1);
+  session.playerLastGuessAt = Date.now();
   session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+
+  // Add player guess to unified feed
+  session.feedEvents.push({
+    id: `ev-p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    who: 'player',
+    guess: data.guess,
+    pans: displayPans,
+    pots: displayPots,
+    timestamp: Date.now() - session.startedAt,
+    isStealth,
+    unmasked: isUnmasked,
+    cheatUsed: session.player.cheatUsed,
+    falsified: wasFalsified,
+  });
 
   // Check player win
   if (playerScore.pans === session.digits) {
@@ -1188,50 +1483,102 @@ export function submitDuelGuess(data: {
     }
 
     return {
-      session: { ...session },
+      session: toSafeDuelSession(session),
       playerGuess: playerRecord,
     };
   }
 
-  // Check shared attempts exhausted
-  if (session.sharedAttempts <= 0) {
-    session.status = 'draw';
-    session.winner = 'draw';
+  // Check player attempts exhausted
+  if (session.playerAttempts <= 0) {
+    session.status = 'rival_won';
+    session.winner = 'rival';
     return {
-      session: { ...session },
+      session: toSafeDuelSession(session),
       playerGuess: playerRecord,
     };
   }
 
   // Rival (Null_Byte AI) reacts with intelligent guess
-  const previousRivalGuesses = session.rival.guesses.map(g => g.guess);
-  const rivalGuessStr = generateNullByteGuess(session.digits, previousRivalGuesses, session.secret);
-  const rivalScore = calculateScore(session.secret, rivalGuessStr);
-  const rivalRecord: DuelGuessRecord = {
-    guess: rivalGuessStr,
-    pots: rivalScore.pots,
-    pans: rivalScore.pans,
-    timestamp: Date.now() + 250,
-  };
-  session.rival.guesses.push(rivalRecord);
-  session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+  let rivalRecord: DuelGuessRecord | undefined;
+  if (session.rivalAttempts > 0) {
+    const previousRivalGuesses = session.rival.guesses.map(g => g.guess);
+    const rivalGuessStr = generateNullByteGuess(session.digits, previousRivalGuesses, session.secret);
+    const rivalScore = calculateScore(session.secret, rivalGuessStr);
+    const rivalIsStealth = Math.random() < 0.12; // 1 in 8 stealth
+    const rivalIsUnmasked = rivalIsStealth && !!session.player.snoopActive;
+    if (rivalIsUnmasked) {
+      session.player.snoopActive = false;
+    }
 
-  // Check rival win
-  if (rivalScore.pans === session.digits) {
-    session.status = 'rival_won';
-    session.winner = 'rival';
-    session.finishTimeDeltaSeconds = Math.round((Date.now() - session.startedAt) / 1000);
-    return {
-      session: { ...session },
-      playerGuess: playerRecord,
-      rivalGuess: rivalRecord,
+    rivalRecord = {
+      guess: rivalGuessStr,
+      pots: rivalScore.pots,
+      pans: rivalScore.pans,
+      timestamp: Date.now() + 250,
+      isStealth: rivalIsStealth,
+      unmasked: rivalIsUnmasked,
     };
+    session.rival.guesses.push(rivalRecord);
+    session.rivalAttempts = Math.max(0, session.rivalAttempts - 1);
+    session.rivalLastGuessAt = Date.now() + 250;
+    session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
+    session.rivalNextGuessDelayMs = Math.floor(Math.random() * 5000) + 4000;
+
+    session.feedEvents.push({
+      id: `ev-r-${Date.now() + 250}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'rival',
+      guess: rivalIsStealth && !rivalIsUnmasked ? null : rivalGuessStr,
+      pans: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pans,
+      pots: rivalIsStealth && !rivalIsUnmasked ? null : rivalScore.pots,
+      timestamp: (Date.now() + 250) - session.startedAt,
+      isStealth: rivalIsStealth,
+      unmasked: rivalIsUnmasked,
+    });
+
+    // Check rival win
+    if (rivalScore.pans === session.digits) {
+      session.status = 'rival_won';
+      session.winner = 'rival';
+      session.finishTimeDeltaSeconds = Math.round((Date.now() - session.startedAt) / 1000);
+      return {
+        session: toSafeDuelSession(session),
+        playerGuess: playerRecord,
+        rivalGuess: rivalRecord,
+      };
+    }
+
+    if (session.rivalAttempts <= 0) {
+      session.status = 'player_won';
+      session.winner = 'player';
+      return {
+        session: toSafeDuelSession(session),
+        playerGuess: playerRecord,
+        rivalGuess: rivalRecord,
+      };
+    }
+  }
+
+  if (session.pacingMode === 'turn_based') {
+    session.currentTurn = 'player';
+    session.playerLastGuessAt = Date.now();
   }
 
   // Occasional rival counter-sabotage on turn 2+ (25% chance)
   if (session.player.guesses.length >= 2 && Math.random() < 0.25) {
     if (session.player.shieldActive) {
       session.player.shieldActive = false; // Shield absorbed!
+      session.feedEvents.push({
+        id: `ev-sab-r-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        who: 'rival',
+        guess: null,
+        pans: null,
+        pots: null,
+        timestamp: Date.now() - session.startedAt,
+        sabotageEvent: {
+          toolName: 'Rival Counter-Attack',
+          description: "Opponent's attack was absorbed by your Firewall Shield!",
+        },
+      });
     } else {
       const sabotageTypes: Array<'scramble_keypad' | 'static_history' | 'drain_clock'> = [
         'scramble_keypad',
@@ -1241,19 +1588,35 @@ export function submitDuelGuess(data: {
       const effect = sabotageTypes[Math.floor(Math.random() * sabotageTypes.length)];
       if (!session.player.activeEffects.includes(effect)) {
         session.player.activeEffects.push(effect);
+        let desc = 'Opponent disrupted your systems.';
         if (effect === 'static_history') {
           session.player.staticExpiry = Date.now() + 6000;
+          desc = 'Opponent injected Static Glitch into your crack history (6s).';
         } else if (effect === 'drain_clock') {
           session.turnClockSeconds = Math.max(5, session.turnClockSeconds - 10);
+          session.playerLastGuessAt -= 10000;
+          desc = 'Opponent deployed EMP Drain: 10s stripped from your turn clock!';
+        } else if (effect === 'scramble_keypad') {
+          desc = 'Opponent injected Buffer Scramble into your numeric keypad!';
         }
+        session.feedEvents.push({
+          id: `ev-sab-r-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          who: 'rival',
+          guess: null,
+          pans: null,
+          pots: null,
+          timestamp: Date.now() - session.startedAt,
+          sabotageEvent: {
+            toolName: 'Rival Sabotage',
+            description: desc,
+          },
+        });
       }
     }
   }
 
-  // Return session (hide secret if active!)
-  const { secret: _, ...safeSession } = session;
   return {
-    session: safeSession,
+    session: toSafeDuelSession(session),
     playerGuess: playerRecord,
     rivalGuess: rivalRecord,
   };
@@ -1291,6 +1654,18 @@ export function applyDuelSabotage(data: {
 
   if (rule.effectType === 'firewall_shield') {
     session.player.shieldActive = true;
+    session.feedEvents.push({
+      id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'player',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: rule.name,
+        description: 'Firewall Patch activated. Shield primed against next attack.',
+      },
+    });
     return {
       success: true,
       shielded: false,
@@ -1305,6 +1680,18 @@ export function applyDuelSabotage(data: {
     session.rival.guesses.forEach((g) => {
       if (g.isStealth) g.unmasked = true;
     });
+    session.feedEvents.push({
+      id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'player',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: rule.name,
+        description: 'Snoop Packet deployed: rival encrypted moves unmasked.',
+      },
+    });
     return {
       success: true,
       shielded: false,
@@ -1316,6 +1703,18 @@ export function applyDuelSabotage(data: {
 
   if (rule.effectType === 'false_flag_echo') {
     session.player.falseFlagActive = true;
+    session.feedEvents.push({
+      id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'player',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: rule.name,
+        description: 'False Flag Echo armed: next guess broadcasts falsified clues.',
+      },
+    });
     return {
       success: true,
       shielded: false,
@@ -1328,6 +1727,18 @@ export function applyDuelSabotage(data: {
   // Target rival
   if (session.rival.shieldActive) {
     session.rival.shieldActive = false; // Blocked!
+    session.feedEvents.push({
+      id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'player',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: rule.name,
+        description: "Opponent's Firewall Patch absorbed your attack!",
+      },
+    });
     return {
       success: true,
       shielded: true,
@@ -1344,7 +1755,21 @@ export function applyDuelSabotage(data: {
     session.rival.staticExpiry = Date.now() + 6000;
   } else if (rule.effectType === 'drain_clock') {
     session.rival.activeEffects.push('drain_clock');
+    session.rivalLastGuessAt -= 10000;
   }
+
+  session.feedEvents.push({
+    id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    who: 'player',
+    guess: null,
+    pans: null,
+    pots: null,
+    timestamp: Date.now() - session.startedAt,
+    sabotageEvent: {
+      toolName: rule.name,
+      description: `${rule.name} successfully deployed against opponent!`,
+    },
+  });
 
   return {
     success: true,
@@ -1368,6 +1793,7 @@ export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
   const rematchedSession: DuelSessionState = {
     id: `duel-don-${Date.now().toString(36)}`,
     matchType: session.matchType,
+    pacingMode: session.pacingMode,
     wager: session.netPot,
     ante: 0,
     totalPot: donCalc.totalPot,
@@ -1376,7 +1802,14 @@ export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
     secret,
     digits: 4,
     sharedAttempts: 12,
-    turnClockSeconds: 30,
+    playerAttempts: 7,
+    rivalAttempts: 7,
+    maxAttempts: 7,
+    guessClockMs: GUESS_CLOCK_MS,
+    playerLastGuessAt: Date.now(),
+    rivalLastGuessAt: Date.now(),
+    rivalNextGuessDelayMs: 4000,
+    turnClockSeconds: 20,
     overallClockSeconds: 90,
     startedAt: Date.now(),
     status: 'active',
@@ -1397,6 +1830,7 @@ export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
       cheatUsed: false,
     },
     currentTurn: 'player',
+    feedEvents: [],
   };
 
   mockDuelSessions.set(rematchedSession.id, rematchedSession);

@@ -4,12 +4,21 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { StepId, STEPS } from '../steps';
 import { useOnboardingStore } from '../onboardingStore';
+import { PendingQuestNotification } from './PendingQuestNotification';
 
 export interface GateState {
   step: StepId;
   skipped: boolean;
   callsign: string | null;
   ch2Fails: number;
+}
+
+export function shouldExitGuidedChapterHack(pathname: string, state: GateState): boolean {
+  return (
+    state.step === 'ch2.hack' &&
+    Boolean(state.callsign) &&
+    pathname !== STEPS['ch2.hack'].route
+  );
 }
 
 export function getOnboardingRedirect(
@@ -22,32 +31,26 @@ export function getOnboardingRedirect(
   // Never redirect when skipped with a profile
   if (state.skipped && state.callsign) return null;
 
-  // After a failed Chapter 2 hack, let the player leave the terminal for the map.
-  if (state.step === 'ch2.hack' && state.ch2Fails > 0 && pathname === '/map') {
+  // Once Chapter 2's guided hack has started, navigating elsewhere exits onboarding.
+  if (shouldExitGuidedChapterHack(pathname, state)) {
     return null;
   }
 
-  const targetRoute = STEPS[state.step]?.route;
-  if (!targetRoute) return null;
-
-  // If already on the target route, no redirect
-  if (pathname === targetRoute) return null;
-
-  const isOnboardingRoute =
-    pathname === '/' ||
-    pathname.startsWith('/onboarding/') ||
-    pathname === '/terminal/tutorial-soda';
-
-  // If player has no profile and route is not an onboarding route
-  if (!state.callsign && !isOnboardingRoute) {
-    return targetRoute;
+  // Any incomplete or pending task should come up as a pending quest notification,
+  // NOT a force redirect.
+  // The only redirect is if a user has not started onboarding at all (step === 'splash' and no callsign)
+  // and attempts to access protected routes without initializing.
+  if (state.step === 'splash' && !state.callsign) {
+    const isOnboardingRoute =
+      pathname === '/' ||
+      pathname.startsWith('/onboarding/') ||
+      pathname === '/terminal/tutorial-soda';
+    if (!isOnboardingRoute) {
+      return '/';
+    }
   }
 
-  // If route does not match current step's route while not skipped
-  if (!state.skipped && pathname !== targetRoute) {
-    return targetRoute;
-  }
-
+  // Incomplete / pending tasks do NOT force redirect
   return null;
 }
 
@@ -64,11 +67,13 @@ export function OnboardingGate() {
   useEffect(() => {
     if (!mounted || !pathname) return;
 
-    const target = getOnboardingRedirect(pathname, { step, skipped, callsign, ch2Fails });
+    const state = { step, skipped, callsign, ch2Fails };
+    const target = getOnboardingRedirect(pathname, state);
     if (target && target !== pathname) {
       router.replace(target);
     }
   }, [mounted, pathname, step, skipped, callsign, ch2Fails, router]);
 
-  return null;
+  if (!mounted) return null;
+  return <PendingQuestNotification />;
 }

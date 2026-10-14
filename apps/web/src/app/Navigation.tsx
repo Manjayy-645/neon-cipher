@@ -36,6 +36,8 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
   const pathname = usePathname();
   const storeActiveTab = useMapStore((s) => s.activeTab);
   const setActiveTab = useMapStore((s) => s.setActiveTab);
+  // Re-evaluates flags when developer toggles feature flags in DevMenu
+  useMapStore((s) => s.devFlagTick);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 

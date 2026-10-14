@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DuelRoom, DuelSession, DuelMatchType, DuelGuess } from '@/features/duel/types';
+import { DuelRoom, DuelSession, DuelMatchType, DuelGuess, DuelPacingMode } from '@/features/duel/types';
 import { duelService } from '@/features/duel/duelService';
 import { usePlayerStore } from './player-store';
 
@@ -8,6 +8,7 @@ interface DuelState {
   activeSession: DuelSession | null;
   activeMobileTab: 'player' | 'rival';
   selectedMatchType: DuelMatchType;
+  selectedPacingMode: DuelPacingMode;
   wager: number;
   isLoading: boolean;
   error: string | null;
@@ -21,6 +22,7 @@ interface DuelState {
   createRoom: (name: string) => Promise<void>;
   startQuickDuel: (customWager?: number) => Promise<void>;
   joinRoom: (room: DuelRoom) => Promise<void>;
+  syncSession: () => Promise<void>;
   submitGuess: (guess: string, exploitUsed?: string, isStealth?: boolean) => Promise<{ playerGuess: DuelGuess; rivalGuess?: DuelGuess }>;
   useSabotage: (toolId: string) => Promise<void>;
   doubleOrNothing: () => Promise<void>;
@@ -28,6 +30,7 @@ interface DuelState {
   setMobileTab: (tab: 'player' | 'rival') => void;
   setWager: (wager: number) => void;
   setMatchType: (type: DuelMatchType) => void;
+  setPacingMode: (mode: DuelPacingMode) => void;
   clearSabotageFeedback: () => void;
 }
 
@@ -36,6 +39,7 @@ export const useDuelStore = create<DuelState>((set, get) => ({
   activeSession: null,
   activeMobileTab: 'player',
   selectedMatchType: 'casual',
+  selectedPacingMode: 'simultaneous',
   wager: 0,
   isLoading: false,
   error: null,
@@ -55,7 +59,7 @@ export const useDuelStore = create<DuelState>((set, get) => ({
   createRoom: async (name: string) => {
     try {
       set({ isLoading: true, error: null });
-      const { selectedMatchType, wager } = get();
+      const { selectedMatchType, selectedPacingMode, wager } = get();
       const playerHandle = usePlayerStore.getState().handle;
       const newRoom = await duelService.createRoom({
         name,
@@ -63,6 +67,7 @@ export const useDuelStore = create<DuelState>((set, get) => ({
         wager,
         host: playerHandle,
       });
+      newRoom.pacingMode = selectedPacingMode;
       set((state) => ({ rooms: [newRoom, ...state.rooms], isLoading: false }));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to create room';
@@ -74,11 +79,12 @@ export const useDuelStore = create<DuelState>((set, get) => ({
   startQuickDuel: async (customWager?: number) => {
     try {
       set({ isLoading: true, error: null });
-      const { selectedMatchType, wager } = get();
+      const { selectedMatchType, selectedPacingMode, wager } = get();
       const actualWager = customWager !== undefined ? customWager : wager;
       const playerHandle = usePlayerStore.getState().handle;
       const session = await duelService.startDuel({
         matchType: selectedMatchType,
+        pacingMode: selectedPacingMode,
         wager: actualWager,
         playerHandle,
       });
@@ -101,9 +107,11 @@ export const useDuelStore = create<DuelState>((set, get) => ({
   joinRoom: async (room: DuelRoom) => {
     try {
       set({ isLoading: true, error: null });
+      const { selectedPacingMode } = get();
       const playerHandle = usePlayerStore.getState().handle;
       const session = await duelService.startDuel({
         matchType: room.matchType,
+        pacingMode: room.pacingMode ?? selectedPacingMode,
         wager: room.wager,
         ante: room.ante,
         roomId: room.id,
@@ -120,6 +128,17 @@ export const useDuelStore = create<DuelState>((set, get) => ({
       const msg = err instanceof Error ? err.message : 'Failed to join room';
       set({ error: msg, isLoading: false });
       throw err;
+    }
+  },
+
+  syncSession: async () => {
+    const { activeSession } = get();
+    if (!activeSession) return;
+    try {
+      const updated = await duelService.syncSession(activeSession.id);
+      set({ activeSession: updated });
+    } catch {
+      // Ignore background sync errors
     }
   },
 
@@ -206,5 +225,6 @@ export const useDuelStore = create<DuelState>((set, get) => ({
     selectedMatchType: type,
     wager: type === 'casual' ? 0 : get().wager || 250,
   }),
+  setPacingMode: (mode) => set({ selectedPacingMode: mode }),
   clearSabotageFeedback: () => set({ sabotageFeedback: null }),
 }));

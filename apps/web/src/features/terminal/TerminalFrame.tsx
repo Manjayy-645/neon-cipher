@@ -18,18 +18,47 @@ const Tier5MainframeSkin = isTest ? Tier5MainframeStatic : dynamic(() => import(
 
 export interface TerminalFrameProps {
   tier: number;
+  nodeName?: string;
+  nodeType?: string;
   children: React.ReactNode;
 }
 
-export const TerminalFrame: React.FC<TerminalFrameProps> = ({ tier, children }) => {
+export const TerminalFrame: React.FC<TerminalFrameProps> = ({
+  tier,
+  nodeName,
+  nodeType,
+  children,
+}) => {
+  const skinProps = { nodeName, nodeType };
+
+  const renderSkin = () => {
+    if (nodeType) {
+      const typeLower = nodeType.toLowerCase();
+      if (typeLower === 'vending' || typeLower === 'meter' || typeLower === 'coinbox') {
+        return <Tier1VendingSkin {...skinProps} />;
+      }
+      if (typeLower === 'atm' || typeLower === 'register') {
+        return <Tier2AtmSkin {...skinProps} />;
+      }
+      if (typeLower === 'relay' || typeLower === 'camera') {
+        return <Tier3CorporateSkin {...skinProps} />;
+      }
+      if (typeLower === 'safe') {
+        return <Tier4VaultSkin {...skinProps} />;
+      }
+    }
+
+    if (tier === 1) return <Tier1VendingSkin {...skinProps} />;
+    if (tier === 2) return <Tier2AtmSkin {...skinProps} />;
+    if (tier === 3) return <Tier3CorporateSkin {...skinProps} />;
+    if (tier === 4) return <Tier4VaultSkin {...skinProps} />;
+    return <Tier5MainframeSkin {...skinProps} />;
+  };
+
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden select-none">
-      {/* Dynamic Tier Skins */}
-      {tier === 1 && <Tier1VendingSkin />}
-      {tier === 2 && <Tier2AtmSkin />}
-      {tier === 3 && <Tier3CorporateSkin />}
-      {tier === 4 && <Tier4VaultSkin />}
-      {tier >= 5 && <Tier5MainframeSkin />}
+      {/* Dynamic Device Chassis Skin */}
+      {renderSkin()}
 
       {/* Terminal Core Content (same layout bounds for all skins to prevent layout shifts) */}
       <div className="relative z-10 flex-1 flex flex-col min-h-0 w-full overflow-hidden">

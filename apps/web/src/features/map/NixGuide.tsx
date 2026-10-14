@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMapStore } from '../../stores/map-store';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { NIX_GUIDE_LINES, NixSituation } from './nixGuideLines';
-import { getNodes } from './nodeService';
+import { getNodes, getNodeById } from './nodeService';
 import { useCampaignStore } from '@/stores/campaign-store';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
@@ -41,7 +41,7 @@ export const NixGuide: React.FC = () => {
     }
     if (view === 'node') {
       const effId = activeNodeId ?? selectedNodeId;
-      const node = getNodes().find((n) => n.id === effId);
+      const node = effId ? (getNodeById(effId) || getNodes().find((n) => n.id === effId)) : undefined;
       if (node) {
         if (node.status === 'contested') return 'contested';
         if (node.status === 'cooldown') return 'cooldown';

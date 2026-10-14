@@ -39,21 +39,21 @@ export const TIERS: Record<number, TierConfig> = {
 };
 
 export const NODES: MapNode[] = [
-  { id: 's1', n: 'Rusty Soda Machine', t: 'vending', tier: 1, z: 'S', x: 20, y: 12, st: 'available' },
-  { id: 's2', n: 'Tin Alley Parking Meter', t: 'meter', tier: 1, z: 'S', x: 16, y: 27, st: 'available' },
-  { id: 's3', n: 'Scrapyard CCTV Relay', t: 'camera', tier: 2, z: 'S', x: 35, y: 26, st: 'contested' },
-  { id: 's4', n: 'Soap Row Vending', t: 'vending', tier: 1, z: 'S', x: 20, y: 46, st: 'cooldown', cd: 930 },
-  { id: 's5', n: 'St. Jude Corner Store Register', t: 'register', tier: 2, z: 'S', x: 32, y: 51, st: 'available' },
-  { id: 's6', n: 'Chop-Shop Safe', t: 'safe', tier: 3, z: 'S', x: 32, y: 66, st: 'contested' },
-  { id: 's7', n: 'Gutter St. Vending', t: 'vending', tier: 1, z: 'S', x: 13, y: 76, st: 'available' },
-  { id: 's8', n: 'Water Tower Relay', t: 'relay', tier: 1, z: 'S', x: 27, y: 87, st: 'available' },
-  { id: 'c1', n: 'Meridian Ave ATM', t: 'atm', tier: 2, z: 'C', x: 73, y: 22, st: 'available' },
-  { id: 'c2', n: 'Plaza CCTV Relay', t: 'camera', tier: 1, z: 'C', x: 62, y: 30, st: 'available' },
-  { id: 'c3', n: 'Fenwick Market Register', t: 'register', tier: 2, z: 'C', x: 74, y: 35, st: 'available' },
-  { id: 'c4', n: 'Canal Bank ATM', t: 'atm', tier: 2, z: 'C', x: 62, y: 60, st: 'cooldown', cd: 2710 },
-  { id: 'c5', n: 'Civic Parking Meter 9', t: 'meter', tier: 1, z: 'C', x: 75, y: 58, st: 'available' },
-  { id: 'c6', n: 'Northgate Relay Tower', t: 'relay', tier: 3, z: 'C', x: 64, y: 81, st: 'available' },
-  { id: 'c7', n: 'Corner Mart Register', t: 'register', tier: 2, z: 'C', x: 77, y: 93, st: 'owned' },
+  { id: 's1', n: 'Rusty Soda Machine', t: 'vending', tier: 1, z: 'S', x: 15, y: 16, st: 'available' },
+  { id: 's2', n: 'Tin Alley Parking Meter', t: 'meter', tier: 1, z: 'S', x: 16, y: 62, st: 'available' },
+  { id: 's3', n: 'Scrapyard CCTV Relay', t: 'camera', tier: 2, z: 'S', x: 40, y: 68, st: 'contested' },
+  { id: 's4', n: 'Soap Row Vending', t: 'vending', tier: 1, z: 'S', x: 14, y: 38, st: 'cooldown', cd: 930 },
+  { id: 's5', n: 'St. Jude Corner Store Register', t: 'register', tier: 2, z: 'S', x: 34, y: 48, st: 'available' },
+  { id: 's6', n: 'Chop-Shop Safe', t: 'safe', tier: 3, z: 'S', x: 14, y: 84, st: 'contested' },
+  { id: 's7', n: 'Gutter St. Vending', t: 'vending', tier: 1, z: 'S', x: 32, y: 86, st: 'available' },
+  { id: 's8', n: 'Water Tower Relay', t: 'relay', tier: 1, z: 'S', x: 38, y: 22, st: 'available' },
+  { id: 'c1', n: 'Meridian Ave ATM', t: 'atm', tier: 2, z: 'C', x: 64, y: 20, st: 'available' },
+  { id: 'c2', n: 'Plaza CCTV Relay', t: 'camera', tier: 1, z: 'C', x: 86, y: 46, st: 'available' },
+  { id: 'c3', n: 'Fenwick Market Register', t: 'register', tier: 2, z: 'C', x: 66, y: 48, st: 'available' },
+  { id: 'c4', n: 'Canal Bank ATM', t: 'atm', tier: 2, z: 'C', x: 62, y: 82, st: 'cooldown', cd: 2710 },
+  { id: 'c5', n: 'Civic Parking Meter 9', t: 'meter', tier: 1, z: 'C', x: 78, y: 66, st: 'available' },
+  { id: 'c6', n: 'Northgate Relay Tower', t: 'relay', tier: 3, z: 'C', x: 84, y: 24, st: 'available' },
+  { id: 'c7', n: 'Corner Mart Register', t: 'register', tier: 2, z: 'C', x: 84, y: 86, st: 'owned' },
 ];
 
 export const SAY: Record<number, string> = {

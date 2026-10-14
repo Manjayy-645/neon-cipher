@@ -61,6 +61,8 @@ export interface MapState {
   triggerNixSituation: (situation: string) => void;
   markNixSituationSeen: (situation: string) => void;
   setNixBubbleOpen: (open: boolean) => void;
+  devFlagTick: number;
+  bumpDevFlagTick: () => void;
   resetMapState: () => void;
 }
 
@@ -85,6 +87,8 @@ export const useMapStore = create<MapState>((set) => ({
   },
   timeOfDay: 'day',
   ambientOverride: 'auto',
+  devFlagTick: 0,
+  bumpDevFlagTick: () => set((s) => ({ devFlagTick: s.devFlagTick + 1 })),
 
   setView: (view) => set({ view }),
 

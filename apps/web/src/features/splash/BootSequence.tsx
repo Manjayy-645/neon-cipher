@@ -164,10 +164,19 @@ export function BootSequence({ onComplete, autoRoute = true }: BootSequenceProps
             <span>SYSTEM LINK INTEGRITY</span>
             <span>{progress}%</span>
           </div>
-          <div className="w-full h-1.5 bg-panel rounded-full overflow-hidden border border-line">
+          <div
+            role="progressbar"
+            aria-label="System link integrity"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+            className="w-full h-1.5 bg-panel rounded-full overflow-hidden border border-line"
+          >
             <div
-              className="h-full bg-accent transition-all duration-150"
-              style={{ width: `${progress}%` }}
+              className={`h-full w-full bg-accent origin-left ${
+                prefersReduced ? 'transition-none' : 'transition-transform duration-150'
+              }`}
+              style={{ transform: `scaleX(${progress / 100})` }}
             />
           </div>
         </div>

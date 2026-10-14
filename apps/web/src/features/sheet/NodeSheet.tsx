@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, useMotionValue, useTransform, animate, PanInfo, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useMapStore } from '../../stores/map-store';
-import { getNodes, GameNode, NodeStatus } from '../map/nodeService';
+import { getNodes, getNodeById, GameNode, NodeStatus } from '../map/nodeService';
 import { NodePlate } from '../map/NodePlate';
 import { usePlayerStore } from '../../stores/player-store';
 import { walletService } from '../market/walletService';
@@ -274,7 +274,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
 
   if (!effectiveNodeId) return null;
 
-  const node = getNodes().find(n => n.id === effectiveNodeId);
+  const node = getNodeById(effectiveNodeId) || getNodes().find(n => n.id === effectiveNodeId);
   if (!node) return null;
 
   const isLocked = node.requiresUnlock && !bridgeUnlocked;

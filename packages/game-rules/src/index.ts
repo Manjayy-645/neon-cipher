@@ -16,6 +16,7 @@ export * from './duel';
 export * from './coop';
 export * from './profileRules';
 export * from './clues';
+export * from './terminalTools';
 
 export interface TierConfig {
   tier: number;

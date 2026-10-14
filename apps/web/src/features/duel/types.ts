@@ -1,10 +1,15 @@
+import { DuelPacingMode, GUESS_CLOCK_MS } from '@neon-cipher/game-rules';
+
 export type DuelMatchType = 'casual' | 'wager' | 'turf';
+export type { DuelPacingMode };
+export { GUESS_CLOCK_MS };
 
 export interface DuelRoom {
   id: string;
   name: string;
   host: string;
   matchType: DuelMatchType;
+  pacingMode?: DuelPacingMode;
   wager: number;
   ante: number;
   pingMs: number;
@@ -20,6 +25,23 @@ export interface DuelGuess {
   isStealth?: boolean;
   falsified?: boolean;
   unmasked?: boolean;
+}
+
+export interface DuelFeedEvent {
+  id: string;
+  who: 'player' | 'rival';
+  guess: string | null;
+  pans: number | null;
+  pots: number | null;
+  timestamp: number; // ms since startedAt
+  isStealth?: boolean;
+  unmasked?: boolean;
+  cheatUsed?: boolean;
+  falsified?: boolean;
+  sabotageEvent?: {
+    toolName: string;
+    description: string;
+  };
 }
 
 export type SabotageEffectType =
@@ -45,6 +67,7 @@ export interface DuelParticipant {
 export interface DuelSession {
   id: string;
   matchType: DuelMatchType;
+  pacingMode?: DuelPacingMode;
   wager: number;
   ante: number;
   totalPot: number;
@@ -52,6 +75,12 @@ export interface DuelSession {
   netPot: number;
   digits: number;
   sharedAttempts: number;
+  playerAttempts?: number;
+  rivalAttempts?: number;
+  maxAttempts?: number;
+  guessClockMs?: number;
+  playerClockMs?: number;
+  rivalClockMs?: number;
   turnClockSeconds: number;
   overallClockSeconds: number;
   startedAt: number;
@@ -60,7 +89,8 @@ export interface DuelSession {
   finishTimeDeltaSeconds?: number;
   player: DuelParticipant;
   rival: DuelParticipant;
-  currentTurn: 'player' | 'rival';
+  currentTurn?: 'player' | 'rival';
+  feedEvents?: DuelFeedEvent[];
   secret?: string;
 }
 

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { mockSessions, mockRigHardware, mockCampaign, getNodeDefense } from '../db';
 import type { Session } from '../db';
 import { generateCode, getChapterById } from '@neon-cipher/game-rules/src/index';
-import { getNodes } from '@/features/map/nodeService';
+import { getNodes, getNodeById } from '@/features/map/nodeService';
 import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
 
 // MOCK: replace with Supabase edge function.
@@ -56,6 +56,10 @@ export async function POST(request: Request) {
           tier: 1,
           ice: 'None',
           eliminatedDigits: [],
+          nodeName: "Nix's Recovery Run",
+          nodeType: 'vending',
+          bounty: 0,
+          district: 'slums',
         },
         startedAt: session.startedAt,
       });
@@ -108,25 +112,30 @@ export async function POST(request: Request) {
           tier: 1,
           ice: 'None',
           eliminatedDigits: [],
+          nodeName: 'Rusty Soda Machine',
+          nodeType: 'vending',
+          bounty: 120,
+          district: 'slums',
         },
         startedAt: session.startedAt,
       });
     }
 
     const nodes = getNodes();
-    const node = nodes.find((n) => n.id === nodeId);
+    const node = getNodeById(nodeId) || nodes.find((n) => n.id === nodeId);
     if (!node) return NextResponse.json({ error: 'Node not found' }, { status: 404 });
 
-    // Check if node is part of the active campaign chapter
+    // Use node's challenge parameters so terminal matches the marker/sheet
+    const digits = node.digits;
+    const allowDuplicates = node.allowDuplicates;
+    const baseAttempts = node.attempts;
+    const timerSeconds = node.timerSeconds;
+
+    // Check if node is part of the active campaign chapter for ICE
     const activeChapter = mockCampaign.activeChapterId
       ? getChapterById(mockCampaign.activeChapterId)
       : null;
     const isCampaignTarget = activeChapter && activeChapter.mapNodeId === node.id;
-
-    const digits = isCampaignTarget ? activeChapter.rules.digits : node.digits;
-    const allowDuplicates = isCampaignTarget ? activeChapter.rules.allowDuplicates : node.allowDuplicates;
-    const baseAttempts = isCampaignTarget ? activeChapter.rules.attempts : node.attempts;
-    const timerSeconds = isCampaignTarget ? activeChapter.rules.timerSeconds : node.timerSeconds;
     const iceTypeFromCampaign = isCampaignTarget ? activeChapter.rules.ice : undefined;
 
     // Check if node has a custom defense deployed by a player/decker
@@ -202,6 +211,10 @@ export async function POST(request: Request) {
         tier: node.tier,
         ice: activeIce,
         eliminatedDigits,
+        nodeName: node.name,
+        nodeType: node.type,
+        bounty: node.bounty,
+        district: node.district,
       },
       startedAt: session.startedAt,
     });

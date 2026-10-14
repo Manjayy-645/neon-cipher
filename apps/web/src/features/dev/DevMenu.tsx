@@ -9,6 +9,15 @@ import { useMapStore } from '@/stores/map-store';
 import { authService } from '../auth/authService';
 import { ReducedMotionMode } from '../settings/types';
 import { Button } from '@/components/ui/Button';
+import {
+  featureFlags,
+  FeatureFlag,
+  isFeatureEnabled,
+  setFeatureFlagOverride,
+  clearFeatureFlagOverrides,
+} from '@/lib/flags';
+import { useCampaignStore } from '@/stores/campaign-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 export function DevMenu() {
   const router = useRouter();
@@ -18,6 +27,47 @@ export function DevMenu() {
   const settings = useSettingsStore();
   const player = usePlayerStore();
   const mapStore = useMapStore();
+  const campaign = useCampaignStore();
+  const [, setFlagTick] = useState(0);
+
+  const toggleFlag = (flag: FeatureFlag) => {
+    const current = isFeatureEnabled(flag);
+    setFeatureFlagOverride(flag, !current);
+    mapStore.bumpDevFlagTick();
+    setFlagTick((t) => t + 1);
+  };
+
+  const unlockAllGates = () => {
+    (Object.keys(featureFlags) as FeatureFlag[]).forEach((f) => {
+      setFeatureFlagOverride(f, true);
+    });
+    mapStore.bumpDevFlagTick();
+    mapStore.setBridgeUnlocked(true);
+    useCampaignStore.setState({
+      unlocks: {
+        blackMarket: true,
+        onlinePlay: true,
+        bridge: true,
+      },
+    });
+    setFlagTick((t) => t + 1);
+  };
+
+  const resetAllFlags = () => {
+    clearFeatureFlagOverrides();
+    mapStore.bumpDevFlagTick();
+    setFlagTick((t) => t + 1);
+  };
+
+  const clearAllCooldowns = () => {
+    useOnboardingStore.setState({ crackedNodes: {} });
+  };
+
+  const jumpToChapter = (chapterId: string) => {
+    campaign.acceptChapter(chapterId);
+    setIsOpen(false);
+    router.push('/comms');
+  };
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -170,6 +220,127 @@ export function DevMenu() {
                     compact
                     onClick={() => {
                       setIsOpen(false);
+                      router.push('/terminal/n4');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    2.1 Terminal (T2)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/terminal/n6');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    2.2 Terminal (T3)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/terminal/n7');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    2.3 Terminal (T4)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/terminal/n13');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    2.4 Terminal (T5)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/comms');
+                    }}
+                    className="p-2 border border-accent/40 rounded-sm bg-panel-light text-accent-text hover:border-accent text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    7.0 Comms & Briefings
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/duel');
+                    }}
+                    className="p-2 border border-accent/40 rounded-sm bg-panel-light text-accent-text hover:border-accent text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    4.0 1v1 Cipher Duel
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/duel/match/duel-01');
+                    }}
+                    className="p-2 border border-accent/40 rounded-sm bg-panel-light text-accent-text hover:border-accent text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    4.1 Duel Active Match
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/coop');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    5.0 Co-op Mode
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/codemaker');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    5.1 Codemaker
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/market');
+                    }}
+                    className="p-2 border border-money/40 rounded-sm bg-panel-light text-money-text hover:border-money text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    8.0 Black Market
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/rig');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    3.0 Decker Rig
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
                       router.push('/error');
                     }}
                     className="p-2 border border-danger/40 rounded-sm bg-panel-light text-danger-text hover:border-danger text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
@@ -198,6 +369,123 @@ export function DevMenu() {
                   >
                     Icon Visualizer
                   </Button>
+                  <Button
+                    variant="secondary"
+                    compact
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/dev/buttons');
+                    }}
+                    className="p-2 border border-line rounded-sm bg-panel-light hover:border-ink-muted text-left font-data font-semibold normal-case tracking-normal !justify-start w-full"
+                  >
+                    Button Matrix
+                  </Button>
+                </div>
+              </section>
+
+              {/* SECTION 1.5: LOCKED-OUT FEATURES & DEV GATES */}
+              <section className="space-y-2 border-b border-line pb-4" data-testid="dev-locked-features-section">
+                <div className="type-label text-[10px] text-ink-muted">LOCKED-OUT FEATURES & DEV GATES</div>
+                
+                {/* One-click bypass / clearance actions */}
+                <div className="p-2 border border-line rounded-sm bg-panel-light space-y-2">
+                  <div className="font-semibold text-[11px] text-ink">GLOBAL UNLOCK CHEATS</div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Button
+                      variant="primary"
+                      compact
+                      onClick={unlockAllGates}
+                      className="p-1.5 text-[10px] font-bold text-center !justify-center"
+                      data-testid="dev-unlock-all-gates"
+                    >
+                      ⚡ UNLOCK ALL GATES
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      compact
+                      onClick={resetAllFlags}
+                      className="p-1.5 text-[10px] font-bold text-center !justify-center bg-panel border border-line"
+                      data-testid="dev-reset-all-flags"
+                    >
+                      ↺ RESET FLAGS
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      compact
+                      onClick={() => {
+                        const nextBridge = !mapStore.unlocks.bridge;
+                        mapStore.setBridgeUnlocked(nextBridge);
+                        useCampaignStore.setState((s) => ({
+                          unlocks: { ...s.unlocks, bridge: nextBridge },
+                        }));
+                      }}
+                      className="p-1.5 text-[10px] font-bold text-center !justify-center bg-panel border border-line"
+                      data-testid="dev-toggle-bridge-btn"
+                    >
+                      {mapStore.unlocks.bridge ? 'BRIDGE: OPEN' : 'BRIDGE: LOCKED'}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      compact
+                      onClick={clearAllCooldowns}
+                      className="p-1.5 text-[10px] font-bold text-center !justify-center bg-panel border border-line"
+                      data-testid="dev-clear-cooldowns"
+                    >
+                      CLEAR COOLDOWNS
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Feature Flag Overrides */}
+                <div className="p-2 border border-line rounded-sm bg-panel-light space-y-1.5">
+                  <div className="flex justify-between items-center font-semibold text-[11px]">
+                    <span>RUNTIME FEATURE FLAGS:</span>
+                    <span className="text-[10px] text-ink-muted">CLICK TO TOGGLE</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {(Object.keys(featureFlags) as FeatureFlag[]).map((flag) => {
+                      const enabled = isFeatureEnabled(flag);
+                      return (
+                        <Button
+                          key={flag}
+                          variant={enabled ? 'primary' : 'secondary'}
+                          compact
+                          onClick={() => toggleFlag(flag)}
+                          className={`p-1 text-[10px] font-data font-bold flex items-center justify-between !px-2 ${
+                            enabled ? 'bg-accent text-white' : 'bg-panel border border-line text-ink-muted'
+                          }`}
+                          data-testid={`dev-flag-toggle-${flag}`}
+                        >
+                          <span className="uppercase">{flag}</span>
+                          <span className="text-[9px]">{enabled ? 'ON' : 'GATED'}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Campaign Chapter Jump */}
+                <div className="p-2 border border-line rounded-sm bg-panel-light space-y-1.5">
+                  <div className="font-semibold text-[11px] text-ink">CAMPAIGN CHAPTER JUMP:</div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { id: 'chapter-1', label: 'CH 1: SLUMS' },
+                      { id: 'chapter-2', label: 'CH 2: MARKET' },
+                      { id: 'chapter-3', label: 'CH 3: BRIDGE' },
+                      { id: 'chapter-4', label: 'CH 4: ROGUE' },
+                      { id: 'chapter-5', label: 'CH 5: VAULT' },
+                    ].map((ch) => (
+                      <Button
+                        key={ch.id}
+                        variant="secondary"
+                        compact
+                        onClick={() => jumpToChapter(ch.id)}
+                        className="py-1 text-[9px] font-bold bg-panel border border-line text-ink hover:border-ink-muted !justify-center"
+                      >
+                        {ch.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </section>
 

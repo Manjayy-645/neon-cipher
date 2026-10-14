@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-export default function Tier4VaultSkin() {
+export interface SkinProps {
+  nodeName?: string;
+  nodeType?: string;
+}
+
+export default function Tier4VaultSkin({ nodeName, nodeType }: SkinProps = {}) {
+  const displayTitle = nodeName ? nodeName.toUpperCase() : 'AEGIS HEAVY DEFENSE';
+  const typeTag = nodeType ? nodeType.toUpperCase() : 'SECURED VAULT';
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
       {/* Heavy Steel Armor Top with Caution Hazard Stripes */}
@@ -14,7 +22,7 @@ export default function Tier4VaultSkin() {
             <circle cx="5" cy="5" r="1.5" fill="var(--line)" />
           </svg>
           <span className="font-bold tracking-wider text-ink-on-dark">AEGIS HEAVY DEFENSE</span>
-          <span className="text-[9px] text-ink-muted">CHASSIS: AEGIS-V80-HYD</span>
+          <span className="text-[9px] text-ink-muted">{typeTag}</span>
         </div>
 
         {/* Hazard diagonal stripes SVG */}
@@ -49,13 +57,9 @@ export default function Tier4VaultSkin() {
         <span className="tracking-widest uppercase font-bold text-ink-on-dark">
           STENCIL: [HYDRAULIC DOGS ENGAGED - DO NOT PRY]
         </span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[8px] border border-line px-1 text-ink-muted rounded-sm">P: 3500 PSI</span>
-          {/* Heavy Rivet */}
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-ink-muted">
-            <circle cx="6" cy="6" r="5" fill="var(--terminal-panel,#202429)" stroke="currentColor" strokeWidth="1" />
-            <circle cx="5" cy="5" r="1.5" fill="var(--line)" />
-          </svg>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-danger animate-ping" />
+          <span className="text-[8px] text-danger-text uppercase font-bold">ARMED</span>
         </div>
       </div>
     </div>

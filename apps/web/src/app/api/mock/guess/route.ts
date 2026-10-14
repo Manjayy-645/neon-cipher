@@ -99,14 +99,21 @@ export async function POST(request: Request) {
       });
     }
 
-    // Liar ICE: 35% chance to falsify feedback
-    const isLiarFalsified = ice === 'Liar' && Math.random() < 0.35;
-    const iceScore = calculateScoreWithIce(session.secret, guess, ice, {
+    // Check if defensive firewall shield is active
+    const isShieldActive = Boolean((session as any).iceShield);
+    if (isShieldActive) {
+      (session as any).iceShield = false; // consumed by defensive action
+    }
+
+    // Liar ICE: 35% chance to falsify feedback (blocked if shield active)
+    const isLiarFalsified = !isShieldActive && ice === 'Liar' && Math.random() < 0.35;
+    const effectiveIce = isShieldActive ? 'None' : ice;
+    const iceScore = calculateScoreWithIce(session.secret, guess, effectiveIce, {
       isFalsified: isLiarFalsified,
     });
 
     // Drift ICE: Mutate 1 digit of the secret after an unsuccessful attempt if game continues
-    if (ice === 'Drift' && session.attemptsLeft > 0) {
+    if (!isShieldActive && ice === 'Drift' && session.attemptsLeft > 0) {
       session.secret = driftSecret(session.secret, session.node.allowDuplicates);
     }
 

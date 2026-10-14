@@ -1,4 +1,4 @@
-import { DuelRoom, DuelSession, DuelGuess, DuelMatchType } from './types';
+import { DuelRoom, DuelSession, DuelGuess, DuelMatchType, DuelPacingMode } from './types';
 
 // MOCK: replace with Supabase client & Edge Functions
 export const duelService = {
@@ -34,6 +34,7 @@ export const duelService = {
 
   async startDuel(params: {
     matchType: DuelMatchType;
+    pacingMode?: DuelPacingMode;
     wager: number;
     ante?: number;
     roomId?: string;
@@ -47,6 +48,16 @@ export const duelService = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed to start duel');
+    }
+    const data = await res.json();
+    return data.session;
+  },
+
+  async syncSession(duelId: string): Promise<DuelSession> {
+    const res = await fetch(`/api/mock/duel/session?duelId=${encodeURIComponent(duelId)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to sync duel session');
     }
     const data = await res.json();
     return data.session;

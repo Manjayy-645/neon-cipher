@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-export default function Tier5MainframeSkin() {
+export interface SkinProps {
+  nodeName?: string;
+  nodeType?: string;
+}
+
+export default function Tier5MainframeSkin({ nodeName, nodeType }: SkinProps = {}) {
+  const displayTitle = nodeName ? nodeName.toUpperCase() : 'NULL-ZERO COMPUTING';
+  const typeTag = nodeType ? nodeType.toUpperCase() : 'MAINFRAME';
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
       {/* Supercomputer Head Rail with Phosphor Bus LED Traces */}
@@ -15,7 +23,7 @@ export default function Tier5MainframeSkin() {
             <line x1="6" y1="2" x2="6" y2="10" stroke="currentColor" strokeWidth="0.8" />
           </svg>
           <span className="font-bold tracking-widest text-accent text-[11px]">NULL-ZERO COMPUTING</span>
-          <span className="text-accent-text text-[9px]">BLADE: NZ-CORE-001X</span>
+          <span className="text-accent-text text-[9px]">{nodeType ? `BLADE: NZ-CORE-001X // ${typeTag}` : 'BLADE: NZ-CORE-001X'}</span>
         </div>
 
         {/* Phosphor Optical Activity Bar */}

@@ -8,6 +8,7 @@ import { SessionConfig } from '../terminalService';
 
 interface TerminalHeaderProps {
   nodeName: string;
+  nodeId?: string;
   config: SessionConfig;
   usedAttempts: number;
   elapsedSeconds: number;
@@ -16,6 +17,7 @@ interface TerminalHeaderProps {
 
 export function TerminalHeader({
   nodeName,
+  nodeId,
   config,
   usedAttempts,
   elapsedSeconds,
@@ -23,13 +25,18 @@ export function TerminalHeader({
 }: TerminalHeaderProps) {
   const tierLabel = `TIER ${config.tier} • ${config.allowDuplicates ? 'DUPLICATES' : 'UNIQUE'}`;
 
+  const displayName =
+    nodeId && !nodeName.toLowerCase().includes(nodeId.toLowerCase())
+      ? `${nodeName} (Node: ${nodeId})`
+      : nodeName;
+
   return (
     <header className="h-[72px] min-h-[72px] w-full flex flex-col justify-between bg-terminal-panel/90 border-b border-terminal-line shrink-0 relative">
       <div className="flex-1 px-4 flex items-center justify-between gap-3">
         {/* Left: Node Name & Tier Chip */}
         <div className="flex flex-col justify-center min-w-0">
           <h1 className="font-heading text-[18px] text-terminal-ink truncate font-medium">
-            {nodeName}
+            {displayName}
           </h1>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="font-data text-[10px] tracking-wider uppercase px-1.5 py-0.5 rounded-[4px] bg-terminal-bg border border-terminal-line/60 text-terminal-muted">

@@ -26,6 +26,15 @@ export const CATALOG: CatalogItem[] = [
     icon: '/icons/icon-static-injector.svg',
   },
   {
+    id: 'tool-frequency-probe',
+    name: 'Frequency Probe',
+    category: 'tools',
+    currency: 'credits',
+    price: 400,
+    effect: 'Probes carrier bus harmonics to calculate whether the digit sum is even or odd.',
+    icon: '/icons/glyph-router.svg',
+  },
+  {
     id: 'tool-firewall-patch',
     name: 'Firewall Patch',
     category: 'tools',
@@ -129,7 +138,7 @@ export const CATALOG: CatalogItem[] = [
     price: 15,
     effect: 'Directly unmasks the exact digit for one chosen slot.',
     icon: '/icons/icon-slot-peek.svg',
-    bountyPenaltyPercent: 15,
+    bountyPenaltyPercent: 20,
   },
   {
     id: 'exploit-second-chance',
@@ -139,14 +148,14 @@ export const CATALOG: CatalogItem[] = [
     price: 20,
     effect: 'Instantly retries a failed node with full clue history intact.',
     icon: '/icons/icon-second-chance.svg',
-    bountyPenaltyPercent: 20,
+    bountyPenaltyPercent: 25,
   },
   {
     id: 'exploit-skeleton-key',
     name: 'Skeleton Key',
     category: 'exploits',
     currency: 'coins',
-    price: 40,
+    price: 35,
     effect: 'Auto-cracks any Tier 1 or 2 node immediately (Zero bounty payout).',
     icon: '/icons/icon-skeleton-key.svg',
     bountyPenaltyPercent: 100,
@@ -193,6 +202,16 @@ export const CATALOG: CatalogItem[] = [
     icon: '/icons/icon-safehouse.svg',
     maxOwned: 1,
   },
+  {
+    id: 'rig-heat-dispersal-sink',
+    name: 'Heat Dispersal Sink',
+    category: 'rig',
+    currency: 'credits',
+    price: 5500,
+    effect: 'Dissipates deck thermals, reducing trace risk penalties by 25% on failed incursions.',
+    icon: '/icons/icon-stopwatch.svg',
+    maxOwned: 1,
+  },
 
   // --- DISTRICT LEASES (Passive revenue, currency: credits) ---
   {
@@ -203,6 +222,16 @@ export const CATALOG: CatalogItem[] = [
     price: 5000,
     effect: 'Yields daily credit dividend ($250/day) from 3 Slums sub-nodes.',
     icon: '/icons/glyph-terminal.svg',
+    maxOwned: 1,
+  },
+  {
+    id: 'lease-docklands-pier',
+    name: 'Docklands Container Pier Lease',
+    category: 'leases',
+    currency: 'credits',
+    price: 9500,
+    effect: 'Yields daily credit dividend ($400/day) from automated freight relays.',
+    icon: '/icons/glyph-vault.svg',
     maxOwned: 1,
   },
   {
@@ -231,6 +260,7 @@ export function getItemIcon(itemId: string): string {
   const item = CATALOG.find((it) => it.id === itemId);
   if (item?.icon) return item.icon;
   if (itemId.includes('static-injector')) return '/icons/icon-static-injector.svg';
+  if (itemId.includes('frequency-probe')) return '/icons/glyph-router.svg';
   if (itemId.includes('firewall-patch')) return '/icons/icon-firewall-patch.svg';
   if (itemId.includes('blackout-ping')) return '/icons/icon-blackout-ping.svg';
   if (itemId.includes('snoop-packet')) return '/icons/icon-snoop-packet.svg';
@@ -245,6 +275,8 @@ export function getItemIcon(itemId: string): string {
   if (itemId.includes('second-chance')) return '/icons/icon-second-chance.svg';
   if (itemId.includes('memory-buffer')) return '/icons/icon-memory-buffer.svg';
   if (itemId.includes('heuristic-coprocessor')) return '/icons/icon-heuristic-coprocessor.svg';
+  if (itemId.includes('heat-dispersal-sink')) return '/icons/icon-stopwatch.svg';
   if (itemId.includes('safehouse')) return '/icons/icon-safehouse.svg';
+  if (itemId.includes('docklands')) return '/icons/glyph-vault.svg';
   return '/icons/glyph-terminal.svg';
 }

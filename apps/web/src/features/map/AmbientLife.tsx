@@ -65,8 +65,8 @@ const AMBIENT_ENTITIES: PathEntity[] = [
   },
 ];
 
-// 1 Animated Shop Sign near Alex's Tech / Corner Store (s5: x: 32, y: 51)
-const SHOP_SIGN_LOC = { x: 32, y: 51 };
+// 1 Animated Shop Sign near Alex's Tech / Corner Store (s5 / n4: x: 34, y: 48)
+const SHOP_SIGN_LOC = { x: 34, y: 48 };
 
 export const AmbientLife: React.FC<AmbientLifeProps> = ({ map }) => {
   const manualOverride = useMapStore((s) => s.ambientOverride);
@@ -116,35 +116,44 @@ export const AmbientLife: React.FC<AmbientLifeProps> = ({ map }) => {
       {shopSignPx && (
         <div
           data-testid="ambient-shop-sign"
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none z-[12]"
           style={{
             left: shopSignPx.x,
-            top: shopSignPx.y - 34,
+            top: shopSignPx.y - 42,
             transform: 'translateX(-50%)',
           }}
         >
           <motion.div
-            className="ambient px-2 py-0.5 rounded-pill bg-panel-light/75 border border-line/40 shadow-sm flex items-center gap-1 font-data text-[9px] font-semibold text-ink tracking-[0.5px] uppercase leading-none max-w-[140px] truncate"
-            style={{
-              backgroundColor: 'rgba(239, 231, 218, 0.75)',
-            }}
+            className="ambient px-2.5 py-1 rounded-[10px] bg-panel-light border-[2px] border-accent shadow-card flex items-center gap-2 max-w-[210px] select-none"
             animate={
               ambientEnabled && !prefersReducedMotion
-                ? { opacity: [0.85, 1, 0.9, 1, 0.7, 1] }
-                : { opacity: 0.9 }
+                ? { scale: [1, 1.03, 1] }
+                : { scale: 1 }
             }
             transition={
               ambientEnabled && !prefersReducedMotion
-                ? { duration: 4, repeat: Infinity, ease: 'easeInOut' }
+                ? { duration: 3.5, repeat: Infinity, ease: 'easeInOut' }
                 : undefined
             }
           >
-            <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-line shrink-0">
+            <div className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-accent shrink-0 shadow-sm bg-panel">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/Character portraits/Alex.png" alt="Alex" className="w-full h-full object-cover" />
             </div>
-            <span className="truncate">ALEX&apos;S TECH</span>
+            <div className="flex flex-col min-w-0 pr-0.5">
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="font-heading font-black text-[12px] sm:text-[13px] text-ink tracking-[1px] uppercase truncate drop-shadow-sm">
+                  ALEX&apos;S TECH
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" aria-hidden="true" />
+              </div>
+              <span className="font-data text-[8px] font-bold text-accent-text tracking-[1.2px] leading-tight uppercase truncate">
+                HARDWARE BENCH
+              </span>
+            </div>
           </motion.div>
+          {/* Pointer tail pointing down to node */}
+          <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-accent mx-auto" />
         </div>
       )}
 

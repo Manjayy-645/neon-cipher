@@ -10,6 +10,10 @@ export interface SessionConfig {
   tier: number;
   ice: IceType;
   eliminatedDigits?: string[];
+  nodeName?: string;
+  nodeType?: string;
+  bounty?: number;
+  district?: string;
 }
 
 export interface SessionData {
@@ -29,6 +33,20 @@ export interface GuessResult {
   payout?: number;
   fine?: number;
   burnedHardware?: string;
+  error?: string;
+}
+
+export interface ToolActivationResult {
+  success: boolean;
+  toolId?: string;
+  effectType?: string;
+  eliminatedDigit?: string;
+  hasDuplicates?: boolean;
+  shieldArmed?: boolean;
+  timeAddedSeconds?: number;
+  message?: string;
+  inventory?: Record<string, number>;
+  equippedTools?: string[];
   error?: string;
 }
 
@@ -57,7 +75,20 @@ export const terminalService = {
       throw new Error(err.error || 'Failed to submit guess');
     }
     return res.json();
-  }
+  },
+
+  useTool: async (sessionId: string, toolId: string): Promise<ToolActivationResult> => {
+    const res = await fetch('/api/mock/session/tool', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, toolId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to activate tool');
+    }
+    return data;
+  },
 };
 
 export { useTerminalSession } from './useTerminalSession';

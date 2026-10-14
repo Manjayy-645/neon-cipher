@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-export default function Tier2AtmSkin() {
+export interface SkinProps {
+  nodeName?: string;
+  nodeType?: string;
+}
+
+export default function Tier2AtmSkin({ nodeName, nodeType }: SkinProps = {}) {
+  const displayTitle = nodeName ? nodeName.toUpperCase() : 'MERIDIAN COMMERCE // MK-II';
+  const typeTag = nodeType ? nodeType.toUpperCase() : 'REGISTER // ATM';
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
       {/* Top Metallic Bezel */}
@@ -14,7 +22,7 @@ export default function Tier2AtmSkin() {
             <circle cx="6" cy="6" r="2" fill="var(--terminal-bg,#1c2024)" />
           </svg>
           <span className="font-bold tracking-wider text-ink-on-dark">MERIDIAN COMMERCE // MK-II</span>
-          <span className="text-[9px] opacity-70">REG-ID: MCS-501-REV9</span>
+          <span className="text-[9px] opacity-70">{nodeType ? `REG-ID: MCS-501-REV9 // ${typeTag}` : 'REG-ID: MCS-501-REV9'}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-accent" />

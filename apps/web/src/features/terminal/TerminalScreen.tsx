@@ -10,6 +10,7 @@ import { useCampaignStore } from '@/stores/campaign-store';
 import { getChapterById } from '@neon-cipher/game-rules';
 import { terminalService, SessionData } from './terminalService';
 import { TerminalFrame } from './TerminalFrame';
+import { getNodeById } from '@/features/map/nodeService';
 import {
   TerminalHeader,
   ProgressStrip,
@@ -18,6 +19,7 @@ import {
   Keypad,
   ClueLegendDrawer,
   BreachBanner,
+  TerminalToolSlots,
 } from './components';
 import { TutorialOverlay } from '@/features/story/TutorialOverlay';
 import { QuitModal } from './TerminalScreens';
@@ -30,9 +32,14 @@ import { triggerToast } from '@/stores/toast-store';
 
 export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const router = useRouter();
-  const { addCredits, subtractCredits } = usePlayerStore();
+  const { addCredits, subtractCredits, equippedTools, inventory, syncWallet } = usePlayerStore();
   const rookieAssist = useSettingsStore((s) => s.rookieAssist);
   const assistMode: 'rookie' | 'pro' = rookieAssist ? 'rookie' : 'pro';
+
+  const [toolFeedback, setToolFeedback] = useState<string | null>(null);
+  const [isActivatingTool, setIsActivatingTool] = useState(false);
+  const [iceShieldArmed, setIceShieldArmed] = useState(false);
+  const [eliminatedByTools, setEliminatedByTools] = useState<string[]>([]);
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +87,9 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
         if (!mounted) return;
         setSession(data);
         setAttemptsLeft(data.config.attempts ?? 999);
+        if (data.config.bounty != null) {
+          setPayout(data.config.bounty);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -137,7 +147,12 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
   // Derived state
   const best = useMemo(() => bestGuess(history), [history]);
-  const deadDigits = useMemo(() => provenDeadDigits(history), [history]);
+  const deadDigits = useMemo(() => {
+    const fromHistory = provenDeadDigits(history);
+    const fromPreConfig = (session?.config.eliminatedDigits || []).map((d) => parseInt(d, 10));
+    const fromTools = eliminatedByTools.map((d) => parseInt(d, 10));
+    return new Set([...fromHistory, ...fromPreConfig, ...fromTools]);
+  }, [history, session, eliminatedByTools]);
   const latestRecord = history.length > 0 ? history[history.length - 1] : null;
   const tacticalHint = useMemo(() => {
     if (!latestRecord || !session) return null;
@@ -147,6 +162,48 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     }
     return null;
   }, [latestRecord, session]);
+
+  const handleActivateTool = useCallback(
+    async (toolId: string) => {
+      if (!session || status !== 'playing' || isActivatingTool) return;
+      setIsActivatingTool(true);
+      setToolFeedback(null);
+
+      try {
+        const res = await terminalService.useTool(session.sessionId, toolId);
+        setIsActivatingTool(false);
+
+        if (res.inventory) {
+          syncWallet({
+            credits: usePlayerStore.getState().credits,
+            coins: usePlayerStore.getState().coins,
+            inventory: res.inventory,
+            equippedTools: res.equippedTools,
+          });
+        }
+
+        if (res.message) {
+          setToolFeedback(res.message);
+        }
+
+        if (res.eliminatedDigit) {
+          setEliminatedByTools((prev) => [...prev, res.eliminatedDigit!]);
+        }
+
+        if (res.shieldArmed) {
+          setIceShieldArmed(true);
+        }
+
+        if (res.timeAddedSeconds) {
+          setElapsedSeconds((prev) => Math.max(0, prev - (res.timeAddedSeconds || 0)));
+        }
+      } catch (err: any) {
+        setIsActivatingTool(false);
+        setToolFeedback(err.message || 'Failed to deploy intrusion tool');
+      }
+    },
+    [session, status, isActivatingTool, syncWallet]
+  );
 
   const handleDigit = useCallback(
     (digit: number) => {
@@ -338,13 +395,20 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   }
 
   const { config } = session;
+  const node = getNodeById(nodeId);
+  const nodeName =
+    config.nodeName ||
+    node?.name ||
+    (nodeId === NIX_RECOVERY_NODE_ID ? "Nix's Recovery Run" : `Node: ${nodeId}`);
+  const nodeType = config.nodeType || node?.type || 'vending';
+
   const usedAttempts = config.attempts != null ? config.attempts - attemptsLeft : history.length;
   const isSubmitDisabled =
     entry.length !== config.digits ||
     (!config.allowDuplicates && new Set(entry).size !== entry.length);
 
   return (
-    <TerminalFrame tier={config.tier}>
+    <TerminalFrame tier={config.tier} nodeName={nodeName} nodeType={nodeType}>
       <div
         className="flex flex-col h-full w-full bg-terminal-bg text-terminal-ink overflow-hidden relative"
         data-surface="terminal"
@@ -354,7 +418,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
         {/* 1. Header (72px) */}
         <TerminalHeader
-          nodeName={nodeId === NIX_RECOVERY_NODE_ID ? "Nix's Recovery Run" : `Node: ${nodeId}`}
+          nodeName={nodeName}
+          nodeId={nodeId}
           config={config}
           usedAttempts={usedAttempts}
           elapsedSeconds={elapsedSeconds}
@@ -382,7 +447,19 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           hint={tacticalHint}
         />
 
-        {/* 5. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
+        {/* 5. Tool Slots Row (Equipped intrusion tools) */}
+        <TerminalToolSlots
+          equippedTools={equippedTools}
+          inventory={inventory}
+          onActivateTool={handleActivateTool}
+          isActivating={isActivatingTool}
+          disabled={status !== 'playing'}
+          toolFeedback={toolFeedback}
+          onClearFeedback={() => setToolFeedback(null)}
+          iceShieldArmed={iceShieldArmed}
+        />
+
+        {/* 6. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
         <Keypad
           onDigit={handleDigit}
           onBackspace={handleBackspace}

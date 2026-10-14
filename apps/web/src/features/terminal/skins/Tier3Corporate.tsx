@@ -2,7 +2,15 @@
 
 import React from 'react';
 
-export default function Tier3CorporateSkin() {
+export interface SkinProps {
+  nodeName?: string;
+  nodeType?: string;
+}
+
+export default function Tier3CorporateSkin({ nodeName, nodeType }: SkinProps = {}) {
+  const displayTitle = nodeName ? nodeName.toUpperCase() : 'AERIS NETWORKS';
+  const typeTag = nodeType ? nodeType.toUpperCase() : 'RELAY // SENSOR';
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
       {/* Sleek Anodized Top Rail with laser etching */}
@@ -14,7 +22,7 @@ export default function Tier3CorporateSkin() {
             <circle cx="7" cy="8" r="1.5" fill="currentColor" />
           </svg>
           <span className="font-bold tracking-widest text-accent text-[11px]">AERIS NETWORKS</span>
-          <span className="text-accent-text text-[9px]">WS-9 // UID: AC-9941-X</span>
+          <span className="text-accent-text text-[9px]">{nodeType ? `WS-9 // UID: AC-9941-X // ${typeTag}` : 'WS-9 // UID: AC-9941-X'}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[9px] text-accent-text uppercase tracking-widest">ENCLAVE SEC-3</span>

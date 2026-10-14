@@ -9,4 +9,5 @@ export * from './GuessEntry';
 export * from './Keypad';
 export * from './ClueLegendDrawer';
 export * from './BreachBanner';
+export * from './TerminalToolSlots';
 export { IceIndicator } from '../IceIndicator';

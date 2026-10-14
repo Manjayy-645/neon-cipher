@@ -11,6 +11,7 @@ export function MatchmakingLobby() {
   const {
     rooms,
     selectedMatchType,
+    selectedPacingMode,
     wager,
     isLoading,
     error,
@@ -19,6 +20,7 @@ export function MatchmakingLobby() {
     startQuickDuel,
     joinRoom,
     setMatchType,
+    setPacingMode,
     setWager,
   } = useDuelStore();
 
@@ -113,6 +115,57 @@ export function MatchmakingLobby() {
               <span className="font-data text-[9px] text-accent-text">{type.badge}</span>
             </Button>
           ))}
+        </div>
+      </section>
+
+      {/* Pacing Mode Selector (Speed Race vs Tactical Turns) */}
+      <section aria-label="Pacing Mode Selection" className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <label className="font-data text-[11px] font-bold text-ink-muted uppercase tracking-wider">
+            PACING MODE
+          </label>
+          <span className="font-data text-[10px] text-accent-text font-bold uppercase tracking-wider">
+            {selectedPacingMode === 'simultaneous' ? '⚡ Realtime Race' : '⏱️ 20s Tactical Turns'}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant={selectedPacingMode === 'simultaneous' ? 'secondary' : 'ghost'}
+            onClick={() => setPacingMode('simultaneous')}
+            data-testid="pacing-mode-simultaneous"
+            className={`min-h-[48px] p-2 flex flex-col items-center justify-center normal-case tracking-normal ${
+              selectedPacingMode === 'simultaneous'
+                ? 'border-accent ring-1 ring-accent text-ink font-bold shadow-card'
+                : 'text-ink-muted font-medium'
+            }`}
+          >
+            <span className="font-data text-xs uppercase font-bold flex items-center gap-1">
+              ⚡ SPEED (SIMULTANEOUS)
+            </span>
+            <span className="font-data text-[9px] text-ink-muted text-center leading-tight">
+              Realtime speed race. Guess at will.
+            </span>
+          </Button>
+
+          <Button
+            type="button"
+            variant={selectedPacingMode === 'turn_based' ? 'secondary' : 'ghost'}
+            onClick={() => setPacingMode('turn_based')}
+            data-testid="pacing-mode-turn-based"
+            className={`min-h-[48px] p-2 flex flex-col items-center justify-center normal-case tracking-normal ${
+              selectedPacingMode === 'turn_based'
+                ? 'border-accent ring-1 ring-accent text-ink font-bold shadow-card'
+                : 'text-ink-muted font-medium'
+            }`}
+          >
+            <span className="font-data text-xs uppercase font-bold flex items-center gap-1">
+              ⏱️ TACTICAL (TURN-BASED)
+            </span>
+            <span className="font-data text-[9px] text-ink-muted text-center leading-tight">
+              Strict turns. 20s clock per decker.
+            </span>
+          </Button>
         </div>
       </section>
 

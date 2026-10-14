@@ -48,10 +48,11 @@ export function BreachBanner({
         initial={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
+        style={{
+          borderColor: isWon ? 'var(--terminal-phosphor)' : 'var(--terminal-danger)',
+        }}
         className={`terminal-result-card w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 rounded-[12px] border shadow-sheet flex flex-col items-center text-center gap-4 ${
-          isWon
-            ? 'border-terminal-phosphor shadow-[0_0_24px_rgba(111,191,122,0.2)]'
-            : 'border-terminal-danger shadow-[0_0_24px_rgba(208,118,90,0.2)]'
+          isWon ? 'shadow-[0_0_24px_rgba(111,191,122,0.2)]' : 'shadow-[0_0_24px_rgba(208,118,90,0.2)]'
         }`}
       >
         <div
@@ -128,7 +129,11 @@ export function BreachBanner({
             <button
               type="button"
               onClick={onStartRecovery}
-              className="terminal-result-secondary w-full min-h-[44px] rounded-[8px] border font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] flex items-center justify-center"
+              style={{
+                border: '1px solid var(--terminal-phosphor)',
+                color: 'var(--terminal-phosphor)',
+              }}
+              className="w-full min-h-[44px] rounded-[8px] font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] flex items-center justify-center"
             >
               {recoveryActionLabel}
             </button>
@@ -138,7 +143,11 @@ export function BreachBanner({
         <button
           type="button"
           onClick={onReturnToMap}
-          className="terminal-result-primary w-full h-12 min-h-[44px] rounded-[8px] font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] hover:brightness-105 flex items-center justify-center shadow-card"
+          style={{
+            backgroundColor: 'var(--terminal-phosphor)',
+            color: 'var(--terminal-bg)',
+          }}
+          className="w-full h-12 min-h-[44px] rounded-[8px] font-data text-xs font-bold tracking-wider uppercase transition-transform active:scale-[0.97] hover:brightness-105 flex items-center justify-center shadow-card"
         >
           {returnActionLabel}
         </button>

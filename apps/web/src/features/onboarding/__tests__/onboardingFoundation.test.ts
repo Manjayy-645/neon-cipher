@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useOnboardingStore, isChromeVisible } from '../onboardingStore';
-import { getOnboardingRedirect } from '../components/OnboardingGate';
+import {
+  getOnboardingRedirect,
+  shouldExitGuidedChapterHack,
+} from '../components/OnboardingGate';
+import { getPendingQuest } from '../components/PendingQuestNotification';
 import { AVATAR_OPTIONS, validateCallsign } from '../components/ProfileScreen';
 import { STEP_ORDER } from '../steps';
 
@@ -131,14 +135,14 @@ describe('Onboarding Foundation (Task O-A)', () => {
       expect(redirect).toBe('/');
     });
 
-    it('redirects to current step route if pathname does not match and not skipped', () => {
+    it('does not force redirect when visiting other routes with an incomplete task (shows pending quest notification instead)', () => {
       const redirect = getOnboardingRedirect('/map', {
         step: 'cold.intro',
         skipped: false,
         callsign: null,
         ch2Fails: 0,
       });
-      expect(redirect).toBe('/terminal/tutorial-soda');
+      expect(redirect).toBeNull();
     });
 
     it('allows player to stay on current step route', () => {
@@ -151,34 +155,43 @@ describe('Onboarding Foundation (Task O-A)', () => {
       expect(redirect).toBeNull();
     });
 
-    it('redirects to map step if visiting market before reaching market step', () => {
+    it('does not force redirect when visiting market before reaching market step', () => {
       const redirect = getOnboardingRedirect('/market', {
         step: 'map.district',
         skipped: false,
         callsign: 'ROOKIE',
         ch2Fails: 0,
       });
-      expect(redirect).toBe('/map');
-    });
-
-    it('allows returning to the map after a failed Chapter 2 hack', () => {
-      const redirect = getOnboardingRedirect('/map', {
-        step: 'ch2.hack',
-        skipped: false,
-        callsign: 'ROOKIE',
-        ch2Fails: 1,
-      });
       expect(redirect).toBeNull();
     });
 
-    it('keeps guiding the active Chapter 2 hack until it is failed', () => {
+    it('allows returning to the map during the Chapter 2 hack', () => {
       const redirect = getOnboardingRedirect('/map', {
         step: 'ch2.hack',
         skipped: false,
         callsign: 'ROOKIE',
         ch2Fails: 0,
       });
-      expect(redirect).toBe('/terminal/n4');
+      expect(redirect).toBeNull();
+    });
+
+    it('exits the guided hack when a profiled player navigates to another game page', () => {
+      const state = {
+        step: 'ch2.hack' as const,
+        skipped: false,
+        callsign: 'ROOKIE',
+        ch2Fails: 0,
+      };
+      expect(shouldExitGuidedChapterHack('/market', state)).toBe(true);
+      expect(getOnboardingRedirect('/market', state)).toBeNull();
+      expect(shouldExitGuidedChapterHack('/terminal/n4', state)).toBe(false);
+
+      expect(getOnboardingRedirect('/terminal/n4', {
+          step: 'ch2.hack',
+          skipped: false,
+          callsign: 'ROOKIE',
+          ch2Fails: 0,
+        })).toBeNull();
     });
   });
 
@@ -239,4 +252,49 @@ describe('Onboarding Foundation (Task O-A)', () => {
       'avatar-op',
     ]);
   });
+
+  describe('getPendingQuest (pending quest detection)', () => {
+    it('returns tutorial soda quest when in cold intro', () => {
+      const quest = getPendingQuest('cold.intro', false, null);
+      expect(quest).not.toBeNull();
+      expect(quest?.id).toBe('quest-tutorial-soda');
+      expect(quest?.title).toBe('Tutorial: Breach Soda Machine');
+      expect(quest?.route).toBe('/terminal/tutorial-soda');
+    });
+
+    it('returns Chapter 2 quest when in ch2.hack', () => {
+      const quest = getPendingQuest('ch2.hack', false, null);
+      expect(quest).not.toBeNull();
+      expect(quest?.id).toBe('quest-ch2-hack');
+      expect(quest?.title).toBe('Chapter 02: First Clean Run');
+      expect(quest?.route).toBe('/terminal/n4');
+    });
+
+    it('returns black market quest when in market.buy', () => {
+      const quest = getPendingQuest('market.buy', false, null);
+      expect(quest).not.toBeNull();
+      expect(quest?.id).toBe('quest-market');
+      expect(quest?.route).toBe('/market');
+    });
+
+    it('returns active campaign chapter quest when onboarding is done and chapter active', () => {
+      const quest = getPendingQuest('done', false, 'chapter-2', {
+        'chapter-2': { status: 'active' },
+      });
+      expect(quest).not.toBeNull();
+      expect(quest?.id).toBe('campaign-chapter-2');
+      expect(quest?.route).toBe('/terminal/n4');
+    });
+
+    it('returns null when onboarding is done and no active chapter', () => {
+      const quest = getPendingQuest('done', false, null);
+      expect(quest).toBeNull();
+    });
+
+    it('returns null at splash step', () => {
+      const quest = getPendingQuest('splash', false, null);
+      expect(quest).toBeNull();
+    });
+  });
 });
+

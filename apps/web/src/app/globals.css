@@ -174,14 +174,6 @@
   .terminal-result-ink { color: var(--terminal-ink); }
   .terminal-result-success { color: var(--terminal-phosphor); }
   .terminal-result-danger { color: var(--terminal-danger); }
-  .terminal-result-primary {
-    background-color: var(--terminal-phosphor);
-    color: var(--terminal-bg);
-  }
-  .terminal-result-secondary {
-    border-color: var(--terminal-phosphor);
-    color: var(--terminal-phosphor);
-  }
   .text-ink { color: var(--ink); }
   .text-ink-muted { color: var(--ink-muted); }
   .text-ink-on-dark { color: var(--ink-on-dark); }
