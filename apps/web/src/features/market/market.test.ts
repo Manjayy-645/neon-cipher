@@ -41,6 +41,27 @@ describe('Task 8: Black Market & Wallet Backend', () => {
         expect(e.bountyPenaltyPercent).toBeGreaterThan(0);
       });
     });
+
+    it('includes newly added items and rebalanced exploit penalties', () => {
+      const freqProbe = CATALOG.find((it) => it.id === 'tool-frequency-probe');
+      const heatSink = CATALOG.find((it) => it.id === 'rig-heat-dispersal-sink');
+      const pierLease = CATALOG.find((it) => it.id === 'lease-docklands-pier');
+
+      expect(freqProbe).toBeDefined();
+      expect(freqProbe?.price).toBe(400);
+
+      expect(heatSink).toBeDefined();
+      expect(heatSink?.maxOwned).toBe(1);
+
+      expect(pierLease).toBeDefined();
+      expect(pierLease?.price).toBe(9500);
+
+      const slotPeek = CATALOG.find((it) => it.id === 'exploit-slot-peek');
+      expect(slotPeek?.bountyPenaltyPercent).toBe(20);
+
+      const secondChance = CATALOG.find((it) => it.id === 'exploit-second-chance');
+      expect(secondChance?.bountyPenaltyPercent).toBe(25);
+    });
   });
 
   describe('GET /api/mock/wallet', () => {
