@@ -960,7 +960,12 @@ export interface DuelSessionState {
   feedEvents: DuelFeedEvent[];
 }
 
-export const mockDuelRooms: DuelRoom[] = [
+const globalForDuel = global as unknown as {
+  mockDuelRooms?: DuelRoom[];
+  mockDuelSessions?: Map<string, DuelSessionState>;
+};
+
+export const mockDuelRooms: DuelRoom[] = globalForDuel.mockDuelRooms || [
   {
     id: 'room-01',
     name: 'Slums Underground #04',
@@ -1003,7 +1008,63 @@ export const mockDuelRooms: DuelRoom[] = [
   },
 ];
 
-export const mockDuelSessions = new Map<string, DuelSessionState>();
+export const mockDuelSessions = globalForDuel.mockDuelSessions || new Map<string, DuelSessionState>();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForDuel.mockDuelRooms = mockDuelRooms;
+  globalForDuel.mockDuelSessions = mockDuelSessions;
+}
+
+export function createDefaultDuelSession(duelId: string = 'duel-01'): DuelSessionState {
+  const potCalc = calculateDuelPot(0);
+  const secret = generateCode(4, false);
+  return {
+    id: duelId,
+    matchType: 'casual',
+    pacingMode: 'simultaneous',
+    wager: 0,
+    ante: 0,
+    totalPot: potCalc.totalPot,
+    rake: potCalc.rake,
+    netPot: potCalc.netPot,
+    secret,
+    digits: 4,
+    sharedAttempts: 12,
+    playerAttempts: 7,
+    rivalAttempts: 7,
+    maxAttempts: 7,
+    guessClockMs: GUESS_CLOCK_MS,
+    playerLastGuessAt: Date.now(),
+    rivalLastGuessAt: Date.now(),
+    rivalNextGuessDelayMs: Math.floor(Math.random() * 5000) + 4000,
+    turnClockSeconds: 20,
+    overallClockSeconds: 90,
+    startedAt: Date.now(),
+    status: 'active',
+    player: {
+      handle: 'ZERO_COOL',
+      avatar: '/Character portraits/Player avatars.png',
+      guesses: [],
+      activeEffects: [],
+      shieldActive: false,
+      cheatUsed: false,
+    },
+    rival: {
+      handle: 'Null_Byte',
+      avatar: '/Character portraits/Null_Byte.png',
+      guesses: [],
+      activeEffects: [],
+      shieldActive: false,
+      cheatUsed: false,
+    },
+    currentTurn: 'player',
+    feedEvents: [],
+  };
+}
+
+if (!mockDuelSessions.has('duel-01')) {
+  mockDuelSessions.set('duel-01', createDefaultDuelSession('duel-01'));
+}
 
 export function getDuelRooms(): DuelRoom[] {
   return [...mockDuelRooms];
@@ -1096,8 +1157,15 @@ export function toSafeDuelSession(session: DuelSessionState): DuelSession {
 }
 
 export function syncDuelClocks(duelId: string): DuelSession | undefined {
-  const session = mockDuelSessions.get(duelId);
-  if (!session) return undefined;
+  let session = mockDuelSessions.get(duelId);
+  if (!session) {
+    if (duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
+      session = createDefaultDuelSession(duelId);
+      mockDuelSessions.set(duelId, session);
+    } else {
+      return undefined;
+    }
+  }
   if (session.status !== 'active') return toSafeDuelSession(session);
 
   const now = Date.now();
@@ -1371,9 +1439,14 @@ export function submitDuelGuess(data: {
   playerGuess: DuelGuessRecord;
   rivalGuess?: DuelGuessRecord;
 } {
-  const session = mockDuelSessions.get(data.duelId);
+  let session = mockDuelSessions.get(data.duelId);
   if (!session) {
-    throw new Error('Duel session not found');
+    if (data.duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
+      session = createDefaultDuelSession(data.duelId);
+      mockDuelSessions.set(data.duelId, session);
+    } else {
+      throw new Error('Duel session not found');
+    }
   }
   if (session.status !== 'active') {
     throw new Error('Duel session already resolved');
@@ -1632,8 +1705,15 @@ export function applyDuelSabotage(data: {
   remainingCredits: number;
   message: string;
 } {
-  const session = mockDuelSessions.get(data.duelId);
-  if (!session) throw new Error('Duel session not found');
+  let session = mockDuelSessions.get(data.duelId);
+  if (!session) {
+    if (data.duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
+      session = createDefaultDuelSession(data.duelId);
+      mockDuelSessions.set(data.duelId, session);
+    } else {
+      throw new Error('Duel session not found');
+    }
+  }
   if (session.status !== 'active') throw new Error('Duel already ended');
 
   const rule = SABOTAGE_RULES[data.toolId];
@@ -1781,8 +1861,16 @@ export function applyDuelSabotage(data: {
 }
 
 export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
-  const session = mockDuelSessions.get(duelId);
-  if (!session) throw new Error('Duel session not found');
+  let session = mockDuelSessions.get(duelId);
+  if (!session) {
+    if (duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
+      session = createDefaultDuelSession(duelId);
+      session.status = 'player_won';
+      mockDuelSessions.set(duelId, session);
+    } else {
+      throw new Error('Duel session not found');
+    }
+  }
   if (session.status !== 'player_won') {
     throw new Error('Double or Nothing can only be triggered after victory');
   }
@@ -1870,7 +1958,15 @@ export interface CoopSessionState {
   payout?: CoopPayoutResult;
 }
 
-export const mockCoopSessions = new Map<string, CoopSessionState>();
+const globalForCoop = global as unknown as {
+  mockCoopSessions?: Map<string, CoopSessionState>;
+};
+
+export const mockCoopSessions = globalForCoop.mockCoopSessions || new Map<string, CoopSessionState>();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForCoop.mockCoopSessions = mockCoopSessions;
+}
 
 export function getSafeCoopSession(session: CoopSessionState) {
   const isFinished = session.status !== 'active';

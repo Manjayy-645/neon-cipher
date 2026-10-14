@@ -4,6 +4,7 @@ import {
   createDuelRoom,
   startDuelSession,
   submitDuelGuess,
+  syncDuelClocks,
   applyDuelSabotage,
   triggerDoubleOrNothing,
   mockWallet,
@@ -223,5 +224,40 @@ describe('Task 11: Duel Full Flow & Mock Backend Integration', () => {
     expect(snoopResult.success).toBe(true);
     expect(session.player.snoopActive).toBe(true);
     expect(session.rival.guesses[0].unmasked).toBe(true);
+  });
+
+  it('11. duel-01 default session is seeded and permits guess submission', () => {
+    expect(mockDuelSessions.has('duel-01')).toBe(true);
+    const session = mockDuelSessions.get('duel-01')!;
+    expect(session.status).toBe('active');
+    expect(session.digits).toBe(4);
+
+    const testGuess = session.secret === '1234' ? '5678' : '1234';
+    const result = submitDuelGuess({
+      duelId: 'duel-01',
+      guess: testGuess,
+    });
+
+    expect(result.session.id).toBe('duel-01');
+    expect(result.playerGuess.guess).toBe(testGuess);
+  });
+
+  it('12. syncDuelClocks returns safe session without leaking server secret', () => {
+    const safe = syncDuelClocks('duel-01');
+    expect(safe).toBeDefined();
+    expect(safe?.id).toBe('duel-01');
+    expect((safe as any)?.secret).toBeUndefined();
+  });
+
+  it('13. submitDuelGuess auto-creates missing session in dev mode instead of crashing', () => {
+    const unknownId = `duel-dev-test-${Date.now()}`;
+    const result = submitDuelGuess({
+      duelId: unknownId,
+      guess: '1234',
+    });
+
+    expect(result.session.id).toBe(unknownId);
+    expect(result.playerGuess.guess).toBe('1234');
+    expect(mockDuelSessions.has(unknownId)).toBe(true);
   });
 });

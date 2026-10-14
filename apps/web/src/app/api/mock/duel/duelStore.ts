@@ -47,7 +47,15 @@ export interface ServerDuelSession {
   nextRivalIntervalMs: number;
 }
 
-export const mockDuels = new Map<string, ServerDuelSession>();
+const globalForDuelStore = global as unknown as {
+  mockDuels?: Map<string, ServerDuelSession>;
+};
+
+export const mockDuels = globalForDuelStore.mockDuels || new Map<string, ServerDuelSession>();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForDuelStore.mockDuels = mockDuels;
+}
 
 export function createDuelSession(tierNumber: number = 2): ServerDuelSession {
   const tierConfig = getTierConfig(tierNumber || 2);
