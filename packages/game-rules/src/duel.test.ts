@@ -5,6 +5,7 @@ import {
   isExploitAllowed,
   SABOTAGE_RULES,
   generateNullByteGuess,
+  generateFalseFlagClue,
 } from './duel';
 
 describe('Duel Game Rules (packages/game-rules)', () => {
@@ -79,6 +80,28 @@ describe('Duel Game Rules (packages/game-rules)', () => {
       expect(rule).toBeDefined();
       expect(rule.creditCost).toBe(450);
       expect(rule.effectType).toBe('firewall_shield');
+    });
+
+    it('defines Snoop Packet at 750 credits with snoop_packet effect', () => {
+      const rule = SABOTAGE_RULES['tool-snoop-packet'];
+      expect(rule).toBeDefined();
+      expect(rule.creditCost).toBe(750);
+      expect(rule.effectType).toBe('snoop_packet');
+    });
+
+    it('defines False Flag Echo at 1100 credits with false_flag_echo effect', () => {
+      const rule = SABOTAGE_RULES['tool-false-flag-echo'];
+      expect(rule).toBeDefined();
+      expect(rule.creditCost).toBe(1100);
+      expect(rule.effectType).toBe('false_flag_echo');
+    });
+
+    it('generates deceptive clue with generateFalseFlagClue', () => {
+      const fake = generateFalseFlagClue(1, 1, 4);
+      expect(fake.pots + fake.pans).toBeLessThanOrEqual(4);
+      // Winning score is never faked
+      const winFake = generateFalseFlagClue(4, 0, 4);
+      expect(winFake.pans).toBe(4);
     });
   });
 

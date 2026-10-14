@@ -8,6 +8,8 @@ import { authService } from '../auth/authService';
 import { soundFx } from '@/lib/audio';
 import { ReducedMotionMode } from './types';
 import { Button } from '@/components/ui/Button';
+import { BottomDrawer } from '@/components/ui/BottomDrawer';
+import { useCampaignStore } from '@/stores/campaign-store';
 
 interface SettingsDrawerProps {
   isOpen?: boolean;
@@ -24,6 +26,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const handleClose = isControlled ? onClose : store.closeDrawer;
 
   const [confirmReset, setConfirmReset] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -74,18 +77,18 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   };
 
   const handleResetCampaign = async () => {
-    if (!confirmReset) {
-      setConfirmReset(true);
-      return;
-    }
     try {
-      await authService.resetCampaign();
-      player.setBalances(10000, 25);
+      setIsResetting(true);
+      const result = await authService.resetCampaign();
+      player.syncWallet(result.account.wallet);
+      useCampaignStore.getState().syncCampaign(result.campaign);
       setConfirmReset(false);
-      setStatusMessage('Campaign & starter balance reset.');
+      setStatusMessage('Campaign progress and starter wallet reset.');
       setTimeout(() => setStatusMessage(null), 3000);
     } catch {
       setStatusMessage('Failed to reset campaign.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -100,17 +103,18 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Settings configuration"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70"
-      onClick={() => handleClose?.()}
-    >
+    <>
       <div
-        className="scene-ground w-full max-w-[480px] max-h-[90vh] border-t sm:border border-line rounded-t-lg sm:rounded-lg shadow-sheet flex flex-col overflow-hidden text-ink font-data"
-        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings configuration"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70"
+        onClick={() => handleClose?.()}
       >
+        <div
+          className="scene-ground w-full max-w-[480px] max-h-[90vh] border-t sm:border border-line rounded-t-lg sm:rounded-lg shadow-sheet flex flex-col overflow-hidden text-ink font-data"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-panel shrink-0">
           <div className="flex items-center gap-3">
@@ -389,31 +393,53 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             {/* Reset Campaign */}
             <div className="pt-2">
               <Button
-                variant={confirmReset ? 'danger' : 'secondary'}
+                variant="secondary"
                 fullWidth
-                onClick={handleResetCampaign}
-                className={confirmReset ? 'animate-pulse' : 'border-danger/40 text-danger-text hover:bg-danger/10'}
+                onClick={() => setConfirmReset(true)}
+                className="border-danger/40 text-danger-text hover:bg-danger/10"
               >
-                {confirmReset ? 'CONFIRM PURGE: RESET CAMPAIGN?' : 'Reset Campaign Progress'}
+                Reset Campaign Progress
               </Button>
-              {confirmReset && (
-                <div className="flex justify-between items-center mt-2 px-1">
-                  <span className="text-[11px] text-danger-text">Resets bankroll to $10,000 and clears logs.</span>
-                  <Button
-                    variant="ghost"
-                    compact
-                    onClick={() => setConfirmReset(false)}
-                    className="text-xs text-ink-muted underline font-semibold border-none h-auto min-h-[32px] px-2"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
             </div>
           </section>
 
         </div>
       </div>
-    </div>
+      </div>
+      <BottomDrawer
+        open={confirmReset}
+        onClose={() => setConfirmReset(false)}
+        title="RESET CAMPAIGN?"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-ink-muted leading-relaxed">
+            This clears chapter and node progress, campaign unlocks, and wallet
+            history. Your balance and tool inventory return to the starter
+            values. Your callsign and settings stay unchanged.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              size="full"
+              onClick={handleResetCampaign}
+              loading={isResetting}
+              disabled={isResetting}
+            >
+              RESET CAMPAIGN
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="full"
+              onClick={() => setConfirmReset(false)}
+              disabled={isResetting}
+            >
+              CANCEL
+            </Button>
+          </div>
+        </div>
+      </BottomDrawer>
+    </>
   );
 }

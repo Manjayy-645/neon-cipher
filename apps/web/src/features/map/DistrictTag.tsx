@@ -6,6 +6,7 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { DistrictDefinition } from './districtConfig';
 import { triggerToast } from '../../stores/toast-store';
 import { useMapStore } from '../../stores/map-store';
+import { emit } from '@/features/onboarding/events';
 
 export interface DistrictTagProps {
   district: DistrictDefinition;
@@ -42,6 +43,9 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setHasInteracted(true);
+    if (isSlums) {
+      emit({ type: 'map:districtTagTapped', district: 'slums' });
+    }
     if (isLocked) {
       triggerToast(
         district.unlockHint || 'Commercial Strip is locked. Cross the bridge to access.',
@@ -87,6 +91,7 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
     >
       <button
         type="button"
+        data-tour={isSlums ? 'tag-slums' : undefined}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         aria-label={ariaLabel}

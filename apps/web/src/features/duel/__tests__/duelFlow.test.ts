@@ -156,4 +156,72 @@ describe('Task 11: Duel Full Flow & Mock Backend Integration', () => {
       });
     }).toThrow(/disabled in ranked/i);
   });
+
+  it('8. Stealth Guess: deducts 150 CR stealth fee and marks guess as stealth', () => {
+    const session = startDuelSession({
+      matchType: 'casual',
+      wager: 0,
+    });
+    mockWallet.credits = 5000;
+
+    const result = submitDuelGuess({
+      duelId: session.id,
+      guess: '1234',
+      isStealth: true,
+    });
+
+    expect(result.playerGuess.isStealth).toBe(true);
+    expect(mockWallet.credits).toBe(5000 - 150);
+  });
+
+  it('9. False Flag Echo: arms deceptive clue broadcast and marks falsified on next guess', () => {
+    const session = startDuelSession({
+      matchType: 'casual',
+      wager: 0,
+    });
+    mockWallet.credits = 5000;
+
+    const sabotageResult = applyDuelSabotage({
+      duelId: session.id,
+      toolId: 'tool-false-flag-echo',
+    });
+    expect(sabotageResult.success).toBe(true);
+    expect(session.player.falseFlagActive).toBe(true);
+
+    const testGuess = session.secret === '1234' ? '5678' : '1234';
+    const guessResult = submitDuelGuess({
+      duelId: session.id,
+      guess: testGuess,
+    });
+
+    expect(guessResult.playerGuess.falsified).toBe(true);
+    expect(session.player.falseFlagActive).toBe(false); // Consumed
+  });
+
+  it('10. Snoop Packet: unmasks opponent stealth moves', () => {
+    const session = startDuelSession({
+      matchType: 'casual',
+      wager: 0,
+    });
+    mockWallet.credits = 5000;
+
+    // Rival has stealth guess
+    session.rival.guesses.push({
+      guess: '9876',
+      pots: 1,
+      pans: 0,
+      timestamp: Date.now(),
+      isStealth: true,
+      unmasked: false,
+    });
+
+    const snoopResult = applyDuelSabotage({
+      duelId: session.id,
+      toolId: 'tool-snoop-packet',
+    });
+
+    expect(snoopResult.success).toBe(true);
+    expect(session.player.snoopActive).toBe(true);
+    expect(session.rival.guesses[0].unmasked).toBe(true);
+  });
 });

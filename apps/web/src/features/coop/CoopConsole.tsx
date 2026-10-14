@@ -1,86 +1,98 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { calculateScore, Score } from '@neon-cipher/game-rules/src/index';
 import { Button } from '@/components/ui/Button';
+import { coopService, CoopSessionView } from './coopService';
+import { usePlayerStore } from '@/stores/player-store';
 
-interface GuessRecord {
-  guess: string;
-  pots: number;
-  pans: number;
+export interface CoopConsoleProps {
+  initialSession?: CoopSessionView;
+  onExit?: () => void;
 }
 
-interface BetaStage {
-  id: number;
-  name: string;
-  secret: string;
-  digits: number;
-  rewardType: 'extra_attempt' | 'remove_dead_digit';
-  rewardDescription: string;
-  completed: boolean;
-}
+const DEFAULT_SESSION: CoopSessionView = {
+  id: 'coop-initial-session',
+  status: 'active',
+  startedAt: Date.now(),
+  timeLimitSeconds: 180,
+  bounty: 2500,
+  alpha: {
+    digits: 4,
+    attemptsLeft: 4,
+    maxAttempts: 4,
+    guesses: [],
+    eliminatedDigits: [],
+  },
+  beta: {
+    currentStageIndex: 0,
+    guesses: [],
+    stages: [
+      {
+        id: 1,
+        name: 'Subroutine 01: Firewall Bypass',
+        digits: 3,
+        rewardType: 'remove_dead_digit',
+        rewardDescription: 'Eliminates 1 dead digit from Alpha keypad',
+        completed: false,
+      },
+      {
+        id: 2,
+        name: 'Subroutine 02: Buffer Overflow',
+        digits: 3,
+        rewardType: 'extra_attempt',
+        rewardDescription: 'Grants +1 guess attempt to Alpha',
+        completed: false,
+      },
+      {
+        id: 3,
+        name: 'Subroutine 03: Shroud Override',
+        digits: 3,
+        rewardType: 'extra_attempt',
+        rewardDescription: 'Grants +1 guess attempt to Alpha',
+        completed: false,
+      },
+    ],
+  },
+};
 
-export function CoopConsole() {
+export function CoopConsole({ initialSession, onExit: _onExit }: CoopConsoleProps = {}) {
+  // Session State (Server Authoritative)
+  const [session, setSession] = useState<CoopSessionView>(initialSession || DEFAULT_SESSION);
+
   // Shared Timer (180s countdown)
-  const [secondsLeft, setSecondsLeft] = useState<number>(180);
+  const [secondsLeft, setSecondsLeft] = useState<number>(session.timeLimitSeconds);
   const [timerActive, setTimerActive] = useState<boolean>(true);
 
   // Active Role View ('alpha' | 'beta' | 'split')
   const [activeRole, setActiveRole] = useState<'split' | 'alpha' | 'beta'>('split');
-  const [heistStatus, setHeistStatus] = useState<'active' | 'won' | 'lost'>('active');
   const [partnerLog, setPartnerLog] = useState<string[]>([]);
 
   // Alpha (Infiltrator) State
-  const [alphaSecret] = useState<string>('7294');
-  const [alphaAttempts, setAlphaAttempts] = useState<number>(4);
-  const [alphaHistory, setAlphaHistory] = useState<GuessRecord[]>([]);
   const [alphaGuess, setAlphaGuess] = useState<string>('');
-  const [eliminatedDigits, setEliminatedDigits] = useState<string[]>([]);
 
   // Beta (Support) State
-  const [betaStages, setBetaStages] = useState<BetaStage[]>([
-    {
-      id: 1,
-      name: 'Subroutine 01: Firewall Bypass',
-      secret: '381',
-      digits: 3,
-      rewardType: 'remove_dead_digit',
-      rewardDescription: 'Eliminates 1 dead digit from Alpha keypad',
-      completed: false,
-    },
-    {
-      id: 2,
-      name: 'Subroutine 02: Buffer Overflow',
-      secret: '519',
-      digits: 3,
-      rewardType: 'extra_attempt',
-      rewardDescription: 'Grants +1 guess attempt to Alpha',
-      completed: false,
-    },
-    {
-      id: 3,
-      name: 'Subroutine 03: Shroud Override',
-      secret: '842',
-      digits: 3,
-      rewardType: 'extra_attempt',
-      rewardDescription: 'Grants +1 guess attempt to Alpha',
-      completed: false,
-    },
-  ]);
-  const [currentBetaStageIdx, setCurrentBetaStageIdx] = useState<number>(0);
   const [betaGuess, setBetaGuess] = useState<string>('');
-  const [betaHistory, setBetaHistory] = useState<GuessRecord[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const { credits, setBalances } = usePlayerStore();
+
+  useEffect(() => {
+    if (initialSession) {
+      setSession(initialSession);
+      setSecondsLeft(initialSession.timeLimitSeconds);
+    }
+  }, [initialSession]);
 
   // Timer countdown
   useEffect(() => {
-    if (!timerActive || heistStatus !== 'active') return;
+    if (!timerActive || session.status !== 'active') return;
 
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           setTimerActive(false);
-          setHeistStatus('lost');
+          setSession((s) => ({ ...s, status: 'lost' }));
           return 0;
         }
         return prev - 1;
@@ -88,7 +100,7 @@ export function CoopConsole() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerActive, heistStatus]);
+  }, [timerActive, session.status]);
 
   // Format MM:SS
   const formatTime = (totalSeconds: number) => {
@@ -97,13 +109,17 @@ export function CoopConsole() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const addPartnerMessage = (msg: string) => {
+    setPartnerLog((prev) => [msg, ...prev.slice(0, 8)]);
+  };
+
   // Mock Partner automated action simulation (if idle)
   const partnerSimRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (heistStatus !== 'active') return;
+    if (session.status !== 'active') return;
 
     partnerSimRef.current = setTimeout(() => {
-      if (currentBetaStageIdx === 0 && !betaStages[0].completed) {
+      if (session.beta.currentStageIndex === 0 && !session.beta.stages[0]?.completed) {
         addPartnerMessage('Partner Glitch (Beta) scanning Subroutine 01 carrier waves...');
       }
     }, 10000);
@@ -111,81 +127,101 @@ export function CoopConsole() {
     return () => {
       if (partnerSimRef.current) clearTimeout(partnerSimRef.current);
     };
-  }, [currentBetaStageIdx, betaStages, heistStatus]);
-
-  const addPartnerMessage = (msg: string) => {
-    setPartnerLog((prev) => [msg, ...prev.slice(0, 8)]);
-  };
+  }, [session.beta.currentStageIndex, session.beta.stages, session.status]);
 
   // Alpha Guess Submission
-  const handleAlphaSubmit = () => {
-    if (alphaGuess.length !== 4 || alphaAttempts <= 0 || heistStatus !== 'active') return;
-
-    const score = calculateScore(alphaSecret, alphaGuess);
-    const newRecord: GuessRecord = { guess: alphaGuess, pots: score.pots, pans: score.pans };
-    setAlphaHistory((prev) => [newRecord, ...prev]);
-    setAlphaGuess('');
-
-    if (score.pots === 4) {
-      setHeistStatus('won');
-      setTimerActive(false);
-      addPartnerMessage('VAULT CRACKED! Master signal unlocked by Alpha Infiltrator.');
+  const handleAlphaSubmit = async () => {
+    if (
+      alphaGuess.length !== session.alpha.digits ||
+      session.alpha.attemptsLeft <= 0 ||
+      session.status !== 'active' ||
+      isSubmitting
+    ) {
       return;
     }
 
-    const nextAttempts = alphaAttempts - 1;
-    setAlphaAttempts(nextAttempts);
-    if (nextAttempts <= 0) {
-      setHeistStatus('lost');
-      setTimerActive(false);
-      addPartnerMessage('MISSION FAILED // Alpha exhausted all guess attempts.');
+    setIsSubmitting(true);
+    try {
+      const res = await coopService.submitGuess({
+        sessionId: session.id,
+        role: 'alpha',
+        guess: alphaGuess,
+      });
+
+      setSession(res.session);
+      setAlphaGuess('');
+
+      if (res.rewardMessage) {
+        addPartnerMessage(res.rewardMessage);
+      }
+
+      if (res.session.status !== 'active') {
+        setTimerActive(false);
+      }
+
+      if (res.session.status === 'won' && res.session.payout) {
+        setBalances(credits + res.session.payout.eachPlayerShare, usePlayerStore.getState().coins);
+      }
+    } catch (err: unknown) {
+      console.error('Failed to submit alpha guess:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Beta Guess Submission
-  const handleBetaSubmit = () => {
-    const stage = betaStages[currentBetaStageIdx];
-    if (!stage || stage.completed || betaGuess.length !== stage.digits || heistStatus !== 'active') return;
+  const handleBetaSubmit = async () => {
+    const stage = session.beta.stages[session.beta.currentStageIndex];
+    if (
+      !stage ||
+      stage.completed ||
+      betaGuess.length !== stage.digits ||
+      session.status !== 'active' ||
+      isSubmitting
+    ) {
+      return;
+    }
 
-    const score = calculateScore(stage.secret, betaGuess);
-    const newRecord: GuessRecord = { guess: betaGuess, pots: score.pots, pans: score.pans };
-    setBetaHistory((prev) => [newRecord, ...prev]);
-    setBetaGuess('');
+    setIsSubmitting(true);
+    try {
+      const res = await coopService.submitGuess({
+        sessionId: session.id,
+        role: 'beta',
+        guess: betaGuess,
+      });
 
-    if (score.pots === stage.digits) {
-      // Stage cracked! Apply reward to Alpha
-      const updatedStages = [...betaStages];
-      updatedStages[currentBetaStageIdx].completed = true;
-      setBetaStages(updatedStages);
+      setSession(res.session);
+      setBetaGuess('');
 
-      if (stage.rewardType === 'extra_attempt') {
-        setAlphaAttempts((prev) => prev + 1);
-        addPartnerMessage(`[BETA SUPPORT] ${stage.name} CRACKED! +1 Attempt granted to Alpha.`);
-      } else if (stage.rewardType === 'remove_dead_digit') {
-        const deadCandidates = ['0', '1', '3', '5', '6', '8'].filter((d) => !eliminatedDigits.includes(d));
-        const deadToRemove = deadCandidates[0] || '0';
-        setEliminatedDigits((prev) => [...prev, deadToRemove]);
-        addPartnerMessage(`[BETA SUPPORT] ${stage.name} CRACKED! Dead digit '${deadToRemove}' eliminated for Alpha.`);
+      if (res.rewardMessage) {
+        addPartnerMessage(res.rewardMessage);
       }
-
-      if (currentBetaStageIdx < betaStages.length - 1) {
-        setCurrentBetaStageIdx((prev) => prev + 1);
-        setBetaHistory([]);
-      } else {
-        addPartnerMessage('[BETA SUPPORT] All security firewalls bypassed! Alpha has full signal support.');
-      }
+    } catch (err: unknown) {
+      console.error('Failed to submit beta guess:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Quick bot solve for Beta (Simulate partner cracking)
-  const handleSimulatePartnerSolve = () => {
-    const stage = betaStages[currentBetaStageIdx];
-    if (!stage || stage.completed) return;
-    setBetaGuess(stage.secret);
-    setTimeout(() => {
-      handleBetaSubmit();
-    }, 150);
+  const handleSimulatePartnerSolve = async () => {
+    if (session.status !== 'active' || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await coopService.simulatePartnerStage(session.id);
+      setSession(res.session);
+      if (res.rewardMessage) {
+        addPartnerMessage(res.rewardMessage);
+      }
+    } catch (err: unknown) {
+      console.error('Failed to simulate partner solve:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const currentBetaStage = session.beta.stages[session.beta.currentStageIndex];
 
   return (
     <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
@@ -252,7 +288,7 @@ export function CoopConsole() {
           variant="secondary"
           compact
           onClick={handleSimulatePartnerSolve}
-          disabled={heistStatus !== 'active'}
+          disabled={session.status !== 'active' || isSubmitting}
           data-testid="partner-solve-button"
           className="text-accent-text flex items-center gap-1.5"
         >
@@ -264,7 +300,7 @@ export function CoopConsole() {
       </div>
 
       {/* Heist Outcome Banner */}
-      {heistStatus === 'won' && (
+      {session.status === 'won' && (
         <div
           data-testid="heist-won-banner"
           className="bg-accent text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider flex items-center justify-center gap-2"
@@ -279,7 +315,7 @@ export function CoopConsole() {
           <span>VAULT BREACH SUCCESSFUL // All syndicate dividends secured!</span>
         </div>
       )}
-      {heistStatus === 'lost' && (
+      {session.status === 'lost' && (
         <div
           data-testid="heist-lost-banner"
           className="bg-danger text-white p-3 font-data text-xs font-bold uppercase text-center shrink-0 tracking-wider flex items-center justify-center gap-2"
@@ -316,18 +352,18 @@ export function CoopConsole() {
                 data-testid="alpha-attempts-left"
                 className="font-data text-xs font-bold bg-accent/15 text-accent-text border border-accent/40 px-2.5 py-1 rounded-pill"
               >
-                {alphaAttempts} ATTEMPTS LEFT
+                {session.alpha.attemptsLeft} ATTEMPTS LEFT
               </span>
             </div>
 
             {/* Eliminated Dead Digits from Beta Support */}
-            {eliminatedDigits.length > 0 && (
+            {session.alpha.eliminatedDigits.length > 0 && (
               <div
                 data-testid="eliminated-digits-banner"
                 className="bg-accent/10 border border-accent/30 text-accent-text p-2 rounded-sm font-data text-[11px] flex items-center justify-between"
               >
                 <span>SUPPORT BUFF: Dead Digits Purged</span>
-                <span className="font-bold">[{eliminatedDigits.join(', ')}]</span>
+                <span className="font-bold">[{session.alpha.eliminatedDigits.join(', ')}]</span>
               </div>
             )}
 
@@ -341,7 +377,7 @@ export function CoopConsole() {
                   value={alphaGuess}
                   onChange={(e) => setAlphaGuess(e.target.value.replace(/\D/g, ''))}
                   placeholder="----"
-                  disabled={heistStatus !== 'active'}
+                  disabled={session.status !== 'active' || isSubmitting}
                   data-testid="alpha-guess-input"
                   className="flex-1 min-h-[44px] px-3 bg-panel-light border border-line text-center font-data text-xl font-bold tracking-[6px] text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                   aria-label="Alpha guess code"
@@ -351,7 +387,7 @@ export function CoopConsole() {
                   variant="primary"
                   compact
                   onClick={handleAlphaSubmit}
-                  disabled={alphaGuess.length !== 4 || heistStatus !== 'active'}
+                  disabled={alphaGuess.length !== 4 || session.status !== 'active' || isSubmitting}
                   data-testid="alpha-submit-button"
                 >
                   INJECT
@@ -361,14 +397,14 @@ export function CoopConsole() {
               {/* Keypad Digits */}
               <div className="grid grid-cols-5 gap-1 pt-1">
                 {'0123456789'.split('').map((d) => {
-                  const isDead = eliminatedDigits.includes(d);
+                  const isDead = session.alpha.eliminatedDigits.includes(d);
                   return (
                     <Button
                       key={d}
                       type="button"
                       variant="secondary"
                       compact
-                      disabled={isDead || alphaGuess.length >= 4 || heistStatus !== 'active'}
+                      disabled={isDead || alphaGuess.length >= 4 || session.status !== 'active' || isSubmitting}
                       onClick={() => setAlphaGuess((prev) => prev + d)}
                       className={`min-h-[40px] p-0 text-xs font-bold ${
                         isDead ? 'line-through opacity-40' : ''
@@ -384,10 +420,10 @@ export function CoopConsole() {
             {/* Alpha Guess History */}
             <div className="flex-1 flex flex-col gap-1 min-h-[120px] max-h-[200px] overflow-y-auto">
               <span className="font-data text-[10px] uppercase text-ink-muted">INFILTRATOR PROBE LOG:</span>
-              {alphaHistory.length === 0 ? (
+              {session.alpha.guesses.length === 0 ? (
                 <span className="font-data text-xs text-ink-muted italic">Awaiting initial guess...</span>
               ) : (
-                alphaHistory.map((rec, i) => (
+                [...session.alpha.guesses].reverse().map((rec, i) => (
                   <div
                     key={i}
                     className="flex justify-between items-center font-data text-xs p-1.5 bg-panel border border-line rounded-sm"
@@ -422,17 +458,17 @@ export function CoopConsole() {
                 </h2>
               </div>
               <span className="font-data text-xs font-bold text-ink-muted">
-                STAGE {currentBetaStageIdx + 1} / {betaStages.length}
+                STAGE {Math.min(session.beta.currentStageIndex + 1, session.beta.stages.length)} / {session.beta.stages.length}
               </span>
             </div>
 
             {/* Current Beta Stage Info */}
             <div className="bg-panel p-3 rounded-sm border border-line flex flex-col gap-1">
               <span className="font-heading text-sm font-bold text-ink">
-                {betaStages[currentBetaStageIdx]?.name}
+                {currentBetaStage?.name || 'All Subroutines Cleared'}
               </span>
               <span className="font-data text-xs text-accent-text font-semibold">
-                REWARD: {betaStages[currentBetaStageIdx]?.rewardDescription}
+                REWARD: {currentBetaStage?.rewardDescription || 'Full support online'}
               </span>
             </div>
 
@@ -448,7 +484,7 @@ export function CoopConsole() {
                   value={betaGuess}
                   onChange={(e) => setBetaGuess(e.target.value.replace(/\D/g, ''))}
                   placeholder="---"
-                  disabled={heistStatus !== 'active' || betaStages[currentBetaStageIdx]?.completed}
+                  disabled={session.status !== 'active' || !currentBetaStage || currentBetaStage.completed || isSubmitting}
                   data-testid="beta-guess-input"
                   className="flex-1 min-h-[44px] px-3 bg-panel-light border border-line text-center font-data text-xl font-bold tracking-[6px] text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                   aria-label="Beta guess code"
@@ -458,7 +494,7 @@ export function CoopConsole() {
                   variant="primary"
                   compact
                   onClick={handleBetaSubmit}
-                  disabled={betaGuess.length !== 3 || heistStatus !== 'active'}
+                  disabled={betaGuess.length !== 3 || session.status !== 'active' || isSubmitting}
                   data-testid="beta-submit-button"
                 >
                   BYPASS
@@ -473,7 +509,7 @@ export function CoopConsole() {
                     type="button"
                     variant="secondary"
                     compact
-                    disabled={betaGuess.length >= 3 || heistStatus !== 'active'}
+                    disabled={betaGuess.length >= 3 || session.status !== 'active' || isSubmitting}
                     onClick={() => setBetaGuess((prev) => prev + d)}
                     className="min-h-[40px] p-0 text-xs font-bold"
                   >
@@ -486,10 +522,10 @@ export function CoopConsole() {
             {/* Beta Log */}
             <div className="flex-1 flex flex-col gap-1 min-h-[120px] max-h-[200px] overflow-y-auto">
               <span className="font-data text-[10px] uppercase text-ink-muted">SUBROUTINE BYPASS LOG:</span>
-              {betaHistory.length === 0 ? (
+              {session.beta.guesses.length === 0 ? (
                 <span className="font-data text-xs text-ink-muted italic">Crack this stage to empower Alpha...</span>
               ) : (
-                betaHistory.map((rec, i) => (
+                [...session.beta.guesses].reverse().map((rec, i) => (
                   <div
                     key={i}
                     className="flex justify-between items-center font-data text-xs p-1.5 bg-panel border border-line rounded-sm"

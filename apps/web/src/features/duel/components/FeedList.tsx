@@ -41,8 +41,8 @@ export function FeedList({
           const pots = latest.pots ?? 0;
           const pans = latest.pans ?? 0;
           setLiveAnnouncement(
-            `Rival guessed ${guessStr}: ${pots} pot${pots === 1 ? '' : 's'}, ${pans} pan${
-              pans === 1 ? '' : 's'
+            `Rival guessed ${guessStr}: ${pans} pan${pans === 1 ? '' : 's'}, ${pots} pot${
+              pots === 1 ? '' : 's'
             }.`
           );
         }

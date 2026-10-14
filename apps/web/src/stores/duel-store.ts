@@ -21,7 +21,7 @@ interface DuelState {
   createRoom: (name: string) => Promise<void>;
   startQuickDuel: (customWager?: number) => Promise<void>;
   joinRoom: (room: DuelRoom) => Promise<void>;
-  submitGuess: (guess: string, exploitUsed?: string) => Promise<{ playerGuess: DuelGuess; rivalGuess?: DuelGuess }>;
+  submitGuess: (guess: string, exploitUsed?: string, isStealth?: boolean) => Promise<{ playerGuess: DuelGuess; rivalGuess?: DuelGuess }>;
   useSabotage: (toolId: string) => Promise<void>;
   doubleOrNothing: () => Promise<void>;
   exitDuel: () => void;
@@ -123,13 +123,13 @@ export const useDuelStore = create<DuelState>((set, get) => ({
     }
   },
 
-  submitGuess: async (guess: string, exploitUsed?: string) => {
+  submitGuess: async (guess: string, exploitUsed?: string, isStealth?: boolean) => {
     const { activeSession } = get();
     if (!activeSession) throw new Error('No active duel session');
 
     try {
       set({ isLoading: true, error: null });
-      const result = await duelService.submitGuess(activeSession.id, guess, exploitUsed);
+      const result = await duelService.submitGuess(activeSession.id, guess, exploitUsed, isStealth);
 
       // If victory, credit net pot to player store cache
       if (result.session.status === 'player_won' && result.session.netPot > 0) {

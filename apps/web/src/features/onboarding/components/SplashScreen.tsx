@@ -1,0 +1,187 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useReducedMotion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
+import { BottomDrawer } from '@/components/ui/BottomDrawer';
+import { useOnboardingStore } from '../onboardingStore';
+import { STEPS } from '../steps';
+import { track } from '../analytics';
+
+const BOOT_LINE = 'DECK INITIALIZATION: SECURE PROTOCOL ACTIVE';
+
+export function SplashScreen() {
+  const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
+  const { step, callsign, advance, reset } = useOnboardingStore();
+
+  const [displayedBootLine, setDisplayedBootLine] = useState('');
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Typewriter effect (max 1.2s, instant under reduced motion)
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setDisplayedBootLine(BOOT_LINE);
+      return;
+    }
+
+    let currentIndex = 0;
+    const intervalMs = Math.floor(1200 / BOOT_LINE.length); // ~27ms per char -> ~1.16s
+    const timer = setInterval(() => {
+      currentIndex++;
+      setDisplayedBootLine(BOOT_LINE.slice(0, currentIndex));
+      if (currentIndex >= BOOT_LINE.length) {
+        clearInterval(timer);
+      }
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [shouldReduceMotion]);
+
+  const handleStart = () => {
+    track('splash_start');
+    advance('cold.intro');
+    router.push('/terminal/tutorial-soda');
+  };
+
+  const handleKnowGame = () => {
+    useOnboardingStore.setState({ skipExplanations: true });
+    track('skip_explanations');
+    advance('cold.intro');
+    router.push('/terminal/tutorial-soda');
+  };
+
+  const handleContinue = () => {
+    const targetRoute = step === 'done' ? '/map' : STEPS[step]?.route ?? '/map';
+    router.push(targetRoute);
+  };
+
+  const handleConfirmReset = () => {
+    reset();
+    setConfirmResetOpen(false);
+  };
+
+  const hasProfile = mounted && Boolean(callsign);
+
+  return (
+    <div
+      className="flex-1 w-full bg-panel text-ink flex flex-col justify-between p-6 select-none relative overflow-y-auto"
+      data-surface="panel"
+    >
+      {/* Top Header / Branding */}
+      <div className="flex flex-col items-center pt-12 sm:pt-16 text-center">
+        <div className="w-12 h-12 rounded-[12px] border border-line bg-panel-light flex items-center justify-center mb-6 shadow-sm">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-accent"
+          >
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M7 15h10M7 9h4" />
+          </svg>
+        </div>
+
+        <h1 className="font-heading text-4xl sm:text-5xl font-bold tracking-wider text-ink leading-tight">
+          NEON CIPHER
+        </h1>
+        <p className="font-data text-xs text-ink-muted uppercase tracking-[2px] mt-2">
+          Cracking Nodes Across the City
+        </p>
+      </div>
+
+      {/* Center Console Line */}
+      <div className="my-8 text-center flex flex-col items-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[6px] bg-panel-light border border-line">
+          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden="true" />
+          <span className="font-data text-xs text-accent-text tracking-wider">
+            {displayedBootLine}
+          </span>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="w-full max-w-sm mx-auto flex flex-col gap-3 pb-6">
+        {hasProfile ? (
+          <>
+            <Button
+              variant="primary"
+              size="full"
+              onClick={handleContinue}
+              data-testid="splash-continue-btn"
+            >
+              CONTINUE ({callsign})
+            </Button>
+            <Button
+              variant="ghost"
+              size="full"
+              onClick={() => setConfirmResetOpen(true)}
+              data-testid="splash-new-game-btn"
+            >
+              NEW GAME
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="primary"
+              size="full"
+              onClick={handleStart}
+              data-testid="splash-start-btn"
+            >
+              START
+            </Button>
+            <Button
+              variant="ghost"
+              size="full"
+              onClick={handleKnowGame}
+              data-testid="splash-know-game-btn"
+            >
+              I KNOW THIS GAME
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Reset Confirmation Drawer */}
+      <BottomDrawer
+        open={confirmResetOpen}
+        onClose={() => setConfirmResetOpen(false)}
+        title="START NEW GAME?"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="font-data text-xs text-ink-muted leading-relaxed">
+            Starting a new game will reset all progress on this device and return to Chapter 1.
+          </p>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button
+              variant="danger"
+              size="full"
+              onClick={handleConfirmReset}
+            >
+              RESET AND RESTART
+            </Button>
+            <Button
+              variant="ghost"
+              size="full"
+              onClick={() => setConfirmResetOpen(false)}
+            >
+              CANCEL
+            </Button>
+          </div>
+        </div>
+      </BottomDrawer>
+    </div>
+  );
+}

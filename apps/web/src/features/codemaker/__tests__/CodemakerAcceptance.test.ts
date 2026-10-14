@@ -129,7 +129,8 @@ describe('Task 12 Acceptance: Set defense, see applied to node, and attack from 
     const guessData = await guessRes.json();
 
     expect(guessData.status).toBe('won');
-    expect(guessData.pots).toBe(4);
+    expect(guessData.pans).toBe(4);
+    expect(guessData.pots).toBe(0);
 
     // Ownership transfers to PHREAK
     const updatedDefense = getNodeDefense('n2');

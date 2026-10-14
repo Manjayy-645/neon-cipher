@@ -39,7 +39,7 @@ export const TIERS: Record<number, TierConfig> = {
 };
 
 export const NODES: MapNode[] = [
-  { id: 's1', n: 'Rust Lane Vending', t: 'vending', tier: 1, z: 'S', x: 20, y: 12, st: 'available' },
+  { id: 's1', n: 'Rusty Soda Machine', t: 'vending', tier: 1, z: 'S', x: 20, y: 12, st: 'available' },
   { id: 's2', n: 'Tin Alley Parking Meter', t: 'meter', tier: 1, z: 'S', x: 16, y: 27, st: 'available' },
   { id: 's3', n: 'Scrapyard CCTV Relay', t: 'camera', tier: 2, z: 'S', x: 35, y: 26, st: 'contested' },
   { id: 's4', n: 'Soap Row Vending', t: 'vending', tier: 1, z: 'S', x: 20, y: 46, st: 'cooldown', cd: 930 },

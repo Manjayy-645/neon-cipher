@@ -7,6 +7,7 @@ import { walletService } from './walletService';
 import { usePlayerStore } from '@/stores/player-store';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Button } from '@/components/ui/Button';
+import { emit } from '@/features/onboarding/events';
 
 interface BlackMarketProps {
   onBackToDialogue: () => void;
@@ -63,6 +64,10 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
         coins: result.balances.coins,
         inventory: result.inventory,
       });
+      emit({ type: 'market:bought', itemId: selectedItemForPurchase.id });
+      if (selectedItemForPurchase.id === 'tool-firewall-patch') {
+        emit({ type: 'market:bought', itemId: 'firewall-patch' });
+      }
       setPurchaseFeedback({
         type: 'success',
         message: result.message || `Acquired ${selectedItemForPurchase.name}!`,
@@ -99,6 +104,10 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
         coins,
         equippedTools: res.equippedTools,
       });
+      emit({ type: 'market:equipped', itemId: toolId });
+      if (toolId === 'tool-firewall-patch') {
+        emit({ type: 'market:equipped', itemId: 'firewall-patch' });
+      }
     }
   };
 
@@ -209,7 +218,9 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
               item={item}
               ownedCount={owned}
               isMaxed={isMaxed}
+              isEquipped={equippedTools.includes(item.id)}
               onBuyClick={() => handleOpenConfirm(item)}
+              onEquipClick={() => handleToggleEquipTool(item.id)}
             />
           );
         })}
@@ -261,12 +272,16 @@ function ItemCard({
   item,
   ownedCount,
   isMaxed,
+  isEquipped = false,
   onBuyClick,
+  onEquipClick,
 }: {
   item: CatalogItem;
   ownedCount: number;
   isMaxed: boolean;
+  isEquipped?: boolean;
   onBuyClick: () => void;
+  onEquipClick?: () => void;
 }) {
   const isCoinCurrency = item.currency === 'coins';
 
@@ -357,14 +372,36 @@ function ItemCard({
             : 'Consumable tool'}
         </span>
 
-        <Button
-          variant={isMaxed ? 'secondary' : 'compact'}
-          compact
-          onClick={onBuyClick}
-          disabled={isMaxed}
-        >
-          {isMaxed ? 'OWNED' : 'BUY'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {item.category === 'tools' && ownedCount > 0 && onEquipClick && (
+            <Button
+              variant={isEquipped ? 'secondary' : 'primary'}
+              compact
+              onClick={onEquipClick}
+              data-tour={
+                item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
+                  ? 'equip-firewall-patch'
+                  : undefined
+              }
+            >
+              {isEquipped ? 'EQUIPPED' : 'EQUIP'}
+            </Button>
+          )}
+
+          <Button
+            variant={isMaxed ? 'secondary' : 'compact'}
+            compact
+            onClick={onBuyClick}
+            disabled={isMaxed}
+            data-tour={
+              item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
+                ? 'buy-firewall-patch'
+                : undefined
+            }
+          >
+            {isMaxed ? 'OWNED' : 'BUY'}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -507,6 +544,11 @@ function ConfirmPurchaseSheet({
             disabled={isShort || isPurchasing}
             loading={isPurchasing}
             className="flex-1"
+            data-tour={
+              item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
+                ? 'buy-firewall-patch'
+                : undefined
+            }
           >
             {isPurchasing ? 'PROCESSING...' : isShort ? 'CANNOT AFFORD' : 'CONFIRM PURCHASE'}
           </Button>
@@ -674,6 +716,11 @@ function EquipDrawer({
                     variant={isEquipped ? 'danger' : 'primary'}
                     compact
                     onClick={() => onToggleEquip(tool.id)}
+                    data-tour={
+                      tool.id === 'tool-firewall-patch' || tool.id === 'firewall-patch'
+                        ? 'equip-firewall-patch'
+                        : undefined
+                    }
                   >
                     {isEquipped ? 'UNEQUIP' : 'EQUIP'}
                   </Button>

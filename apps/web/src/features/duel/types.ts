@@ -17,22 +17,29 @@ export interface DuelGuess {
   pans: number;
   timestamp: number;
   cheatUsed?: boolean;
+  isStealth?: boolean;
+  falsified?: boolean;
+  unmasked?: boolean;
 }
 
 export type SabotageEffectType =
   | 'scramble_keypad'
   | 'static_history'
   | 'drain_clock'
-  | 'firewall_shield';
+  | 'firewall_shield'
+  | 'snoop_packet'
+  | 'false_flag_echo';
 
 export interface DuelParticipant {
   handle: string;
   avatar: string;
   guesses: DuelGuess[];
-  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock'>;
+  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock' | 'snoop_packet' | 'false_flag_echo'>;
   staticExpiry?: number;
   shieldActive: boolean;
   cheatUsed: boolean;
+  falseFlagActive?: boolean;
+  snoopActive?: boolean;
 }
 
 export interface DuelSession {

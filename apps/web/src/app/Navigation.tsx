@@ -116,6 +116,7 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
               aria-label={`${item.name} (Coming soon)`}
               aria-current={isActive ? 'page' : undefined}
               data-testid={`nav-item-${item.name.toLowerCase()}`}
+              data-tour={item.flag === 'comms' ? 'nav-comms' : undefined}
             >
               <div className="w-[22px] h-[22px] flex items-center justify-center">
                 {item.icon}
@@ -136,6 +137,7 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
             style={tabStyle}
             aria-current={isActive ? 'page' : undefined}
             data-testid={`nav-item-${item.name.toLowerCase()}`}
+            data-tour={item.flag === 'comms' ? 'nav-comms' : undefined}
           >
             <div className="w-[22px] h-[22px] flex items-center justify-center">
               {item.icon}

@@ -89,17 +89,15 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       data-testid="tutorial-overlay"
       className="fixed inset-0 z-50 pointer-events-none select-none overflow-hidden"
     >
-      {/* Dark backdrop cutout with SVG mask */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        aria-hidden="true"
-      >
-        <defs>
-          <mask id="tutorial-spotlight-mask">
-            {/* White covers all (opaque) */}
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {/* Black hole cut out at target coordinates */}
-            {isTargetVisible && (
+      {isTargetVisible && (
+        <svg
+          data-testid="tutorial-curtain"
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          aria-hidden="true"
+        >
+          <defs>
+            <mask id="tutorial-spotlight-mask">
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
               <rect
                 x={left}
                 y={top}
@@ -109,19 +107,18 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
                 ry="8"
                 fill="black"
               />
-            )}
-          </mask>
-        </defs>
-        {/* Semi-transparent dark curtain */}
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(10, 14, 12, 0.72)"
-          mask="url(#tutorial-spotlight-mask)"
-        />
-      </svg>
+            </mask>
+          </defs>
+          <rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="rgba(10, 14, 12, 0.72)"
+            mask="url(#tutorial-spotlight-mask)"
+          />
+        </svg>
+      )}
 
       {isTargetVisible ? (
         <>
@@ -154,14 +151,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
             onClick={handleBackdropClick}
           />
         </>
-      ) : (
-        <div
-          aria-hidden="true"
-          data-testid="tutorial-backdrop-guard"
-          className="absolute inset-0 pointer-events-auto"
-          onClick={handleBackdropClick}
-        />
-      )}
+      ) : null}
 
       {/* Target spotlight highlight ring (pointer-events-none so target underneath receives click) */}
       {isTargetVisible && (

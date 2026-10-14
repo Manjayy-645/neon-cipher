@@ -8,6 +8,8 @@ import { MarkerIcon } from '../../components/ui/MarkerIcon';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 import { triggerToast } from '../../stores/toast-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { emit } from '@/features/onboarding/events';
 
 function formatCountdown(seconds?: number): string {
   if (seconds === undefined || seconds <= 0) return '00:00';
@@ -24,6 +26,22 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   const setActiveNodeId = useMapStore((s) => s.setActiveNodeId);
   const bridgeUnlocked = useMapStore((s) => s.unlocks.bridge);
 
+  const step = useOnboardingStore((s) => s.step);
+  const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
+
+  const isDimmed = step === 'map.district' && node.id !== 's5' && node.id !== 's1';
+  const crackedRecord = crackedNodes[node.id];
+  const isCooldownFromCracked = Boolean(
+    crackedRecord && Date.now() - crackedRecord.crackedAt < crackedRecord.cooldownMs
+  );
+  const cooldownSecs = isCooldownFromCracked
+    ? Math.max(0, Math.ceil((crackedRecord.cooldownMs - (Date.now() - crackedRecord.crackedAt)) / 1000))
+    : node.timerSeconds;
+
+  const effectiveNode = isCooldownFromCracked
+    ? { ...node, status: 'cooldown' as const, timerSeconds: cooldownSecs }
+    : node;
+
   const isSelected = (activeNodeId ?? selectedNodeId) === node.id;
   const isLocked = Boolean(node.requiresUnlock && !bridgeUnlocked);
 
@@ -33,8 +51,8 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   if (isLocked) {
     tagText = 'LOCKED';
     tagBg = 'bg-ink text-panel-light';
-  } else if (node.status === 'cooldown') {
-    tagText = formatCountdown(node.timerSeconds);
+  } else if (effectiveNode.status === 'cooldown') {
+    tagText = formatCountdown(cooldownSecs);
     tagBg = 'bg-status-cooldown text-panel-light';
   }
 
@@ -43,6 +61,9 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   }
 
   const handleSelect = () => {
+    if (isDimmed) return;
+    emit({ type: 'map:nodeSelected', nodeId: node.id });
+
     if (isLocked) {
       triggerToast(`${node.name} is locked: Complete Chapter 2 to gain district clearance.`, { type: 'locked' });
     }
@@ -55,17 +76,20 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
 
   return (
     <motion.button
-      className={`relative flex flex-col items-center justify-center cursor-pointer select-none rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:shadow-[0_0_0_5px_var(--accent)] transition-shadow ${
+      data-tour={node.id === 's5' ? 'node-s5' : undefined}
+      className={`relative flex flex-col items-center justify-center cursor-pointer select-none rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:shadow-[0_0_0_5px_var(--accent)] transition-all ${
         isSelected ? 'drop-shadow-[0_0_8px_rgba(66,105,71,0.85)]' : ''
       }`}
       style={{
         width: '52px',
         height: '60px',
         touchAction: 'manipulation',
+        opacity: isDimmed ? 0.45 : 1,
+        pointerEvents: isDimmed ? 'none' : 'auto',
       }}
       animate={{ y: isSelected ? -4 : 0 }}
       transition={prefersReducedMotion ? { duration: 0.05 } : { duration: 0.22, ease: 'easeOut' }}
-      whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
+      whileTap={prefersReducedMotion || isDimmed ? undefined : { scale: 0.95 }}
       onClick={(e) => {
         e.stopPropagation();
         handleSelect();
@@ -77,10 +101,10 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
           handleSelect();
         }
       }}
-      aria-label={`${node.name}, tier ${node.tier}, ${isLocked ? 'locked' : node.status}`}
+      aria-label={`${node.name}, tier ${node.tier}, ${isLocked ? 'locked' : effectiveNode.status}`}
     >
       <div className="relative flex flex-col items-center">
-        <MarkerIcon size="md" node={node} isLocked={isLocked} isSelected={isSelected} />
+        <MarkerIcon size="md" node={effectiveNode} isLocked={isLocked} isSelected={isSelected} />
 
         {/* Selection Pulse: 400ms pulse if motion enabled */}
         <AnimatePresence>

@@ -101,8 +101,8 @@ export function SabotageBar({
         </div>
       )}
 
-      {/* 4 Sabotage Tool Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* 6 Sabotage Tool Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {tools.map((tool) => {
           const canAfford = effectiveCredits >= tool.creditCost;
           const shortfall = tool.creditCost - effectiveCredits;

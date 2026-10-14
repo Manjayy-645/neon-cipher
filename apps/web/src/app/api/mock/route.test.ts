@@ -82,8 +82,8 @@ describe('Mock Server Routes', () => {
 
       const data = await response.json();
       expect(data.status).toBe('active');
-      expect(data.pots).toBe(2);
-      expect(data.pans).toBe(0);
+      expect(data.pans).toBe(2);
+      expect(data.pots).toBe(0);
       expect(data.attemptsLeft).toBe(4);
       expect(data.secret).toBeUndefined();
     });
@@ -99,8 +99,8 @@ describe('Mock Server Routes', () => {
 
       const data = await response.json();
       expect(data.status).toBe('won');
-      expect(data.pots).toBe(3);
-      expect(data.pans).toBe(0);
+      expect(data.pans).toBe(3);
+      expect(data.pots).toBe(0);
       expect(data.attemptsLeft).toBe(4);
       expect(data.secret).toBe('123'); // Secret is returned on win
       expect(data.payout).toBe(mockNode.bounty);
@@ -149,10 +149,10 @@ describe('Mock Server Routes', () => {
       expect(data.secret).toBe('123');
     });
 
-    it('evaluates Pot-only ICE by suppressing pans to zero', async () => {
+    it('evaluates Pot-only ICE by suppressing pots to zero', async () => {
       const session = mockSessions.get(testSessionId)!;
       session.ice = 'Pot-only';
-      // secret is 123. Guess 132 would normally give 1 pot, 2 pans.
+      // secret is 123. Guess 132 would normally give 1 pan, 2 pots.
       const request = new Request('http://localhost/api/mock/guess', {
         method: 'POST',
         body: JSON.stringify({ sessionId: testSessionId, guess: '132' }),
@@ -162,8 +162,8 @@ describe('Mock Server Routes', () => {
       expect(response.status).toBe(200);
 
       const data = await response.json();
-      expect(data.pots).toBe(1);
-      expect(data.pans).toBe(0); // Pans suppressed by Pot-only ICE
+      expect(data.pans).toBe(1);
+      expect(data.pots).toBe(0); // Pots suppressed by Pot-only ICE
       expect(data.ice).toBe('Pot-only');
     });
 

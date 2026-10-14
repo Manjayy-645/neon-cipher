@@ -5,6 +5,8 @@ import { SettingsDrawer } from '../SettingsDrawer';
 import { useSettingsStore } from '@/stores/settings-store';
 import { usePlayerStore } from '@/stores/player-store';
 import { authService } from '../../auth/authService';
+import { defaultCampaignState } from '@/app/api/mock/db';
+import { useCampaignStore } from '@/stores/campaign-store';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -53,6 +55,18 @@ describe('SettingsDrawer Component (6.0)', () => {
       credits: 12500,
       coins: 45,
     });
+    vi.mocked(authService.resetCampaign).mockResolvedValue({
+      account: {
+        wallet: {
+          credits: 4200,
+          coins: 7,
+          inventory: { 'tool-static-injector': 1 },
+          equippedTools: ['tool-static-injector'],
+        },
+      },
+      campaign: defaultCampaignState,
+    });
+    useCampaignStore.getState().syncCampaign(defaultCampaignState);
   });
 
   it('renders all 6 configuration sections and decker profile', () => {
@@ -139,17 +153,18 @@ describe('SettingsDrawer Component (6.0)', () => {
       fireEvent.click(resetBtn);
     });
 
-    // Button text changes to confirmation prompt
-    expect(screen.getByText('CONFIRM PURGE: RESET CAMPAIGN?')).toBeDefined();
+    expect(screen.getByText(/clears chapter and node progress/i)).toBeDefined();
     expect(authService.resetCampaign).not.toHaveBeenCalled();
 
-    // Clicking confirm invokes the reset
-    const confirmBtn = screen.getByText('CONFIRM PURGE: RESET CAMPAIGN?');
+    const confirmBtn = screen.getByRole('button', { name: 'RESET CAMPAIGN' });
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
 
     expect(authService.resetCampaign).toHaveBeenCalledTimes(1);
+    expect(usePlayerStore.getState().credits).toBe(4200);
+    expect(usePlayerStore.getState().coins).toBe(7);
+    expect(usePlayerStore.getState().inventory).toEqual({ 'tool-static-injector': 1 });
   });
 
   it('signs out and routes to /login', async () => {

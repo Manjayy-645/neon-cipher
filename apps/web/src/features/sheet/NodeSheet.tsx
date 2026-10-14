@@ -11,6 +11,7 @@ import { walletService } from '../market/walletService';
 import { LoadoutSelector } from '../rig/LoadoutSelector';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
+import { emit } from '@/features/onboarding/events';
 
 const SNAP_POINTS = [76, 250, 500]; // peek, half, expanded
 
@@ -323,6 +324,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
 
   const navigateToTerminal = () => {
     if (isActionDisabled) return;
+    emit({ type: 'map:jackIn', nodeId: node.id });
     const chapter = getChapterByNodeId(node.id);
     const tutorialStep = chapter?.tutorialSteps?.[tutorialStepIndex];
     if (
@@ -584,6 +586,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
               disabled={isActionDisabled}
               data-testid="jack-in-button"
               data-tutorial="jack-in"
+              data-tour="jack-in"
             >
               {actionLabel}
             </Button>

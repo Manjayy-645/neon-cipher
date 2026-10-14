@@ -1,5 +1,5 @@
 export type IceType = 'Liar' | 'Drift' | 'Pot-only' | 'Ghost' | 'Sticky' | 'None';
-export type Score = { pots: number; pans: number };
+export type Score = { pans: number; pots: number };
 
 export interface IceScore extends Score {
   ice?: IceType;
@@ -13,6 +13,7 @@ export * from './characters';
 export * from './campaign';
 export * from './codemaker';
 export * from './duel';
+export * from './coop';
 export * from './profileRules';
 export * from './clues';
 
@@ -145,29 +146,29 @@ export function calculateScore(secret: string, guess: string): Score {
     throw new Error('Secret and guess must be the same length');
   }
 
-  let pots = 0;
+  let pans = 0;
   const secretRemaining: Record<string, number> = {};
   const guessRemaining: Record<string, number> = {};
 
-  // First pass: identify pots and collect remaining characters
+  // First pass: identify exact matches (pans) and collect remaining characters.
   for (let i = 0; i < secret.length; i++) {
     if (secret[i] === guess[i]) {
-      pots++;
+      pans++;
     } else {
       secretRemaining[secret[i]] = (secretRemaining[secret[i]] || 0) + 1;
       guessRemaining[guess[i]] = (guessRemaining[guess[i]] || 0) + 1;
     }
   }
 
-  let pans = 0;
-  // Second pass: count pans based on minimum of remaining characters
+  let pots = 0;
+  // Count wrong-position matches (pots) from the digits left after exact matches.
   for (const digit in guessRemaining) {
     if (secretRemaining[digit]) {
-      pans += Math.min(secretRemaining[digit], guessRemaining[digit]);
+      pots += Math.min(secretRemaining[digit], guessRemaining[digit]);
     }
   }
 
-  return { pots, pans };
+  return { pans, pots };
 }
 
 export function calculateScoreWithIce(
@@ -180,32 +181,32 @@ export function calculateScoreWithIce(
 
   switch (ice) {
     case 'Pot-only':
-      return { pots: base.pots, pans: 0, ice: 'Pot-only' };
+      return { pans: base.pans, pots: 0, ice: 'Pot-only' };
 
     case 'Ghost':
-      return { pots: 0, pans: 0, totalHits: base.pots + base.pans, ice: 'Ghost' };
+      return { pans: 0, pots: 0, totalHits: base.pans + base.pots, ice: 'Ghost' };
 
     case 'Liar': {
       if (!options?.isFalsified) {
         return { ...base, ice: 'Liar', isFalsified: false };
       }
-      let { pots, pans } = base;
-      const totalHits = pots + pans;
+      let { pans, pots } = base;
+      const totalHits = pans + pots;
       if (totalHits >= secret.length) {
-        if (pans > 0) pans--;
-        else if (pots > 0) pots--;
+        if (pots > 0) pots--;
+        else if (pans > 0) pans--;
       } else if (totalHits === 0) {
-        pans++;
+        pots++;
       } else {
         const rng = options?.randomFn ? options.randomFn() : Math.random();
         if (rng > 0.5) {
-          pans++;
+          pots++;
         } else {
-          if (pans > 0) pans--;
-          else pots--;
+          if (pots > 0) pots--;
+          else pans--;
         }
       }
-      return { pots, pans, ice: 'Liar', isFalsified: true };
+      return { pans, pots, ice: 'Liar', isFalsified: true };
     }
 
     case 'Sticky':
@@ -279,7 +280,7 @@ export function checkContradiction(
       return {
         isConsistent: false,
         conflictingGuess: entry,
-        reason: `Contradicts guess ${entry.guess} (clue: ${entry.pots} Pot${entry.pots === 1 ? '' : 's'}, ${entry.pans} Pan${entry.pans === 1 ? '' : 's'}; candidate yields ${score.pots} Pot${score.pots === 1 ? '' : 's'}, ${score.pans} Pan${score.pans === 1 ? '' : 's'})`,
+        reason: `Contradicts guess ${entry.guess} (clue: ${entry.pans} Pan${entry.pans === 1 ? '' : 's'}, ${entry.pots} Pot${entry.pots === 1 ? '' : 's'}; candidate yields ${score.pans} Pan${score.pans === 1 ? '' : 's'}, ${score.pots} Pot${score.pots === 1 ? '' : 's'})`,
       };
     }
   }

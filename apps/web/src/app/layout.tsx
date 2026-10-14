@@ -2,8 +2,9 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { fontHeading, fontData } from '../lib/fonts'
 import { ConnectionBanner } from '@/features/system/ConnectionBanner'
-import { Navigation } from './Navigation'
-import { Hud } from '@/features/hud/Hud'
+import { ConditionalHud, ConditionalNav } from '@/features/onboarding/components/AppChrome'
+import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
+import { TourDirector } from '@/features/onboarding/components/TourDirector'
 import { AppShell } from '@/components/AppShell'
 import { Toast } from '@/components/ui/Toast'
 
@@ -25,8 +26,8 @@ export default function RootLayout({
             {/* Network & Mid-duel status banner */}
             <ConnectionBanner />
 
-            {/* Top HUD Slot */}
-            <Hud />
+            {/* Top HUD Slot (rendered only when chromeVisible is true) */}
+            <ConditionalHud />
 
             {/* Main Content Area */}
             <main className="flex-1 overflow-hidden relative z-0 flex flex-col">
@@ -36,8 +37,14 @@ export default function RootLayout({
             {/* Global Feedback Toast */}
             <Toast />
 
-            {/* Bottom Nav */}
-            <Navigation />
+            {/* Bottom Nav (rendered only when chromeVisible is true) */}
+            <ConditionalNav />
+
+            {/* Onboarding Gate Route Guard */}
+            <OnboardingGate />
+
+            {/* Guided Tour Director */}
+            <TourDirector />
           </div>
         </AppShell>
       </body>

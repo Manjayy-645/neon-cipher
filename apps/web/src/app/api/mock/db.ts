@@ -15,6 +15,17 @@ import {
   SABOTAGE_RULES,
   generateNullByteGuess,
   DuelMatchType,
+  STEALTH_GUESS_COST,
+  generateFalseFlagClue,
+  COOP_STAGE_TEMPLATES,
+  calculateCoopReward,
+  validateCoopGuess,
+  calculateCoopPayout,
+  findDeadDigitsForAlpha,
+  CoopRole,
+  CoopStageConfig,
+  CoopGuessRecord,
+  CoopPayoutResult,
   DeckerProfile,
   SkillNode,
   FactionStanding,
@@ -894,16 +905,21 @@ export interface DuelGuessRecord {
   pans: number;
   timestamp: number;
   cheatUsed?: boolean;
+  isStealth?: boolean;
+  falsified?: boolean;
+  unmasked?: boolean;
 }
 
 export interface DuelParticipant {
   handle: string;
   avatar: string;
   guesses: DuelGuessRecord[];
-  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock'>;
+  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock' | 'snoop_packet' | 'false_flag_echo'>;
   staticExpiry?: number;
   shieldActive: boolean;
   cheatUsed: boolean;
+  falseFlagActive?: boolean;
+  snoopActive?: boolean;
 }
 
 export interface DuelSessionState {
@@ -1073,6 +1089,7 @@ export function submitDuelGuess(data: {
   duelId: string;
   guess: string;
   exploitUsed?: string;
+  isStealth?: boolean;
 }): {
   session: Omit<DuelSessionState, 'secret'> & { secret?: string };
   playerGuess: DuelGuessRecord;
@@ -1084,6 +1101,19 @@ export function submitDuelGuess(data: {
   }
   if (session.status !== 'active') {
     throw new Error('Duel session already resolved');
+  }
+
+  // Handle stealth guess fee
+  if (data.isStealth) {
+    if (mockWallet.credits < STEALTH_GUESS_COST) {
+      throw new Error(`Insufficient credits for Stealth Guess. Required: ${STEALTH_GUESS_COST} CR`);
+    }
+    recordTransaction({
+      source: 'Stealth Guess Fee',
+      amount: -STEALTH_GUESS_COST,
+      currency: 'credits',
+      category: 'purchase',
+    });
   }
 
   // Check exploit
@@ -1106,18 +1136,41 @@ export function submitDuelGuess(data: {
 
   // Score player guess
   const playerScore = calculateScore(session.secret, data.guess);
+
+  let displayPots = playerScore.pots;
+  let displayPans = playerScore.pans;
+  let wasFalsified = false;
+
+  // False Flag Echo: spoof public feedback for this guess
+  if (session.player.falseFlagActive) {
+    const fake = generateFalseFlagClue(playerScore.pots, playerScore.pans, session.digits);
+    displayPots = fake.pots;
+    displayPans = fake.pans;
+    wasFalsified = true;
+    session.player.falseFlagActive = false;
+  }
+
+  const isStealth = !!data.isStealth;
+  const isUnmasked = isStealth && !!session.rival.snoopActive;
+  if (isUnmasked) {
+    session.rival.snoopActive = false;
+  }
+
   const playerRecord: DuelGuessRecord = {
     guess: data.guess,
-    pots: playerScore.pots,
-    pans: playerScore.pans,
+    pots: displayPots,
+    pans: displayPans,
     timestamp: Date.now(),
     cheatUsed: session.player.cheatUsed,
+    isStealth,
+    falsified: wasFalsified,
+    unmasked: isUnmasked,
   };
   session.player.guesses.push(playerRecord);
   session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
 
   // Check player win
-  if (playerScore.pots === session.digits) {
+  if (playerScore.pans === session.digits) {
     session.status = 'player_won';
     session.winner = 'player';
     session.finishTimeDeltaSeconds = Math.round((Date.now() - session.startedAt) / 1000);
@@ -1163,7 +1216,7 @@ export function submitDuelGuess(data: {
   session.sharedAttempts = Math.max(0, session.sharedAttempts - 1);
 
   // Check rival win
-  if (rivalScore.pots === session.digits) {
+  if (rivalScore.pans === session.digits) {
     session.status = 'rival_won';
     session.winner = 'rival';
     session.finishTimeDeltaSeconds = Math.round((Date.now() - session.startedAt) / 1000);
@@ -1246,6 +1299,31 @@ export function applyDuelSabotage(data: {
     };
   }
 
+  if (rule.effectType === 'snoop_packet') {
+    session.player.snoopActive = true;
+    session.rival.guesses.forEach((g) => {
+      if (g.isStealth) g.unmasked = true;
+    });
+    return {
+      success: true,
+      shielded: false,
+      effectApplied: 'snoop_packet',
+      remainingCredits: mockWallet.credits,
+      message: 'Snoop Packet activated. Rival encrypted moves unmasked.',
+    };
+  }
+
+  if (rule.effectType === 'false_flag_echo') {
+    session.player.falseFlagActive = true;
+    return {
+      success: true,
+      shielded: false,
+      effectApplied: 'false_flag_echo',
+      remainingCredits: mockWallet.credits,
+      message: 'False Flag Echo armed. Next guess broadcasts falsified clues.',
+    };
+  }
+
   // Target rival
   if (session.rival.shieldActive) {
     session.rival.shieldActive = false; // Blocked!
@@ -1322,6 +1400,265 @@ export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
 
   mockDuelSessions.set(rematchedSession.id, rematchedSession);
   return rematchedSession;
+}
+
+/**
+ * ============================================================================
+ * CO-OP HEIST MULTIPLAYER MOCK STATE & LOGIC
+ * ============================================================================
+ */
+
+export interface CoopStageServerState extends CoopStageConfig {
+  secret: string; // SERVER ONLY!
+  completed: boolean;
+}
+
+export interface CoopSessionState {
+  id: string;
+  status: 'active' | 'won' | 'lost';
+  startedAt: number;
+  timeLimitSeconds: number;
+  bounty: number;
+  alpha: {
+    secret: string; // SERVER ONLY!
+    digits: number;
+    attemptsLeft: number;
+    maxAttempts: number;
+    guesses: CoopGuessRecord[];
+    eliminatedDigits: string[];
+  };
+  beta: {
+    currentStageIndex: number;
+    stages: CoopStageServerState[];
+    guesses: CoopGuessRecord[];
+  };
+  payout?: CoopPayoutResult;
+}
+
+export const mockCoopSessions = new Map<string, CoopSessionState>();
+
+export function getSafeCoopSession(session: CoopSessionState) {
+  const isFinished = session.status !== 'active';
+  return {
+    id: session.id,
+    status: session.status,
+    startedAt: session.startedAt,
+    timeLimitSeconds: session.timeLimitSeconds,
+    bounty: session.bounty,
+    payout: session.payout,
+    alpha: {
+      digits: session.alpha.digits,
+      attemptsLeft: session.alpha.attemptsLeft,
+      maxAttempts: session.alpha.maxAttempts,
+      guesses: session.alpha.guesses,
+      eliminatedDigits: session.alpha.eliminatedDigits,
+      // RULE 1: Secret only returned after victory/defeat
+      secret: isFinished ? session.alpha.secret : undefined,
+    },
+    beta: {
+      currentStageIndex: session.beta.currentStageIndex,
+      guesses: session.beta.guesses,
+      stages: session.beta.stages.map((st) => ({
+        id: st.id,
+        name: st.name,
+        digits: st.digits,
+        rewardType: st.rewardType,
+        rewardDescription: st.rewardDescription,
+        completed: st.completed,
+        // RULE 1: Secret only returned after stage is completed or heist finished
+        secret: (isFinished || st.completed) ? st.secret : undefined,
+      })),
+    },
+  };
+}
+
+export function startCoopSession(options?: {
+  playerRole?: CoopRole;
+  difficulty?: number;
+  initialAlphaSecret?: string;
+  initialBetaSecrets?: string[];
+}): CoopSessionState {
+  const sessionId = `coop-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const alphaSecret = options?.initialAlphaSecret || generateCode(4, false);
+
+  const stages: CoopStageServerState[] = COOP_STAGE_TEMPLATES.map((tmpl, idx) => ({
+    ...tmpl,
+    secret: (options?.initialBetaSecrets && options.initialBetaSecrets[idx]) || generateCode(tmpl.digits, false),
+    completed: false,
+  }));
+
+  const session: CoopSessionState = {
+    id: sessionId,
+    status: 'active',
+    startedAt: Date.now(),
+    timeLimitSeconds: 180,
+    bounty: 2500,
+    alpha: {
+      secret: alphaSecret,
+      digits: 4,
+      attemptsLeft: 4,
+      maxAttempts: 4,
+      guesses: [],
+      eliminatedDigits: [],
+    },
+    beta: {
+      currentStageIndex: 0,
+      stages,
+      guesses: [],
+    },
+  };
+
+  mockCoopSessions.set(sessionId, session);
+  return session;
+}
+
+export function submitCoopGuess(data: {
+  sessionId: string;
+  role: CoopRole;
+  guess: string;
+}): {
+  session: ReturnType<typeof getSafeCoopSession>;
+  guessRecord: CoopGuessRecord;
+  rewardMessage?: string;
+} {
+  const session = mockCoopSessions.get(data.sessionId);
+  if (!session) throw new Error('Co-op session not found');
+  if (session.status !== 'active') throw new Error('Co-op session is no longer active');
+
+  const isValid = validateCoopGuess(data.role, data.guess);
+  if (!isValid) throw new Error(`Invalid guess format for role ${data.role}`);
+
+  const elapsed = (Date.now() - session.startedAt) / 1000;
+  if (elapsed >= session.timeLimitSeconds) {
+    session.status = 'lost';
+    return {
+      session: getSafeCoopSession(session),
+      guessRecord: { guess: data.guess, pots: 0, pans: 0, timestamp: Date.now(), role: data.role },
+      rewardMessage: 'MISSION FAILED: Security countdown expired.',
+    };
+  }
+
+  let rewardMessage: string | undefined;
+
+  if (data.role === 'alpha') {
+    const score = calculateScore(session.alpha.secret, data.guess);
+    const rec: CoopGuessRecord = {
+      guess: data.guess,
+      pots: score.pots,
+      pans: score.pans,
+      timestamp: Date.now(),
+      role: 'alpha',
+    };
+    session.alpha.guesses.push(rec);
+
+    if (score.pans === session.alpha.digits) {
+      session.status = 'won';
+      const remainingSecs = Math.max(0, session.timeLimitSeconds - elapsed);
+      const stagesCompleted = session.beta.stages.filter((s) => s.completed).length;
+      const payout = calculateCoopPayout({
+        baseBounty: session.bounty,
+        remainingSeconds: remainingSecs,
+        totalSeconds: session.timeLimitSeconds,
+        stagesCompleted,
+      });
+      session.payout = payout;
+
+      recordTransaction({
+        source: 'Co-op Vault Breach Payout',
+        amount: payout.eachPlayerShare,
+        currency: 'credits',
+        category: 'payout',
+      });
+
+      rewardMessage = `VAULT CRACKED! Master signal unlocked by Alpha Infiltrator. Crew dividend of ${payout.eachPlayerShare} CR secured.`;
+      return {
+        session: getSafeCoopSession(session),
+        guessRecord: rec,
+        rewardMessage,
+      };
+    }
+
+    session.alpha.attemptsLeft -= 1;
+    if (session.alpha.attemptsLeft <= 0) {
+      session.status = 'lost';
+      rewardMessage = 'MISSION FAILED // Alpha exhausted all guess attempts.';
+    }
+
+    return {
+      session: getSafeCoopSession(session),
+      guessRecord: rec,
+      rewardMessage,
+    };
+  } else {
+    // Role Beta
+    const stage = session.beta.stages[session.beta.currentStageIndex];
+    if (!stage || stage.completed) {
+      throw new Error('All auxiliary subroutines already bypassed');
+    }
+
+    const score = calculateScore(stage.secret, data.guess);
+    const rec: CoopGuessRecord = {
+      guess: data.guess,
+      pots: score.pots,
+      pans: score.pans,
+      timestamp: Date.now(),
+      role: 'beta',
+    };
+    session.beta.guesses.push(rec);
+
+    if (score.pans === stage.digits) {
+      stage.completed = true;
+      const reward = calculateCoopReward(stage, {
+        alphaAttempts: session.alpha.attemptsLeft,
+        alphaSecret: session.alpha.secret,
+        eliminatedDigits: session.alpha.eliminatedDigits,
+        remainingSeconds: Math.max(0, session.timeLimitSeconds - elapsed),
+      });
+
+      session.alpha.attemptsLeft = reward.nextAttempts;
+      session.alpha.eliminatedDigits = reward.eliminatedDigits;
+      if (reward.addedSeconds) {
+        session.timeLimitSeconds += reward.addedSeconds;
+      }
+
+      if (reward.type === 'extra_attempt') {
+        rewardMessage = `[BETA SUPPORT] ${stage.name} CRACKED! +1 Attempt granted to Alpha.`;
+      } else if (reward.type === 'remove_dead_digit') {
+        rewardMessage = `[BETA SUPPORT] ${stage.name} CRACKED! Dead digit '${reward.eliminatedDigit}' eliminated for Alpha.`;
+      } else if (reward.type === 'time_freeze') {
+        rewardMessage = `[BETA SUPPORT] ${stage.name} CRACKED! +${reward.addedSeconds}s added to crew timer.`;
+      }
+
+      if (session.beta.currentStageIndex < session.beta.stages.length - 1) {
+        session.beta.currentStageIndex += 1;
+      } else {
+        rewardMessage = (rewardMessage ? rewardMessage + ' ' : '') + '[BETA SUPPORT] All security firewalls bypassed! Alpha has full signal support.';
+      }
+    }
+
+    return {
+      session: getSafeCoopSession(session),
+      guessRecord: rec,
+      rewardMessage,
+    };
+  }
+}
+
+export function simulatePartnerBetaStage(sessionId: string): {
+  session: ReturnType<typeof getSafeCoopSession>;
+  guessRecord: CoopGuessRecord;
+  rewardMessage?: string;
+} {
+  const session = mockCoopSessions.get(sessionId);
+  if (!session) throw new Error('Co-op session not found');
+  const stage = session.beta.stages[session.beta.currentStageIndex];
+  if (!stage) throw new Error('No active Beta stage');
+
+  return submitCoopGuess({
+    sessionId,
+    role: 'beta',
+    guess: stage.secret,
+  });
 }
 
 /**

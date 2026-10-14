@@ -6,8 +6,60 @@ import { getNodes } from '@/features/map/nodeService';
 // MOCK: replace with Supabase edge function.
 export async function POST(request: Request) {
   try {
-    const { nodeId } = await request.json();
+    const { nodeId, courtesy } = await request.json();
     if (!nodeId) return NextResponse.json({ error: 'Missing nodeId' }, { status: 400 });
+
+    if (nodeId === 'tutorial-soda') {
+      const sessionId = Math.random().toString(36).substring(2, 15);
+      const secret = generateCode(3, false);
+      const session = {
+        id: sessionId,
+        nodeId: 'tutorial-soda',
+        secret,
+        attemptsLeft: 999,
+        startedAt: Date.now(),
+        status: 'active' as const,
+        node: {
+          id: 'tutorial-soda',
+          name: 'Rusty Soda Machine',
+          type: 'vending' as const,
+          tier: 1,
+          district: 'slums' as const,
+          x: 20,
+          y: 12,
+          digits: 3,
+          allowDuplicates: false,
+          attempts: 999,
+          timerSeconds: 0,
+          bounty: 120,
+          traceRisk: 0,
+          status: 'available' as const,
+          requiresUnlock: false,
+        },
+        eliminatedDigits: [],
+        ice: 'None' as const,
+        courtesy: Boolean(courtesy),
+        courtesyUsed: false,
+      };
+
+      mockSessions.set(sessionId, session as any);
+
+      return NextResponse.json({
+        sessionId,
+        config: {
+          length: 3,
+          digits: 3,
+          allowDuplicates: false,
+          attempts: null,
+          maxAttempts: null,
+          timerSeconds: null,
+          tier: 1,
+          ice: 'None',
+          eliminatedDigits: [],
+        },
+        startedAt: session.startedAt,
+      });
+    }
 
     const nodes = getNodes();
     const node = nodes.find((n) => n.id === nodeId);
@@ -80,16 +132,20 @@ export async function POST(request: Request) {
       node: sessionNode,
       eliminatedDigits,
       ice: activeIce,
+      courtesy: Boolean(courtesy),
+      courtesyUsed: false,
     };
 
-    mockSessions.set(sessionId, session);
+    mockSessions.set(sessionId, session as any);
 
     return NextResponse.json({
       sessionId,
       config: {
+        length: digits,
         digits,
         allowDuplicates,
         attempts: totalAttempts,
+        maxAttempts: totalAttempts,
         timerSeconds,
         tier: node.tier,
         ice: activeIce,

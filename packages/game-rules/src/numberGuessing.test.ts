@@ -105,20 +105,20 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
 
   describe('3. Core Scoring Invariants & Edge Cases', () => {
     it('verifies hand-checked duplicate cases from Handoff docs', () => {
-      // secret 1123 vs guess 1211 -> Pot: 1, Pan: 2
-      expect(calculateScore('1123', '1211')).toEqual({ pots: 1, pans: 2 });
-      // secret 1122 vs guess 2211 -> Pot: 0, Pan: 4
-      expect(calculateScore('1122', '2211')).toEqual({ pots: 0, pans: 4 });
+      // secret 1123 vs guess 1211 -> Pan: 1, Pot: 2
+      expect(calculateScore('1123', '1211')).toEqual({ pans: 1, pots: 2 });
+      // secret 1122 vs guess 2211 -> Pan: 0, Pot: 4
+      expect(calculateScore('1122', '2211')).toEqual({ pans: 0, pots: 4 });
     });
 
-    it('ensures duplicate occurrences in guess do not create phantom pans', () => {
+    it('ensures duplicate occurrences in guess do not create phantom pots', () => {
       // Secret has only one '1'. Guess has three '1's.
-      // Pos 0: 1 vs 1 -> Pot. Remaining '1's in guess have no match -> 0 pans.
-      expect(calculateScore('1234', '1115')).toEqual({ pots: 1, pans: 0 });
+      // Pos 0: 1 vs 1 -> Pan (exact match). Remaining '1's in guess have no match -> 0 pots.
+      expect(calculateScore('1234', '1115')).toEqual({ pans: 1, pots: 0 });
 
       // Secret has one '1' at pos 0. Guess has three '1's at pos 1, 2, 3.
-      // Pos 0 has no 1. Secret has one '1'. Exactly one pan should be awarded.
-      expect(calculateScore('1234', '5111')).toEqual({ pots: 0, pans: 1 });
+      // Pos 0 has no 1. Secret has one '1'. Exactly one pot should be awarded.
+      expect(calculateScore('1234', '5111')).toEqual({ pans: 0, pots: 1 });
     });
 
     it('preserves invariant: pots + pans <= length across arbitrary cases', () => {
@@ -138,21 +138,21 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
   });
 
   describe('4. ICE Variants Scoring', () => {
-    it('Pot-only ICE: suppresses pans to zero', () => {
-      // Normally secret 1234 vs 4321 gives 0 pots, 4 pans
+    it('Pot-only ICE: suppresses wrong-position pots to zero, keeping pans', () => {
+      // Normally secret 1234 vs 4321 gives 0 pans, 4 pots
       const score = calculateScoreWithIce('1234', '4321', 'Pot-only');
-      expect(score.pots).toBe(0);
       expect(score.pans).toBe(0);
+      expect(score.pots).toBe(0);
       expect(score.ice).toBe('Pot-only');
 
-      // Secret 1234 vs 1324 gives 2 pots, 2 pans -> Pot-only shows pots: 2, pans: 0
+      // Secret 1234 vs 1324 gives 2 pans, 2 pots -> Pot-only shows pans: 2, pots: 0
       const score2 = calculateScoreWithIce('1234', '1324', 'Pot-only');
-      expect(score2.pots).toBe(2);
-      expect(score2.pans).toBe(0);
+      expect(score2.pans).toBe(2);
+      expect(score2.pots).toBe(0);
     });
 
     it('Ghost ICE: merges pots and pans into totalHits', () => {
-      // Secret 1234 vs 1324 -> 2 pots, 2 pans -> Ghost totalHits = 4
+      // Secret 1234 vs 1324 -> 2 pans, 2 pots -> Ghost totalHits = 4
       const score = calculateScoreWithIce('1234', '1324', 'Ghost');
       expect(score.ice).toBe('Ghost');
       expect(score.totalHits).toBe(4);
@@ -161,9 +161,9 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
     });
 
     it('Liar ICE: falsifies feedback by +/- 1 when falsified option is enabled', () => {
-      // Base score: 2 pots, 1 pan
+      // Base score: 2 pans, 1 pot
       const base = calculateScore('1234', '1249');
-      expect(base).toEqual({ pots: 2, pans: 1 });
+      expect(base).toEqual({ pans: 2, pots: 1 });
 
       const liarScore = calculateScoreWithIce('1234', '1249', 'Liar', { isFalsified: true });
       expect(liarScore.ice).toBe('Liar');
@@ -220,11 +220,11 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
 
     it('passes clean guess that aligns with all prior clues', () => {
       const history = [
-        { guess: '123', pots: 0, pans: 1 },
-        { guess: '456', pots: 1, pans: 0 },
+        { guess: '123', pans: 0, pots: 1 },
+        { guess: '456', pans: 1, pots: 0 },
       ];
 
-      // Candidate '357' (pan on 3 from 123, pot on 5 from 456)
+      // Candidate '357' (pot on 3 from 123, pan on 5 from 456)
       const result = checkContradiction('357', history);
       expect(result.isConsistent).toBe(true);
       expect(result.conflictingGuess).toBeUndefined();
@@ -262,8 +262,8 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
 
     it('filters candidate pool based on score clues', () => {
       const pool = generateCandidatePool(3, false);
-      // Secret is 123. Guess 124 -> 2 pots, 0 pans
-      const filtered = filterCandidates(pool, '124', { pots: 2, pans: 0 });
+      // Secret is 123. Guess 124 -> 2 pans, 0 pots
+      const filtered = filterCandidates(pool, '124', { pans: 2, pots: 0 });
       // Only codes like 120, 123, 125, 126, 127, 128, 129 should survive
       expect(filtered).toContain('123');
       expect(filtered).not.toContain('124');
@@ -285,7 +285,7 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
         history.push({ guess, ...score });
         pool = filterCandidates(pool, guess, score);
 
-        if (score.pots === 3) {
+        if (score.pans === 3) {
           // Solved!
           expect(guess).toBe(secret);
           break;
@@ -295,7 +295,7 @@ describe('Number Guessing & Game Rules (packages/game-rules)', () => {
       // Solved within reasonable attempts
       const lastGuess = history[history.length - 1];
       expect(lastGuess.guess).toBe(secret);
-      expect(lastGuess.pots).toBe(3);
+      expect(lastGuess.pans).toBe(3);
     });
   });
 });

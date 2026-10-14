@@ -14,17 +14,17 @@ interface GuessRowProps {
 
 export function GuessRow({ record, length, index, isLatest = false }: GuessRowProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isBreached = record.pots === length;
+  const isBreached = record.pans === length;
 
   const attemptNumberFormatted = `#${String(index).padStart(2, '0')}`;
   const ariaLabel = describeGuess(record, length, index);
 
   const summaryText =
-    record.pots === 0 && record.pans === 0
+    record.pans === 0 && record.pots === 0
       ? 'NO MATCH'
-      : `${record.pots > 0 ? `${record.pots} POT` : ''}${
-          record.pots > 0 && record.pans > 0 ? ' ' : ''
-        }${record.pans > 0 ? `${record.pans} PAN` : ''}`;
+      : `${record.pans > 0 ? `${record.pans} PAN` : ''}${
+          record.pans > 0 && record.pots > 0 ? ' ' : ''
+        }${record.pots > 0 ? `${record.pots} POT` : ''}`;
 
   return (
     <div
@@ -58,10 +58,10 @@ export function GuessRow({ record, length, index, isLatest = false }: GuessRowPr
       </div>
 
       {/* Clue Marks */}
-      <div className="shrink-0">
+      <div className="shrink-0" data-tour={isLatest ? 'clue-marks-latest' : undefined}>
         <ClueMarks
-          pots={record.pots}
           pans={record.pans}
+          pots={record.pots}
           length={length}
           animated={isLatest}
         />
@@ -75,9 +75,9 @@ export function GuessRow({ record, length, index, isLatest = false }: GuessRowPr
             animate={{ opacity: 1 }}
             transition={{ delay: length * 0.09 + 0.1, duration: 0.2 }}
             className={`font-data text-xs font-semibold uppercase tracking-wider ${
-              record.pots === 0 && record.pans === 0
+              record.pans === 0 && record.pots === 0
                 ? 'text-terminal-muted'
-                : record.pots > 0
+                : record.pans > 0
                 ? 'text-terminal-phosphor'
                 : 'text-terminal-amber'
             }`}
@@ -87,9 +87,9 @@ export function GuessRow({ record, length, index, isLatest = false }: GuessRowPr
         ) : (
           <span
             className={`font-data text-xs font-semibold uppercase tracking-wider ${
-              record.pots === 0 && record.pans === 0
+              record.pans === 0 && record.pots === 0
                 ? 'text-terminal-muted'
-                : record.pots > 0
+                : record.pans > 0
                 ? 'text-terminal-phosphor'
                 : 'text-terminal-amber'
             }`}

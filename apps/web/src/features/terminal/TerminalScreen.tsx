@@ -21,6 +21,10 @@ import {
 } from './components';
 import { TutorialOverlay } from '@/features/story/TutorialOverlay';
 import { QuitModal } from './TerminalScreens';
+import { emit } from '@/features/onboarding/events';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { TUTORIAL, CH2_NODE_ID } from '@/features/onboarding/steps';
+import { campaignService } from '@/features/story/campaignService';
 
 export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const router = useRouter();
@@ -65,12 +69,13 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   // Start session from server (secret never sent to client)
   useEffect(() => {
     let mounted = true;
+    const isCourtesyNode = nodeId === CH2_NODE_ID && useOnboardingStore.getState().ch2Fails === 0;
     terminalService
-      .startSession(nodeId)
+      .startSession(nodeId, { courtesy: isCourtesyNode })
       .then((data) => {
         if (!mounted) return;
         setSession(data);
-        setAttemptsLeft(data.config.attempts);
+        setAttemptsLeft(data.config.attempts ?? 999);
         setLoading(false);
       })
       .catch((err) => {
@@ -86,13 +91,13 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
   // Client-side timer calculated from single server startedAt timestamp (no polling)
   useEffect(() => {
-    if (!session || session.config.timerSeconds === 0 || status !== 'playing') return;
+    if (!session || !session.config.timerSeconds || session.config.timerSeconds === 0 || status !== 'playing') return;
 
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
       setElapsedSeconds(elapsed);
 
-      if (elapsed >= session.config.timerSeconds) {
+      if (elapsed >= (session.config.timerSeconds ?? 0)) {
         setStatus('lost');
         setAttemptsLeft(0);
         setValidationError('Time expired');
@@ -117,6 +122,15 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   // Derived state
   const best = useMemo(() => bestGuess(history), [history]);
   const deadDigits = useMemo(() => provenDeadDigits(history), [history]);
+  const latestRecord = history.length > 0 ? history[history.length - 1] : null;
+  const tacticalHint = useMemo(() => {
+    if (!latestRecord || !session) return null;
+    const { digits } = session.config;
+    if (latestRecord.pans === 0 && latestRecord.pots === digits) {
+      return `All ${digits} digits found! Swap positions to breach.`;
+    }
+    return null;
+  }, [latestRecord, session]);
 
   const handleDigit = useCallback(
     (digit: number) => {
@@ -192,11 +206,36 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
       const newRecord: GuessRecord = {
         guess: [...entry],
-        pots: res.pots ?? 0,
         pans: res.pans ?? 0,
+        pots: res.pots ?? 0,
       };
 
-      setHistory((prev) => [...prev, newRecord]);
+      const newHistory = [...history, newRecord];
+      const deadDigitsNow = provenDeadDigits(newHistory);
+      const isWon = res.status === 'won';
+      const isLost = res.status === 'lost';
+
+      emit({
+        type: 'terminal:guess',
+        count: newHistory.length,
+        hasDeadDigit: deadDigitsNow.size > 0,
+        solved: isWon,
+      });
+
+      if (isWon) {
+        emit({
+          type: 'terminal:won',
+          nodeId,
+          guesses: newHistory.length,
+        });
+      } else if (isLost) {
+        emit({
+          type: 'terminal:lost',
+          nodeId,
+        });
+      }
+
+      setHistory(newHistory);
       setAttemptsLeft(res.attemptsLeft ?? attemptsLeft - 1);
       setEntry([]);
       setValidationError(null);
@@ -220,6 +259,10 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           if (res.secret) setSecret(res.secret);
           if (chapter && chapter.mapNodeId === nodeId) {
             completeChapter(chapter.id);
+          }
+          if (nodeId === TUTORIAL.terminalId || nodeId === 'tutorial-soda') {
+            campaignService.completeChapter(1).catch(() => {});
+            useOnboardingStore.getState().crackNode(TUTORIAL.mapNodeId, TUTORIAL.cooldownMs);
           }
         } else if (nextStatus === 'lost') {
           if (res.fine) {
@@ -274,7 +317,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   }
 
   const { config } = session;
-  const usedAttempts = config.attempts - attemptsLeft;
+  const usedAttempts = config.attempts != null ? config.attempts - attemptsLeft : history.length;
   const isSubmitDisabled =
     entry.length !== config.digits ||
     (!config.allowDuplicates && new Set(entry).size !== entry.length);
@@ -315,6 +358,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           entry={entry}
           validationError={validationError}
           shakeKey={shakeKey}
+          hint={tacticalHint}
         />
 
         {/* 5. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
@@ -344,7 +388,17 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
             secret={secret}
             payout={payout}
             fine={fine}
-            onReturnToMap={() => router.push('/map')}
+            onReturnToMap={() => {
+              if (nodeId === TUTORIAL.terminalId || nodeId === 'tutorial-soda') {
+                useOnboardingStore.getState().advance('glitch.intro');
+                router.push('/onboarding/glitch');
+              } else if (nodeId === CH2_NODE_ID && status === 'won') {
+                useOnboardingStore.getState().advance('market.gate');
+                router.push('/market');
+              } else {
+                router.push('/map');
+              }
+            }}
           />
         )}
 

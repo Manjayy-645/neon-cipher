@@ -111,7 +111,7 @@ export function processRivalAiTurn(session: ServerDuelSession, now: number = Dat
   }
 
   const score = scoreGuess(session.secret, aiGuess);
-  const isWinningGuess = score.pots === session.config.length;
+  const isWinningGuess = score.pans === session.config.length;
 
   // 1 in 8 chance to be hidden (unless winning guess)
   const isHidden = !isWinningGuess && Math.random() < 0.125;

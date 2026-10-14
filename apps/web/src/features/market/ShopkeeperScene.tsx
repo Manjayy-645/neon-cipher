@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
+import { emit } from '@/features/onboarding/events';
 
 export interface ShopkeeperSceneProps {
   vendorName?: string;
@@ -150,7 +151,11 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
           <Button
             variant="primary"
             fullWidth
-            onClick={onOpenShop}
+            onClick={() => {
+              emit({ type: 'market:gateOpened' });
+              onOpenShop();
+            }}
+            data-tour="shop-open"
           >
             OPEN BLACK MARKET
           </Button>

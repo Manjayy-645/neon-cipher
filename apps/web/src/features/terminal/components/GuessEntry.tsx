@@ -8,6 +8,7 @@ interface GuessEntryProps {
   entry: number[];
   validationError: string | null;
   shakeKey: number;
+  hint?: string | null;
 }
 
 export function GuessEntry({
@@ -15,6 +16,7 @@ export function GuessEntry({
   entry,
   validationError,
   shakeKey,
+  hint,
 }: GuessEntryProps) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -70,7 +72,7 @@ export function GuessEntry({
         })}
       </motion.div>
 
-      {/* Validation status / reason text */}
+      {/* Validation status / reason text or tactical hint */}
       <div className="h-4 flex items-center justify-center">
         {validationError ? (
           <span
@@ -78,6 +80,10 @@ export function GuessEntry({
             className="font-data text-xs text-terminal-danger font-medium tracking-wide animate-fadeIn"
           >
             {validationError}
+          </span>
+        ) : hint && entry.length === 0 ? (
+          <span className="font-data text-[11px] text-terminal-amber font-semibold tracking-wide animate-fadeIn">
+            {hint}
           </span>
         ) : (
           <span className="font-data text-[11px] text-terminal-muted/60 tracking-wider">

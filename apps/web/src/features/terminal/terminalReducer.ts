@@ -7,7 +7,7 @@ export interface TerminalState {
   sessionId: string | null;
   config: SessionConfig | null;
   startedAt: number;
-  attemptsLeft: number;
+  attemptsLeft: number | null;
   status: TerminalStatus;
   history: GuessRecord[];
   entry: number[];
@@ -204,7 +204,8 @@ export function terminalReducer(state: TerminalState, action: TerminalAction): T
     case 'TICK_TIMER': {
       if (state.status !== 'playing' || !state.config || state.startedAt === 0) return state;
       const elapsed = Math.max(0, Math.floor((action.now - state.startedAt) / 1000));
-      const isExpired = state.config.timerSeconds > 0 && elapsed >= state.config.timerSeconds;
+      const timerSecs = state.config.timerSeconds;
+      const isExpired = timerSecs !== null && timerSecs > 0 && elapsed >= timerSecs;
       return {
         ...state,
         elapsedSeconds: elapsed,

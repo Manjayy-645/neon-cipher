@@ -35,14 +35,14 @@ export function FeedRow({ event, length, isNew = false }: FeedRowProps) {
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : w.endsWith('ss') ? 'es' : 's'}`;
 
   const ariaLabel = isYou
-    ? `You guessed ${guessStr}. ${plural(pots, 'pot')}, ${plural(pans, 'pan')}, ${plural(misses, 'miss')}.`
-    : `Rival guessed ${guessStr}: ${plural(pots, 'pot')}, ${plural(pans, 'pan')}, ${plural(misses, 'miss')}.`;
+    ? `You guessed ${guessStr}. ${plural(pans, 'pan')}, ${plural(pots, 'pot')}, ${plural(misses, 'miss')}.`
+    : `Rival guessed ${guessStr}: ${plural(pans, 'pan')}, ${plural(pots, 'pot')}, ${plural(misses, 'miss')}.`;
 
   const summaryText =
-    pots === 0 && pans === 0
+    pans === 0 && pots === 0
       ? 'NO MATCH'
-      : `${pots > 0 ? `${pots} POT` : ''}${pots > 0 && pans > 0 ? ' ' : ''}${
-          pans > 0 ? `${pans} PAN` : ''
+      : `${pans > 0 ? `${pans} PAN` : ''}${pans > 0 && pots > 0 ? ' ' : ''}${
+          pots > 0 ? `${pots} POT` : ''
         }`;
 
   return (
@@ -101,16 +101,16 @@ export function FeedRow({ event, length, isNew = false }: FeedRowProps) {
 
       {/* Clue Marks */}
       <div className="shrink-0">
-        <ClueMarks pots={pots} pans={pans} length={length} animated={false} />
+        <ClueMarks pans={pans} pots={pots} length={length} animated={false} />
       </div>
 
       {/* Summary Text & NEW Chip */}
       <div className="flex items-center gap-2 shrink-0 min-w-[70px] justify-end">
         <span
           className={`font-data text-xs font-semibold uppercase tracking-wider ${
-            pots === 0 && pans === 0
+            pans === 0 && pots === 0
               ? 'text-terminal-muted'
-              : pots > 0
+              : pans > 0
               ? 'text-terminal-phosphor'
               : 'text-terminal-amber'
           }`}

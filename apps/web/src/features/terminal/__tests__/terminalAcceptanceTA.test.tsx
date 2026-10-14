@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TerminalScreen from '../TerminalScreen';
 import { terminalService } from '../terminalService';
 import { useSettingsStore } from '@/stores/settings-store';
+import { useCampaignStore } from '@/stores/campaign-store';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -15,6 +16,11 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
   beforeEach(() => {
     vi.restoreAllMocks();
     useSettingsStore.setState({ rookieAssist: true });
+    useCampaignStore.setState({
+      activeChapterId: null,
+      tutorialActive: false,
+      tutorialStepIndex: 0,
+    });
   });
 
   it('plays a full Tier 1 game (3 unique digits) with marks, summary text, and breach banner', async () => {
@@ -32,17 +38,17 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
     });
 
     const submitSpy = vi.spyOn(terminalService, 'submitGuess')
-      // First guess: 123 -> 1 pot, 1 pan, 1 miss
+      // First guess: 123 -> 1 pan, 1 pot, 1 miss
       .mockResolvedValueOnce({
-        pots: 1,
         pans: 1,
+        pots: 1,
         attemptsLeft: 7,
         status: 'active',
       })
-      // Second guess: 142 -> 3 pots (win)
+      // Second guess: 142 -> 3 pans (win)
       .mockResolvedValueOnce({
-        pots: 3,
-        pans: 0,
+        pans: 3,
+        pots: 0,
         attemptsLeft: 6,
         status: 'won',
         secret: '142',
@@ -59,6 +65,15 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
     // Keypad has 56px keys
     const btnKey = screen.getByRole('button', { name: '1' });
     expect(btnKey).toHaveClass('h-[56px]');
+    expect(screen.getByLabelText('Terminal Keypad')).toHaveAttribute(
+      'data-tutorial',
+      'keypad'
+    );
+    expect(document.querySelector('[data-tutorial="history"]')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Submit Guess/i })).toHaveAttribute(
+      'data-tutorial',
+      'submit'
+    );
 
     // Type 1, 2, 3
     fireEvent.click(screen.getByRole('button', { name: '1' }));
@@ -72,9 +87,9 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
 
     // Verify first guess result
     await waitFor(() => {
-      expect(screen.getAllByText('1 POT 1 PAN').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('1 PAN 1 POT').length).toBeGreaterThan(0);
     });
-    expect(screen.getByLabelText(/Guess 1: 1 2 3\. 1 pot, 1 pan, 1 miss\./i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Guess 1: 1 2 3\. 1 pan, 1 pot, 1 miss\./i)).toBeInTheDocument();
     expect(screen.getByText('2/8')).toBeInTheDocument();
 
     // Type winning guess: 1, 4, 2
@@ -88,6 +103,50 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
       expect(screen.getByText('BREACHED')).toBeInTheDocument();
       expect(screen.getByText('RETURN TO MAP')).toBeInTheDocument();
     });
+  });
+
+  it('highlights the rendered keypad and advances after the guided digits are entered', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'sess-tutorial',
+      startedAt: Date.now(),
+      config: {
+        digits: 3,
+        allowDuplicates: false,
+        attempts: 8,
+        timerSeconds: 90,
+        tier: 1,
+        ice: 'None',
+      },
+    });
+    useCampaignStore.setState({
+      activeChapterId: 'chapter-1',
+      tutorialActive: true,
+      tutorialStepIndex: 2,
+    });
+
+    render(<TerminalScreen nodeId="n1" />);
+
+    expect(await screen.findByText(/Node: n1/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('tutorial-target-highlight')).toHaveAttribute(
+      'aria-label',
+      'Nix target: KEYPAD PROBE'
+    );
+    expect(screen.getByLabelText('Terminal Keypad')).toHaveAttribute(
+      'data-tutorial',
+      'keypad'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+
+    await waitFor(() => {
+      expect(useCampaignStore.getState().tutorialStepIndex).toBe(3);
+    });
+    expect(screen.getByLabelText('Submit Guess')).toHaveAttribute(
+      'data-tutorial',
+      'submit'
+    );
   });
 
   it('demonstrates Rookie Assist dead key dimming on a 0-pot 0-pan guess', async () => {
@@ -232,5 +291,69 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
     expect(screen.getByText('Right digit in the right position.')).toBeInTheDocument();
     expect(screen.getByText('Right digit in the wrong position.')).toBeInTheDocument();
     expect(screen.getByText('Digit does not appear in the target cipher.')).toBeInTheDocument();
+  });
+
+  it('displays tactical guidance when all digits are pots (transposed) and allows swapping positions to win with all pans', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'sess-allpots',
+      startedAt: Date.now(),
+      config: {
+        digits: 3,
+        allowDuplicates: false,
+        attempts: 8,
+        timerSeconds: 90,
+        tier: 1,
+        ice: 'None',
+      },
+    });
+
+    vi.spyOn(terminalService, 'submitGuess')
+      // Guess 1: 312 -> 0 pans, 3 pots (all digits correct but wrong slots)
+      .mockResolvedValueOnce({
+        pans: 0,
+        pots: 3,
+        attemptsLeft: 7,
+        status: 'active',
+      })
+      // Guess 2: 123 -> 3 pans (win)
+      .mockResolvedValueOnce({
+        pans: 3,
+        pots: 0,
+        attemptsLeft: 6,
+        status: 'won',
+        secret: '123',
+        payout: 120,
+      });
+
+    render(<TerminalScreen nodeId="n-allpots" />);
+    await screen.findByText(/Node: n-allpots/i);
+
+    // Guess 3, 1, 2
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit Guess/i }));
+
+    // Expect 3 POT result
+    await waitFor(() => {
+      expect(screen.getAllByText('3 POT').length).toBeGreaterThan(0);
+    });
+
+    // Expect tactical guidance hint to be shown
+    expect(
+      screen.getByText('All 3 digits found! Swap positions to breach.')
+    ).toBeInTheDocument();
+
+    // Now user swaps to 1, 2, 3
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit Guess/i }));
+
+    // Win banner appears
+    await waitFor(() => {
+      expect(screen.getByText('BREACHED')).toBeInTheDocument();
+      expect(screen.getByText('RETURN TO MAP')).toBeInTheDocument();
+    });
   });
 });

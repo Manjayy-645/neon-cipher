@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { BootSequence } from '@/features/splash/BootSequence';
+import { SplashScreen } from '@/features/onboarding/components/SplashScreen';
 
 export default function RootPage() {
-  return <BootSequence autoRoute={true} />;
+  return <SplashScreen />;
 }

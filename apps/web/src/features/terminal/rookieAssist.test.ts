@@ -59,9 +59,9 @@ describe('checkContradiction & isGuessConsistent', () => {
 
   it('approves consistent guesses against history', () => {
     const history = [
-      { guess: '123', pots: 1, pans: 0 },
+      { guess: '123', pans: 1, pots: 0 },
     ];
-    // Guess 145 is consistent with 1 being the pot
+    // Guess 145 is consistent with 1 being the pan (exact match at index 0)
     expect(isGuessConsistent('145', history)).toBe(true);
     expect(checkContradiction('145', history).isConsistent).toBe(true);
   });

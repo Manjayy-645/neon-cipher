@@ -1,11 +1,18 @@
 // MOCK: replace with Supabase.
 import { AccountProfile, AccountSettings } from '../settings/types';
-import { WalletData } from '@/app/api/mock/db';
+import { CampaignState, WalletData } from '@/app/api/mock/db';
 
 export interface AuthSessionResponse {
   profile: AccountProfile;
   settings: AccountSettings;
   wallet: WalletData;
+}
+
+export interface CampaignResetResponse {
+  account: {
+    wallet: WalletData;
+  };
+  campaign: CampaignState;
 }
 
 function getUrl(path: string): string {
@@ -50,7 +57,7 @@ export const authService = {
     }
   },
 
-  async resetCampaign(): Promise<void> {
+  async resetCampaign(): Promise<CampaignResetResponse> {
     const res = await fetch(getUrl('/api/mock/account/reset'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -59,6 +66,7 @@ export const authService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `Reset failed: ${res.statusText}`);
     }
+    return res.json();
   },
 
   async exportData(): Promise<Blob> {

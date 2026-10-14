@@ -184,6 +184,25 @@ describe('Task 10: Guided Tutorial Overlay Component', () => {
     );
   });
 
+  it('keeps the screen interactive if a tutorial target cannot be found', () => {
+    const step2 = chapter1.tutorialSteps![1];
+    document.body.innerHTML = '';
+
+    render(
+      <TutorialOverlay
+        chapter={chapter1}
+        activeStep={step2}
+        currentStepIndex={1}
+        onAdvanceStep={vi.fn()}
+        onSkipTutorial={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('tutorial-target-highlight')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tutorial-backdrop-guard')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tutorial-curtain')).not.toBeInTheDocument();
+  });
+
   it('provides an escape hatch ("Skip tutorial") that triggers onSkipTutorial', () => {
     const handleAdvance = vi.fn();
     const handleSkip = vi.fn();

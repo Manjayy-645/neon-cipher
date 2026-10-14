@@ -54,6 +54,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
         <div
           className="p-3.5 sm:p-4 bg-panel-light rounded-[12px] border border-line shadow-card shrink-0 flex flex-col gap-3"
           data-testid="campaign-debt-tracker"
+          data-tour="debt-tracker"
         >
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">

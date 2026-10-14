@@ -50,7 +50,7 @@ export async function POST(
     const now = Date.now();
     session.player.attemptsLeft = Math.max(0, session.player.attemptsLeft - 1);
 
-    const isWin = score.pots === session.config.length;
+    const isWin = score.pans === session.config.length;
     if (isWin) {
       session.status = 'won';
     } else if (session.player.attemptsLeft <= 0 && session.rival.attemptsLeft <= 0) {

@@ -5,7 +5,7 @@ import { submitDuelGuess } from '../../db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { duelId, guess, exploitUsed } = body;
+    const { duelId, guess, exploitUsed, isStealth } = body;
 
     if (!duelId || !guess) {
       return NextResponse.json({ error: 'Missing duelId or guess' }, { status: 400 });
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       duelId,
       guess,
       exploitUsed,
+      isStealth,
     });
 
     return NextResponse.json({

@@ -55,7 +55,8 @@ export const duelService = {
   async submitGuess(
     duelId: string,
     guess: string,
-    exploitUsed?: string
+    exploitUsed?: string,
+    isStealth?: boolean
   ): Promise<{
     session: DuelSession;
     playerGuess: DuelGuess;
@@ -64,7 +65,7 @@ export const duelService = {
     const res = await fetch('/api/mock/duel/guess', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ duelId, guess, exploitUsed }),
+      body: JSON.stringify({ duelId, guess, exploitUsed, isStealth }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

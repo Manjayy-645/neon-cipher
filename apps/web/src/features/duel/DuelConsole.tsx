@@ -42,6 +42,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
   const [turnClock, setTurnClock] = useState<number>(activeSessionFromStore?.turnClockSeconds || 30);
   const [activeCheat, setActiveCheat] = useState<boolean>(false);
   const [drainAlert, setDrainAlert] = useState<boolean>(false);
+  const [isStealthArmed, setIsStealthArmed] = useState<boolean>(false);
 
   useEffect(() => {
     if (activeSessionFromStore) {
@@ -102,7 +103,10 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
     setIsSubmitting(true);
     try {
       const exploitToUse = activeCheat && isCasual ? 'exploit-digit-scrub' : undefined;
-      const res = await duelService.submitGuess(currentSession.id, input, exploitToUse);
+      const res = isStealthArmed
+        ? await duelService.submitGuess(currentSession.id, input, exploitToUse, true)
+        : await duelService.submitGuess(currentSession.id, input, exploitToUse);
+      setIsStealthArmed(false);
 
       // Check if drain_clock was triggered by opponent
       if (
@@ -127,7 +131,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
     } finally {
       setIsSubmitting(false);
     }
-  }, [input, isSubmitting, session, activeCheat, isCasual, credits, setBalances]);
+  }, [input, isSubmitting, session, activeCheat, isCasual, isStealthArmed, credits, setBalances]);
 
   // Handle keypad input
   const handleKeyPress = useCallback((digit: string) => {
@@ -416,6 +420,16 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
                         CHEAT
                       </span>
                     )}
+                    {g.isStealth && (
+                      <span className="font-data text-[9px] px-1 py-0.2 bg-accent/20 text-accent border border-accent/40 rounded uppercase">
+                        STEALTH
+                      </span>
+                    )}
+                    {g.falsified && (
+                      <span className="font-data text-[9px] px-1 py-0.2 bg-money/20 text-money-text border border-money/40 rounded uppercase">
+                        SPOOFED
+                      </span>
+                    )}
                   </div>
 
                   <GuessClueDisplay pots={g.pots} pans={g.pans} digits={session.digits} colorBlindMode={colorBlindMode} />
@@ -463,9 +477,22 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
                   data-testid={`rival-guess-row-${idx}`}
                   className="flex items-center justify-between bg-panel-dark/80 px-3 py-2 rounded border border-danger/30 text-sm"
                 >
-                  <span className="font-data font-black text-panel-light tracking-[0.25em]">
-                    {g.guess}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {g.isStealth && !g.unmasked ? (
+                      <span className="font-data font-bold text-ink-muted italic text-xs tracking-wider">
+                        [ENCRYPTED MOVE]
+                      </span>
+                    ) : (
+                      <span className="font-data font-black text-panel-light tracking-[0.25em]">
+                        {g.guess}
+                      </span>
+                    )}
+                    {g.isStealth && (
+                      <span className="font-data text-[9px] px-1 py-0.2 bg-accent/20 text-accent border border-accent/40 rounded uppercase">
+                        {g.unmasked ? 'UNMASKED' : 'STEALTH'}
+                      </span>
+                    )}
+                  </div>
 
                   <GuessClueDisplay pots={g.pots} pans={g.pans} digits={session.digits} colorBlindMode={colorBlindMode} />
                 </div>
@@ -516,8 +543,26 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
           </div>
         )}
 
-        {/* Input buffer display */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={isStealthArmed ? 'primary' : 'secondary'}
+            compact
+            data-testid="stealth-guess-toggle"
+            disabled={session.status !== 'active' || credits < 150}
+            onClick={() => setIsStealthArmed(!isStealthArmed)}
+            className="text-[11px] flex items-center gap-1.5"
+            aria-label="Toggle Stealth Guess"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span>{isStealthArmed ? 'STEALTH ACTIVE' : 'STEALTH (150 CR)'}</span>
+          </Button>
+
+          {/* Input buffer display */}
+          <div className="flex items-center gap-1">
           {Array.from({ length: session.digits }).map((_, i) => {
             const char = input[i];
             return (
@@ -534,6 +579,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({ initialSession, onExit
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 

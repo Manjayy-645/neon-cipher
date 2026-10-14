@@ -2,9 +2,11 @@ export type IceType = 'Liar' | 'Drift' | 'Pot-only' | 'Ghost' | 'Sticky' | 'None
 
 export interface SessionConfig {
   digits: number;
+  length?: number;
   allowDuplicates: boolean;
-  attempts: number;
-  timerSeconds: number;
+  attempts: number | null;
+  maxAttempts?: number | null;
+  timerSeconds: number | null;
   tier: number;
   ice: IceType;
   eliminatedDigits?: string[];
@@ -21,7 +23,7 @@ export interface GuessResult {
   pans?: number;
   totalHits?: number;
   ice?: IceType;
-  attemptsLeft?: number;
+  attemptsLeft?: number | null;
   status: 'active' | 'won' | 'lost';
   secret?: string;
   payout?: number;
@@ -31,11 +33,11 @@ export interface GuessResult {
 }
 
 export const terminalService = {
-  startSession: async (nodeId: string): Promise<SessionData> => {
+  startSession: async (nodeId: string, options?: { courtesy?: boolean }): Promise<SessionData> => {
     const res = await fetch('/api/mock/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nodeId })
+      body: JSON.stringify({ nodeId, courtesy: options?.courtesy })
     });
     if (!res.ok) {
       const err = await res.json();

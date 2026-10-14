@@ -35,11 +35,12 @@ export const campaignService = {
     return data.state;
   },
 
-  async completeChapter(chapterId: string): Promise<CompleteChapterResponse> {
+  async completeChapter(chapterId: string | number): Promise<CompleteChapterResponse> {
+    const id = String(chapterId).startsWith('chapter-') ? String(chapterId) : `chapter-${chapterId}`;
     const res = await fetch('/api/mock/campaign/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chapterId }),
+      body: JSON.stringify({ chapterId: id }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

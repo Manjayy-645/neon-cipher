@@ -42,11 +42,22 @@ export function HistoryList({ history, length }: HistoryListProps) {
   }, [history.length, length, scrollToBottom]);
 
   return (
-    <div className="relative flex-1 min-h-0 w-full flex flex-col justify-end overflow-hidden">
+    <div
+      className="relative flex-1 min-h-0 w-full flex flex-col justify-end overflow-hidden"
+      data-tutorial="history"
+    >
       {/* Screen reader polite live region for new results */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {latestAnnouncement}
       </div>
+
+      {history.length > 0 && (
+        <div className="px-5 pt-1.5 pb-1 flex items-center justify-between text-[10px] font-data text-terminal-muted/60 uppercase tracking-widest shrink-0 border-b border-terminal-line/30 bg-terminal-panel/20 select-none">
+          <span className="w-20">Attempt</span>
+          <span className="text-center flex-1">Clues (Unordered)</span>
+          <span className="w-20 text-right">Result</span>
+        </div>
+      )}
 
       <div
         ref={scrollRef}

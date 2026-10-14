@@ -10,14 +10,24 @@ export interface DuelPotResult {
   rakePercent: number;
 }
 
+export type SabotageEffectType =
+  | 'scramble_keypad'
+  | 'static_history'
+  | 'drain_clock'
+  | 'firewall_shield'
+  | 'snoop_packet'
+  | 'false_flag_echo';
+
 export interface SabotageToolRule {
   id: string;
   name: string;
   creditCost: number;
   durationSeconds?: number;
-  effectType: 'scramble_keypad' | 'static_history' | 'drain_clock' | 'firewall_shield';
+  effectType: SabotageEffectType;
   description: string;
 }
+
+export const STEALTH_GUESS_COST = 150;
 
 export const SABOTAGE_RULES: Record<string, SabotageToolRule> = {
   'tool-static-injector': {
@@ -49,7 +59,37 @@ export const SABOTAGE_RULES: Record<string, SabotageToolRule> = {
     effectType: 'drain_clock',
     description: 'Removes 10 seconds from security lockdown clock.',
   },
+  'tool-snoop-packet': {
+    id: 'tool-snoop-packet',
+    name: 'Snoop Packet',
+    creditCost: 750,
+    effectType: 'snoop_packet',
+    description: "Intercepts and unmasks the opponent's hidden or stealth move.",
+  },
+  'tool-false-flag-echo': {
+    id: 'tool-false-flag-echo',
+    name: 'False Flag Echo',
+    creditCost: 1100,
+    effectType: 'false_flag_echo',
+    description: 'Broadcasts a falsified Pot/Pan clue result on the shared feed for one move.',
+  },
 };
+
+export function generateFalseFlagClue(
+  realPans: number,
+  realPots: number,
+  digits: number
+): { pans: number; pots: number } {
+  if (realPans === digits) {
+    return { pans: realPans, pots: realPots };
+  }
+  let fakePans = (realPans + 1) % digits;
+  let fakePots = Math.max(0, Math.min(digits - fakePans, realPots === 0 ? 1 : 0));
+  if (fakePans === realPans && fakePots === realPots) {
+    fakePots = Math.max(0, digits - fakePans - 1);
+  }
+  return { pans: fakePans, pots: fakePots };
+}
 
 export const DEFAULT_RAKE_PERCENT = 0.10; // 10% syndicate rake
 

@@ -30,12 +30,18 @@ export async function POST(request: Request) {
       const elapsed = (Date.now() - session.startedAt) / 1000;
       if (elapsed > session.node.timerSeconds) {
         session.status = 'lost';
-        const fine = Math.floor(session.node.bounty / 2);
-        recordTransaction(`Trace Fine: ${session.node.name} (Timeout)`, -fine, 'credits', 'fine');
+        const isCourtesy = Boolean((session as any).courtesy && !(session as any).courtesyUsed);
+        if (isCourtesy) {
+          (session as any).courtesyUsed = true;
+        }
+        const fine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+        if (fine > 0) {
+          recordTransaction(`Trace Fine: ${session.node.name} (Timeout)`, -fine, 'credits', 'fine');
 
-        const defense = getNodeDefense(session.nodeId);
-        if (defense && defense.ownerHandle && defense.ownerHandle !== activeAccountId) {
-          creditDefenseFine(defense.ownerHandle, fine, session.nodeId);
+          const defense = getNodeDefense(session.nodeId);
+          if (defense && defense.ownerHandle && defense.ownerHandle !== activeAccountId) {
+            creditDefenseFine(defense.ownerHandle, fine, session.nodeId);
+          }
         }
 
         let burnedHardwareName: string | undefined;
@@ -60,7 +66,7 @@ export async function POST(request: Request) {
     session.attemptsLeft--;
     const ice = session.ice || 'None';
     const rawScore = calculateScore(session.secret, guess);
-    const isWin = rawScore.pots === session.node.digits;
+    const isWin = rawScore.pans === session.node.digits;
 
     if (isWin) {
       session.status = 'won';
@@ -104,12 +110,18 @@ export async function POST(request: Request) {
 
     if (session.attemptsLeft <= 0) {
       session.status = 'lost';
-      const fine = Math.floor(session.node.bounty / 2);
-      recordTransaction(`Trace Fine: ${session.node.name} (Attempts)`, -fine, 'credits', 'fine');
+      const isCourtesy = Boolean((session as any).courtesy && !(session as any).courtesyUsed);
+      if (isCourtesy) {
+        (session as any).courtesyUsed = true;
+      }
+      const fine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+      if (fine > 0) {
+        recordTransaction(`Trace Fine: ${session.node.name} (Attempts)`, -fine, 'credits', 'fine');
 
-      const defense = getNodeDefense(session.nodeId);
-      if (defense && defense.ownerHandle && defense.ownerHandle !== activeAccountId) {
-        creditDefenseFine(defense.ownerHandle, fine, session.nodeId);
+        const defense = getNodeDefense(session.nodeId);
+        if (defense && defense.ownerHandle && defense.ownerHandle !== activeAccountId) {
+          creditDefenseFine(defense.ownerHandle, fine, session.nodeId);
+        }
       }
 
       let burnedHardwareName: string | undefined;

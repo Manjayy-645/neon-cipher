@@ -108,7 +108,7 @@ export const CHAPTERS: ChapterData[] = [
       },
       {
         speaker: 'nix',
-        text: 'Take a breath. I am patching into your optical feed. We will start clean with 3 unique digits. Green is a Pot, amber is a Pan. I will walk you through every step.',
+        text: 'Take a breath. I am patching into your optical feed. We will start clean with 3 unique digits. Green is a Pan, amber is a Pot. I will walk you through every step.',
         mood: 'encouraging',
       },
     ],
@@ -166,7 +166,7 @@ export const CHAPTERS: ChapterData[] = [
         phase: 'terminal',
         targetSelector: '[data-tutorial="history"]',
         title: 'READ POTS & PANS',
-        nixDialogue: 'POT (green dot) = right digit, right slot. PAN (amber ring) = right digit, wrong slot. Dash = dead digit.',
+        nixDialogue: 'PAN (green dot) = right digit, right slot. POT (amber ring) = right digit, wrong slot. Dots are unordered counts. You must get ALL PANS to breach!',
         actionRequired: 'dismiss-callout',
         spotlightPadding: 12,
       },

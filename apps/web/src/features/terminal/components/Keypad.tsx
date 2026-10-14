@@ -126,6 +126,8 @@ export function Keypad({
         className="grid grid-cols-3 gap-2 w-full max-w-[360px]"
         role="group"
         aria-label="Terminal Keypad"
+        data-tutorial="keypad"
+        data-tour="keypad"
       >
         {keys.map((k) => {
           if (k.type === 'digit') {
@@ -138,6 +140,7 @@ export function Keypad({
               <button
                 key={k.label}
                 type="button"
+                data-tour={isDead ? `key-${digit} dead-key` : `key-${digit}`}
                 aria-label={
                   isDead
                     ? `${digit}, eliminated`
@@ -198,6 +201,7 @@ export function Keypad({
                 type="button"
                 id="submit-guess-button"
                 aria-label="Submit Guess"
+                data-tutorial="submit"
                 disabled={isSubmitDisabled}
                 onClick={onSubmit}
                 className={`h-[56px] min-h-[56px] rounded-[8px] border font-data text-sm font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${

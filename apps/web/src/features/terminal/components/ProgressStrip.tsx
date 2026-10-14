@@ -5,9 +5,9 @@ import { GuessRecord } from '@neon-cipher/game-rules';
 
 interface ProgressStripProps {
   currentAttempt: number;
-  maxAttempts: number;
+  maxAttempts: number | null;
   best: GuessRecord | null;
-  totalSeconds: number;
+  totalSeconds: number | null;
   elapsedSeconds: number;
 }
 
@@ -18,17 +18,18 @@ export function ProgressStrip({
   totalSeconds,
   elapsedSeconds,
 }: ProgressStripProps) {
-  const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+  const safeTotalSeconds = totalSeconds ?? 0;
+  const remainingSeconds = Math.max(0, safeTotalSeconds - elapsedSeconds);
   const minutes = Math.floor(remainingSeconds / 60);
   const seconds = remainingSeconds % 60;
   const timeFormatted = `${minutes}:${String(seconds).padStart(2, '0')}`;
 
   const bestSummary = best
-    ? best.pots === 0 && best.pans === 0
-      ? '0 POT 0 PAN'
-      : `${best.pots > 0 ? `${best.pots} POT` : ''}${
-          best.pots > 0 && best.pans > 0 ? ' ' : ''
-        }${best.pans > 0 ? `${best.pans} PAN` : ''}`
+    ? best.pans === 0 && best.pots === 0
+      ? '0 PAN 0 POT'
+      : `${best.pans > 0 ? `${best.pans} PAN` : ''}${
+          best.pans > 0 && best.pots > 0 ? ' ' : ''
+        }${best.pots > 0 ? `${best.pots} POT` : ''}`
     : 'NONE';
 
   return (
@@ -40,7 +41,7 @@ export function ProgressStrip({
       <div>
         <span className="text-terminal-muted">ATTEMPT </span>
         <span className="text-terminal-ink font-semibold">
-          {Math.min(currentAttempt, maxAttempts)}/{maxAttempts}
+          {maxAttempts != null ? `${Math.min(currentAttempt, maxAttempts)}/${maxAttempts}` : currentAttempt}
         </span>
       </div>
 
@@ -53,12 +54,12 @@ export function ProgressStrip({
         <span className="text-terminal-muted">TIME </span>
         <span
           className={`font-semibold ${
-            remainingSeconds <= 10 && totalSeconds > 0
+            totalSeconds != null && remainingSeconds <= 10 && totalSeconds > 0
               ? 'text-terminal-danger'
               : 'text-terminal-ink'
           }`}
         >
-          {timeFormatted}
+          {totalSeconds != null ? timeFormatted : '--:--'}
         </span>
       </div>
     </div>

@@ -44,7 +44,9 @@ export function TerminalHeader({
 
         {/* Right: Attempt Pips & Help Button */}
         <div className="flex items-center gap-3 shrink-0">
-          <AttemptPips total={config.attempts} used={usedAttempts} />
+          {config.attempts != null && (
+            <AttemptPips total={config.attempts} used={usedAttempts} />
+          )}
 
           {/* "?" Button for Clue Legend */}
           <button
@@ -59,10 +61,12 @@ export function TerminalHeader({
       </div>
 
       {/* Timer Bar (4px, drains left to right, danger under 10s) */}
-      <TimerBar
-        totalSeconds={config.timerSeconds}
-        elapsedSeconds={elapsedSeconds}
-      />
+      {config.timerSeconds != null && (
+        <TimerBar
+          totalSeconds={config.timerSeconds}
+          elapsedSeconds={elapsedSeconds}
+        />
+      )}
     </header>
   );
 }

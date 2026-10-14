@@ -46,12 +46,12 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
             </div>
 
             <div className="flex flex-col gap-3 font-data text-xs">
-              {/* POT */}
+              {/* PAN */}
               <div className="flex items-center gap-3 p-2 rounded-[6px] bg-terminal-bg/40 border border-terminal-line/30">
                 <div className="w-[18px] h-[18px] rounded-full bg-terminal-phosphor shrink-0 shadow-[0_0_8px_rgba(111,191,122,0.3)]" />
                 <div>
                   <span className="font-bold text-terminal-phosphor tracking-wide">
-                    POT
+                    PAN (CORRECT SLOT)
                   </span>
                   <p className="text-terminal-muted text-[11px] mt-0.5">
                     Right digit in the right position.
@@ -59,12 +59,12 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
                 </div>
               </div>
 
-              {/* PAN */}
+              {/* POT */}
               <div className="flex items-center gap-3 p-2 rounded-[6px] bg-terminal-bg/40 border border-terminal-line/30">
                 <div className="w-[18px] h-[18px] rounded-full border-2 border-terminal-amber bg-transparent shrink-0" />
                 <div>
                   <span className="font-bold text-terminal-amber tracking-wide">
-                    PAN
+                    POT (WRONG SLOT)
                   </span>
                   <p className="text-terminal-muted text-[11px] mt-0.5">
                     Right digit in the wrong position.
@@ -79,7 +79,7 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
                 </div>
                 <div>
                   <span className="font-bold text-terminal-muted tracking-wide">
-                    MISS
+                    MISS (NOT IN CODE)
                   </span>
                   <p className="text-terminal-muted text-[11px] mt-0.5">
                     Digit does not appear in the target cipher.
@@ -88,8 +88,16 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
               </div>
             </div>
 
-            <div className="text-[11px] text-terminal-muted/70 italic border-t border-terminal-line/40 pt-2">
-              Note: Marks show overall counts only and are not ordered by slot position.
+            <div className="flex flex-col gap-1.5 text-[11px] border-t border-terminal-line/40 pt-2.5 font-data">
+              <span className="text-terminal-phosphor font-semibold">
+                BREACH WIN CONDITION: ALL PANS (all digits in correct slots).
+              </span>
+              <span className="text-terminal-amber">
+                Note: ALL POTS means you found all correct digits, but in the wrong slots—swap positions to win!
+              </span>
+              <span className="text-terminal-muted/80 italic text-[10px]">
+                Marks show overall counts (Pans first, then Pots) and are not ordered by slot position.
+              </span>
             </div>
 
             <button

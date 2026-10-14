@@ -5,14 +5,14 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { clueMarks, Clue } from '@neon-cipher/game-rules';
 
 interface ClueMarksProps {
-  pots: number;
   pans: number;
+  pots: number;
   length: number;
   animated?: boolean;
 }
 
-export function ClueMarks({ pots, pans, length, animated = false }: ClueMarksProps) {
-  const marks = clueMarks(pots, pans, length);
+export function ClueMarks({ pans, pots, length, animated = false }: ClueMarksProps) {
+  const marks = clueMarks(pans, pots, length);
   const shouldReduceMotion = useReducedMotion();
 
   return (
@@ -20,19 +20,19 @@ export function ClueMarks({ pots, pans, length, animated = false }: ClueMarksPro
       {marks.map((mark, index) => {
         const renderMarkShape = () => {
           switch (mark) {
-            case 'pot':
-              // Pot: filled circle (phosphor)
-              return (
-                <div
-                  data-clue="pot"
-                  className="w-[14px] h-[14px] rounded-full bg-terminal-phosphor shadow-[0_0_8px_rgba(111,191,122,0.25)]"
-                />
-              );
             case 'pan':
-              // Pan: ring, 2px stroke (amber)
+              // Pan: filled circle (phosphor) - right digit, right spot!
               return (
                 <div
                   data-clue="pan"
+                  className="w-[14px] h-[14px] rounded-full bg-terminal-phosphor shadow-[0_0_8px_rgba(111,191,122,0.25)]"
+                />
+              );
+            case 'pot':
+              // Pot: ring, 2px stroke (amber) - right digit, wrong spot!
+              return (
+                <div
+                  data-clue="pot"
                   className="w-[14px] h-[14px] rounded-full border-2 border-terminal-amber bg-transparent"
                 />
               );
