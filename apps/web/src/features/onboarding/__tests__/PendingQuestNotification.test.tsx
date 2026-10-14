@@ -116,7 +116,7 @@ describe('PendingQuestNotification Component', () => {
     useCampaignStore.setState({
       activeChapterId: 'chapter-2',
       chapters: {
-        'chapter-2': { status: 'active', stars: 0, bestTimeMs: 0, attempts: 0 },
+        'chapter-2': { id: 'chapter-2', status: 'active' },
       },
     });
     currentPathname = '/market';
