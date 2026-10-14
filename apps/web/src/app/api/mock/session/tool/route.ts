@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       mockWallet.equippedTools = mockWallet.equippedTools.filter((id) => id !== toolId);
     }
 
-    recordTransaction(`Intrusion Tool: ${rule.name}`, 0, 'credits', 'tool_use');
+    recordTransaction(`Intrusion Tool: ${rule.name}`, 0, 'credits', 'purchase');
 
     // Apply rule logic server-side with access to secret
     const toolResult = applyTerminalTool({
