@@ -363,6 +363,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
       isStealth: g.isStealth,
       falsified: g.falsified,
       unmasked: g.unmasked,
+      parityLabel: g.parityLabel,
     }));
     const rEvents: DuelFeedEvent[] = session.rival.guesses.map((g, i) => ({
       id: `r-${i}-${g.timestamp}`,
@@ -373,6 +374,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
       timestamp: g.timestamp - session.startedAt,
       isStealth: g.isStealth,
       unmasked: g.unmasked,
+      parityLabel: g.parityLabel,
     }));
     return [...pEvents, ...rEvents].sort((a, b) => a.timestamp - b.timestamp);
   }, [session]);
