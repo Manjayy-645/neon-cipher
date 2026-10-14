@@ -81,7 +81,7 @@ export const NixBubble: React.FC<NixBubbleProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, transition: { duration: 0.12, ease: 'easeIn' } }}
           transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
-          className={`absolute top-[10px] right-[10px] left-[10px] sm:left-auto sm:max-w-[380px] z-30 pointer-events-auto ${className}`}
+          className={`absolute top-[10px] top-[max(env(safe-area-inset-top),10px)] right-[10px] left-[10px] sm:left-auto sm:max-w-[min(92vw,380px)] z-nix-pip pointer-events-auto ${className}`}
           role="region"
           aria-label="Nix Guide"
         >

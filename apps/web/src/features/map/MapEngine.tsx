@@ -195,11 +195,12 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (node) {
         const [lng, lat] = percentToLngLat(node.x, node.y);
-        const yOffset = sheetHeight / 2;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const upwardOffset = -Math.round(vh * 0.20);
         mapInstance.current.easeTo({
           center: [lng, lat],
           zoom: 4.2,
-          offset: [0, yOffset],
+          offset: [0, upwardOffset],
           duration: prefersReducedMotion ? 0 : CAMERA_EASE_DURATION,
           easing: easeOutCubic,
         });

@@ -12,6 +12,8 @@ import { walletService } from '@/features/market/walletService';
 import { usePlayerStore } from '@/stores/player-store';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Button } from '@/components/ui/Button';
+import { triggerToast } from '@/stores/toast-store';
+import { HardwareRailSlot, RigHardwareId, RIG_PRESETS } from '@neon-cipher/game-rules';
 
 export default function RigPage() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function RigPage() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isLoadoutOpen, setIsLoadoutOpen] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   // Load initial rig and safehouse states from mock server
   const loadRigState = () => {
@@ -71,7 +74,33 @@ export default function RigPage() {
         coins: res.balances.coins,
       });
       loadRigState();
-      // Keep drawer open so user sees operational status
+    }
+  };
+
+  const handleEquipRail = async (slot: HardwareRailSlot, hardwareId: RigHardwareId | null) => {
+    const res = await rigService.equipRail(slot, hardwareId);
+    if (res.success) {
+      loadRigState();
+      if (res.message) {
+        triggerToast(res.message);
+      }
+    } else if (res.error) {
+      triggerToast(res.error);
+    }
+  };
+
+  const handleApplyPreset = async (presetId: 'safe_learner' | 'cash_farmer' | 'pvp_duelist') => {
+    setActivePresetId(presetId);
+    const res = await rigService.applyPreset(presetId);
+    if (res.success) {
+      loadRigState();
+      if (res.missingModules && res.missingModules.length > 0) {
+        triggerToast(`Equipped owned parts. Missing from market: ${res.missingModules.length} item(s)`);
+      } else {
+        triggerToast(`Loadout configured: ${res.preset?.name || presetId}`);
+      }
+    } else if (res.error) {
+      triggerToast(res.error);
     }
   };
 
@@ -143,12 +172,67 @@ export default function RigPage() {
       </div>
 
       {/* Main Tab Content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-24 flex flex-col gap-4">
         {activeTab === 'cyberdeck' && rigData && (
-          <div className="flex flex-col gap-4 items-center">
+          <div className="flex flex-col gap-4 items-center w-full max-w-md mx-auto">
+            {/* Alex's Recommended Loadout Presets Header Card */}
+            <div
+              data-testid="alex-loadout-presets"
+              className="w-full bg-panel-light border border-line rounded-md p-3.5 shadow-card font-data text-xs flex flex-col gap-2.5"
+            >
+              <div className="flex items-center justify-between border-b border-line/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden border border-line shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/Character portraits/Alex.png" alt="Alex" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <span className="font-heading text-xs font-bold text-ink block">
+                      ALEX&apos;S RECOMMENDED PRESETS
+                    </span>
+                    <span className="text-[10px] text-ink-muted">
+                      1-Tap Build Helper // Optimized Archetypes
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preset Buttons Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {RIG_PRESETS.map((preset) => {
+                  const isActive = activePresetId === preset.id;
+                  return (
+                    <Button
+                      key={preset.id}
+                      variant={isActive ? 'primary' : 'secondary'}
+                      compact
+                      onClick={() => handleApplyPreset(preset.id as any)}
+                      data-testid={`preset-btn-${preset.id}`}
+                      className="text-left flex flex-col items-start p-2 h-auto text-[10px]"
+                    >
+                      <span className="font-bold uppercase tracking-wider block">
+                        [{preset.name}]
+                      </span>
+                      <span className="text-[9px] opacity-80 line-clamp-1">
+                        {preset.tagline}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Alex's Selected Preset Note */}
+              {activePresetId && (
+                <div className="mt-1 p-2 rounded bg-panel border border-accent/30 text-[11px] leading-snug italic text-ink">
+                  &quot;{RIG_PRESETS.find((p) => p.id === activePresetId)?.alexNote}&quot;
+                </div>
+              )}
+            </div>
+
             {/* Cyberdeck Schematic */}
             <CyberdeckSchematic
               hardware={rigData.hardware}
+              equippedRails={rigData.equippedRails}
               equippedTools={equippedTools}
               onSelectSlot={handleSelectSlot}
               selectedSlotId={selectedSlotId}
@@ -182,9 +266,12 @@ export default function RigPage() {
         <PartDetailDrawer
           slotId={selectedSlotId}
           hardware={rigData.hardware}
+          equippedRails={rigData.equippedRails}
+          inventory={inventory}
           credits={credits}
           isRepairing={isRepairing}
           onRepair={handleRepairHardware}
+          onEquipRail={handleEquipRail}
           onClose={() => setSelectedSlotId(null)}
           onNavigateToMarket={() => router.push('/market')}
         />

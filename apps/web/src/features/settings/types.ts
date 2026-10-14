@@ -12,6 +12,7 @@ export interface AccountSettings {
   colorBlindMode: boolean; // true = shape-only clues
   audio: AudioSettings;
   dailySpendLimit: number | null; // null = unlimited, otherwise max credits/coins
+  seenFeatureGuides?: string[];
 }
 
 export interface AccountProfile {

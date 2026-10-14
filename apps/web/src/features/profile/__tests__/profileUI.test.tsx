@@ -17,6 +17,8 @@ import {
   BreachReplay,
   FriendProfile,
   AppNotification,
+  SPECIALIZATION_SKILLS,
+  FACTION_CATALOG,
 } from '@neon-cipher/game-rules';
 
 describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
@@ -166,6 +168,91 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       // Deep Deduction requires entropy_reduction (not unlocked)
       expect(screen.getByText(/Req: entropy_reduction/)).toBeDefined();
     });
+
+    it('renders 3 canonical branches (Infiltration, Analysis, Exploitation) and Nix guides', () => {
+      const handleUnlock = vi.fn();
+      const handleRespec = vi.fn();
+      render(
+        <SkillTreeView
+          skills={SPECIALIZATION_SKILLS}
+          availablePoints={6}
+          onUnlockSkill={handleUnlock}
+          onRespec={handleRespec}
+        />
+      );
+
+      expect(screen.getByRole('heading', { name: 'Infiltration' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Analysis' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Exploitation' })).toBeDefined();
+      expect(screen.getByText(/Pick this tree if you hate countdown timers/i)).toBeDefined();
+      expect(screen.getByText(/Pick this tree if you want the cyberdeck to help you/i)).toBeDefined();
+      expect(screen.getByText(/Pick this tree to maximize credit bounties/i)).toBeDefined();
+    });
+
+    it('displays free respec button and triggers onRespec when clicked', () => {
+      const handleUnlock = vi.fn();
+      const handleRespec = vi.fn();
+      const skillsWithUnlocked = SPECIALIZATION_SKILLS.map((s) =>
+        s.id === 'slipstream_boot' ? { ...s, unlocked: true } : s
+      );
+
+      render(
+        <SkillTreeView
+          skills={skillsWithUnlocked}
+          availablePoints={5}
+          onUnlockSkill={handleUnlock}
+          onRespec={handleRespec}
+        />
+      );
+
+      const respecBtn = screen.getByRole('button', { name: /\[respec points \(free\)\]/i });
+      expect(respecBtn).toBeDefined();
+      expect(screen.getByText(/Experiment freely—resetting your skill points is always free/i)).toBeDefined();
+
+      fireEvent.click(respecBtn);
+      expect(handleRespec).toHaveBeenCalledTimes(1);
+    });
+
+    it('enforces Capstone mutual exclusivity warning in UI when a Capstone is active', () => {
+      const handleUnlock = vi.fn();
+      // Phantom Protocol is unlocked (Infiltration Capstone)
+      const skillsWithActiveCapstone = SPECIALIZATION_SKILLS.map((s) =>
+        s.id === 'phantom_protocol' ? { ...s, unlocked: true } : s
+      );
+
+      render(
+        <SkillTreeView
+          skills={skillsWithActiveCapstone}
+          availablePoints={10}
+          onUnlockSkill={handleUnlock}
+        />
+      );
+
+      expect(screen.getByText(/\[CAPSTONE ACTIVE: PHANTOM PROTOCOL\]/i)).toBeDefined();
+      // Analysis Capstone (Quantum Sieve) should show exclusivity warning
+      const capstoneWarnings = screen.getAllByText(/Mutually exclusive with active Capstone\. Respec to switch\./i);
+      expect(capstoneWarnings.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('supports Nix Playstyle Quiz and displays recommendation', () => {
+      const handleUnlock = vi.fn();
+      render(
+        <SkillTreeView
+          skills={SPECIALIZATION_SKILLS}
+          availablePoints={5}
+          onUnlockSkill={handleUnlock}
+        />
+      );
+
+      const quizToggleBtn = screen.getByRole('button', { name: /\[find your playstyle ▼\]/i });
+      fireEvent.click(quizToggleBtn);
+
+      const timersStressBtn = screen.getByRole('button', { name: /“Timers stress me out\.”/i });
+      fireEvent.click(timersStressBtn);
+
+      expect(screen.getByText(/NIX RECOMMENDATION: INFILTRATION TREE/i)).toBeDefined();
+      expect(screen.getByText(/Slipstream Boot gives you \+5s free padding/i)).toBeDefined();
+    });
   });
 
   // 3. FactionView (8.2)
@@ -228,6 +315,25 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       fireEvent.click(contractBtn);
 
       expect(handleAccept).toHaveBeenCalledWith('contract-col-1');
+    });
+
+    it('renders 3 reputation milestone ranks and Glitch tactical intel', () => {
+      const handleAccept = vi.fn();
+      render(<FactionView factions={FACTION_CATALOG} onAcceptContract={handleAccept} />);
+
+      expect(screen.getByRole('heading', { name: 'Kovacs Syndicate' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Street Collective' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Aeris Corp' })).toBeDefined();
+
+      // Glitch Intel Callouts
+      expect(screen.getByText(/Pay your campaign debt on time and take Kovacs contract hits/i)).toBeDefined();
+      expect(screen.getByText(/Defend Slum district nodes, crack media relays/i)).toBeDefined();
+
+      // Reputation Milestones Ranks
+      expect(screen.getAllByText('Rank 1: Known').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Rank 2: Trusted').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Rank 3: Inner Circle').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/✓ REACHED/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -332,7 +438,7 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
         won: true,
         guesses: [
           { step: 1, guess: '1234', pots: 0, pans: 2, timeElapsedSeconds: 4, note: 'Initial test probe' },
-          { step: 2, guess: '4821', pots: 4, pans: 0, timeElapsedSeconds: 9, note: 'Breached' },
+          { step: 2, guess: '4821', pots: 0, pans: 4, timeElapsedSeconds: 9, note: 'Breached' },
         ],
       },
     ];
@@ -398,7 +504,41 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       fireEvent.click(nextBtn);
 
       expect(screen.getByText('STEP 2 OF 2')).toBeDefined();
-      expect(screen.getByText('4821')).toBeDefined();
+      expect(screen.getAllByText('4821').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('renders Possibility Funnel counter, CRT terminal surface, and Nix Coach Breakdown', () => {
+      const handleMarkRead = vi.fn();
+      render(
+        <ExtrasHub
+          achievements={mockAchievements}
+          replays={mockReplays}
+          friends={mockFriends}
+          notifications={mockNotifications}
+          onMarkNotificationRead={handleMarkRead}
+        />
+      );
+
+      const replaysTab = screen.getByRole('button', { name: /replays/i });
+      fireEvent.click(replaysTab);
+
+      // Terminal Header & Surface
+      expect(screen.getByText(/\[BREACH REPLAY ANALYZER \/\/ NIX COACH V2\.4\]/i)).toBeDefined();
+
+      // Possibility Funnel Counter Banner
+      expect(screen.getByText(/POSSIBILITY FUNNEL \(CANDIDATE COLLAPSE\)/i)).toBeDefined();
+      expect(screen.getByText(/START: 5,040/i)).toBeDefined();
+
+      // Nix Turn Breakdown
+      expect(screen.getByText(/NIX TURN 1 BREAKDOWN:/i)).toBeDefined();
+      expect(screen.getAllByText(/Nix/i).length).toBeGreaterThanOrEqual(1);
+
+      // Next step should update candidates and commentary
+      const nextBtn = screen.getByRole('button', { name: /next guess/i });
+      fireEvent.click(nextBtn);
+
+      expect(screen.getByText(/NIX TURN 2 BREAKDOWN:/i)).toBeDefined();
+      expect(screen.getByText(/CLUTCH SOLVE/i)).toBeDefined();
     });
 
     it('renders friends comms roster and status indicators', () => {

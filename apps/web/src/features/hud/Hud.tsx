@@ -22,7 +22,7 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
   const activeSegments = Math.round((clampedHeat / 100) * heatSegments);
 
   return (
-    <header className="h-[56px] bg-panel border-b border-line px-3 grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center shrink-0 select-none gap-2">
+    <header className="min-h-[56px] h-[calc(56px_+_max(env(safe-area-inset-top),0.5rem))] pt-[max(env(safe-area-inset-top),0.5rem)] bg-panel border-b border-line px-3 grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center shrink-0 select-none gap-2 z-hud-bars relative">
       {/* Group 1: Avatar 36px, Handle (max ~90px, ellipsis) with Credits under it, and Coins with 8px gap */}
       <div className="flex items-center min-w-0">
         <Button

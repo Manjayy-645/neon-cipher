@@ -65,6 +65,19 @@ export const profileService = {
     return res.json();
   },
 
+  respecSkills: async (): Promise<{ success: boolean; skills: SkillNode[]; availablePoints: number }> => {
+    const res = await fetch('/api/mock/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'respec-skills' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to respec skill tree');
+    }
+    return res.json();
+  },
+
   getFactions: async (): Promise<FactionStanding[]> => {
     const res = await fetch('/api/mock/profile?section=factions');
     if (!res.ok) throw new Error('Failed to fetch factions');

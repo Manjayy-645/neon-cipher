@@ -14,6 +14,11 @@ export interface SessionConfig {
   nodeType?: string;
   bounty?: number;
   district?: string;
+  parityDistribution?: {
+    evenCount: number;
+    oddCount: number;
+    stencilFormatted: string;
+  } | null;
 }
 
 export interface SessionData {
@@ -33,6 +38,8 @@ export interface GuessResult {
   payout?: number;
   fine?: number;
   burnedHardware?: string;
+  refundedAttempt?: boolean;
+  firstTurnBonus?: number;
   error?: string;
 }
 
@@ -44,6 +51,14 @@ export interface ToolActivationResult {
   hasDuplicates?: boolean;
   shieldArmed?: boolean;
   timeAddedSeconds?: number;
+  timerFrozenSeconds?: number;
+  cleanseIce?: boolean;
+  cleanseTurns?: number;
+  uncorruptedScore?: { pans: number; pots: number };
+  extraAttempts?: number;
+  revealedSlot?: { slotIndex: number; digit: string };
+  autoCrack?: boolean;
+  secret?: string;
   message?: string;
   inventory?: Record<string, number>;
   equippedTools?: string[];

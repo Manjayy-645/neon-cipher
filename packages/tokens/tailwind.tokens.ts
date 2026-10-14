@@ -65,4 +65,14 @@ export const tokens = {
     nav: "var(--nav-height)",
     hud: "var(--hud-height)"
   },
+  zIndex: {
+    'map-canvas': 'var(--z-map-canvas)',
+    'map-markers': 'var(--z-map-markers)',
+    'map-controls': 'var(--z-map-controls)',
+    'nix-pip': 'var(--z-nix-pip)',
+    'bottom-sheet': 'var(--z-bottom-sheet)',
+    'hud-bars': 'var(--z-hud-bars)',
+    'terminal-modal': 'var(--z-terminal-modal)',
+    'tooltip-inspector': 'var(--z-tooltip-inspector)',
+  },
 };

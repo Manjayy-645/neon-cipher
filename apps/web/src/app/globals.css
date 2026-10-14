@@ -48,6 +48,15 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-pill: var(--radius-pill);
+
+  --z-map-canvas: 0;
+  --z-map-markers: 10;
+  --z-map-controls: 20;
+  --z-nix-pip: 30;
+  --z-bottom-sheet: 40;
+  --z-hud-bars: 50;
+  --z-terminal-modal: 60;
+  --z-tooltip-inspector: 70;
 }
 
 @layer base {
@@ -217,6 +226,39 @@
 
   .scene-card {
     transition: transform 140ms ease-out;
+  }
+
+  /* Explicit Z-Index Scale */
+  .z-map-canvas { z-index: var(--z-map-canvas, 0); }
+  .z-map-markers { z-index: var(--z-map-markers, 10); }
+  .z-map-controls { z-index: var(--z-map-controls, 20); }
+  .z-nix-pip { z-index: var(--z-nix-pip, 30); }
+  .z-bottom-sheet { z-index: var(--z-bottom-sheet, 40); }
+  .z-hud-bars { z-index: var(--z-hud-bars, 50); }
+  .z-terminal-modal { z-index: var(--z-terminal-modal, 60); }
+  .z-tooltip-inspector { z-index: var(--z-tooltip-inspector, 70); }
+
+  /* Safe Area Inset Helpers */
+  .pt-safe-top { padding-top: max(env(safe-area-inset-top), 0.5rem); }
+  .pb-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }
+
+  /* Responsive Terminal Keypad Key */
+  .keypad-btn-height {
+    height: clamp(44px, 6.2dvh, 56px);
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-height: 700px) {
+  .terminal-compact-strip {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+  .terminal-chassis-trim {
+    display: none !important;
   }
 }
 

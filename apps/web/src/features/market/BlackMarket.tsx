@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CATALOG, CatalogItem, ItemCategory } from './catalog';
 import { walletService } from './walletService';
 import { usePlayerStore } from '@/stores/player-store';
+import { useCampaignStore } from '@/stores/campaign-store';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Button } from '@/components/ui/Button';
 import { emit } from '@/features/onboarding/events';
+import { normalizeHardwareId, getHardwareStatPreview } from '@neon-cipher/game-rules';
 
 interface BlackMarketProps {
   onBackToDialogue: () => void;
@@ -15,6 +17,7 @@ interface BlackMarketProps {
 
 export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) => {
   const { credits, coins, inventory, equippedTools, syncWallet } = usePlayerStore();
+  const chapters = useCampaignStore((s) => s.chapters);
 
   const [activeTab, setActiveTab] = useState<ItemCategory>('tools');
   const [selectedItemForPurchase, setSelectedItemForPurchase] = useState<CatalogItem | null>(null);
@@ -35,17 +38,28 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
       });
   }, [syncWallet]);
 
-  // Filter items by active tab
+  // Filter items by active tab (excluding legacy aliases from market shelf)
   const itemsInTab = useMemo(() => {
-    return CATALOG.filter((it) => it.category === activeTab);
+    return CATALOG.filter(
+      (it) =>
+        it.category === activeTab &&
+        it.id !== 'rig-memory-buffer-1' &&
+        it.id !== 'rig-memory-buffer-2' &&
+        it.id !== 'rig-heuristic-coprocessor'
+    );
   }, [activeTab]);
 
-  // Consumable tools owned for equip flow
+  // Consumable tools & exploits owned for equip flow
   const ownedTools = useMemo(() => {
-    return CATALOG.filter((it) => it.category === 'tools' && (inventory[it.id] || 0) > 0);
+    return CATALOG.filter(
+      (it) => (it.category === 'tools' || it.category === 'exploits') && (inventory[it.id] || 0) > 0
+    );
   }, [inventory]);
 
   const handleOpenConfirm = (item: CatalogItem) => {
+    if (item.tierRequired && chapters[`chapter-${item.tierRequired}`]?.status !== 'completed') {
+      return;
+    }
     setPurchaseFeedback(null);
     setSelectedItemForPurchase(item);
   };
@@ -207,10 +221,13 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
       </div>
 
       {/* Item Catalog List */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-4 pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-max">
         {itemsInTab.map((item) => {
           const owned = inventory[item.id] || 0;
           const isMaxed = item.maxOwned !== undefined && owned >= item.maxOwned;
+          const isLocked = item.tierRequired
+            ? chapters[`chapter-${item.tierRequired}`]?.status !== 'completed'
+            : false;
 
           return (
             <ItemCard
@@ -218,6 +235,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
               item={item}
               ownedCount={owned}
               isMaxed={isMaxed}
+              isLocked={isLocked}
               isEquipped={equippedTools.includes(item.id)}
               onBuyClick={() => handleOpenConfirm(item)}
               onEquipClick={() => handleToggleEquipTool(item.id)}
@@ -272,6 +290,7 @@ function ItemCard({
   item,
   ownedCount,
   isMaxed,
+  isLocked = false,
   isEquipped = false,
   onBuyClick,
   onEquipClick,
@@ -279,6 +298,7 @@ function ItemCard({
   item: CatalogItem;
   ownedCount: number;
   isMaxed: boolean;
+  isLocked?: boolean;
   isEquipped?: boolean;
   onBuyClick: () => void;
   onEquipClick?: () => void;
@@ -303,6 +323,14 @@ function ItemCard({
             {ownedCount > 0 && (
               <span className="bg-panel border border-line text-ink text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold">
                 x{ownedCount}
+              </span>
+            )}
+            {isLocked && (
+              <span
+                data-testid={`locked-badge-${item.id}`}
+                className="bg-amber-950/60 border border-amber-500/50 text-amber-300 text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold uppercase tracking-wider"
+              >
+                REQ: CH.{item.tierRequired}
               </span>
             )}
           </div>
@@ -365,7 +393,9 @@ function ItemCard({
       {/* Card footer: compact action button, never overlaps text */}
       <div className="border-t border-line/40 pt-2.5 mt-auto flex items-center justify-between gap-2">
         <span className="font-data text-[11px] text-ink-muted truncate">
-          {isMaxed
+          {isLocked
+            ? `Unlocks after clearing Chapter ${item.tierRequired}`
+            : isMaxed
             ? 'Capacity reached'
             : item.maxOwned
             ? `Permanent (max ${item.maxOwned})`
@@ -373,7 +403,7 @@ function ItemCard({
         </span>
 
         <div className="flex items-center gap-2">
-          {item.category === 'tools' && ownedCount > 0 && onEquipClick && (
+          {(item.category === 'tools' || item.category === 'exploits') && ownedCount > 0 && onEquipClick && (
             <Button
               variant={isEquipped ? 'secondary' : 'primary'}
               compact
@@ -389,17 +419,17 @@ function ItemCard({
           )}
 
           <Button
-            variant={isMaxed ? 'secondary' : 'compact'}
+            variant={isLocked || isMaxed ? 'secondary' : 'compact'}
             compact
             onClick={onBuyClick}
-            disabled={isMaxed}
+            disabled={isMaxed || isLocked}
             data-tour={
               item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
                 ? 'buy-firewall-patch'
                 : undefined
             }
           >
-            {isMaxed ? 'OWNED' : 'BUY'}
+            {isLocked ? 'LOCKED' : isMaxed ? 'OWNED' : 'BUY'}
           </Button>
         </div>
       </div>
@@ -514,6 +544,72 @@ function ConfirmPurchaseSheet({
             </div>
           )}
         </div>
+
+        {/* Mentor Build Guidance */}
+        {(item.glitchPitch || item.nixTip || item.alexExplanation) && (
+          <div className="bg-panel p-3.5 rounded-[10px] border border-line flex flex-col gap-2 font-data text-xs">
+            {item.glitchPitch && (
+              <div className="flex items-start gap-2">
+                <span className="font-bold text-accent text-[10px] uppercase shrink-0">GLITCH:</span>
+                <p className="italic text-ink-muted leading-tight">&quot;{item.glitchPitch}&quot;</p>
+              </div>
+            )}
+            {item.alexExplanation && (
+              <div className="flex items-start gap-2 pt-1.5 border-t border-line/60">
+                <span className="font-bold text-ink text-[10px] uppercase shrink-0">ALEX:</span>
+                <p className="italic text-ink leading-tight">&quot;{item.alexExplanation}&quot;</p>
+              </div>
+            )}
+            {item.nixTip && (
+              <div className="flex items-start gap-2 pt-1.5 border-t border-line/60">
+                <span className="font-bold text-accent text-[10px] uppercase shrink-0">NIX:</span>
+                <p className="italic text-ink leading-tight">&quot;{item.nixTip}&quot;</p>
+              </div>
+            )}
+            {item.recommendedWhen && (
+              <div className="mt-0.5 text-[10px] text-accent font-bold uppercase tracking-wide">
+                RECOMMENDED: {item.recommendedWhen}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Live Impact Preview Card for Rig Hardware */}
+        {item.category === 'rig' && (() => {
+          const norm = normalizeHardwareId(item.id);
+          const preview = norm ? getHardwareStatPreview(norm, {}) : null;
+          if (!preview) return null;
+          return (
+            <div
+              data-testid="market-stat-preview"
+              className="bg-panel p-3.5 rounded-[10px] border border-accent/40 flex flex-col gap-1.5 font-data text-xs"
+            >
+              <div className="flex justify-between items-center border-b border-line/60 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                  LIVE IMPACT PREVIEW // 4-DIGIT NODE
+                </span>
+                <span className="text-[9px] text-ink-muted uppercase">HARDWARE UPGRADE</span>
+              </div>
+              {preview.changes.map((ch, idx) => (
+                <div key={idx} className="flex justify-between items-center">
+                  <span className="text-ink-muted">{ch.label}:</span>
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="text-ink-muted">{ch.before} &rarr;</span>
+                    <span className={ch.tone === 'positive' ? 'text-money-text' : ch.tone === 'warning' ? 'text-danger-text' : 'text-ink'}>
+                      {ch.after} ({ch.delta})
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {item.tradeOff && (
+                <div className="mt-1 p-2 rounded bg-danger/10 border border-danger/30 text-[11px] text-danger-text leading-snug">
+                  <span className="font-bold uppercase tracking-wider">Trade-off: </span>
+                  <span>{item.tradeOff}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Feedback message */}
         {feedback && (

@@ -4,7 +4,8 @@ import { POST as acceptRoute } from '@/app/api/mock/campaign/accept/route';
 import { POST as completeRoute } from '@/app/api/mock/campaign/complete/route';
 import { POST as tutorialRoute } from '@/app/api/mock/campaign/tutorial/route';
 import { POST as resetRoute } from '@/app/api/mock/campaign/reset/route';
-import { getCampaignState, resetCampaignProgress } from '@/app/api/mock/db';
+import { POST as purchaseRoute } from '@/app/api/mock/wallet/purchase/route';
+import { getCampaignState, resetCampaignProgress, mockWallet } from '@/app/api/mock/db';
 import { getChapterById } from '@neon-cipher/game-rules/src/index';
 
 describe('Task 10: Campaign Mock Server Persistence & Progression', () => {
@@ -177,3 +178,121 @@ describe('Task 10 Acceptance: Chapter 1 On-Screen Guidance Walkthrough', () => {
     expect(steps[5].nixDialogue).toContain('Dead digits');
   });
 });
+
+describe('Story Mode Power-Up Rewards & Black Market Gating', () => {
+  beforeEach(() => {
+    resetCampaignProgress();
+    mockWallet.credits = 10000;
+  });
+
+  it('rewards Starter Intrusion Bundle (Firewall Patch x2 + Static Injector x2) on completing Chapter 2', async () => {
+    const initialPatch = mockWallet.inventory['tool-firewall-patch'] || 0;
+    const initialInjector = mockWallet.inventory['tool-static-injector'] || 0;
+
+    // Complete Chapter 1 first
+    await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-1' }),
+      })
+    );
+
+    // Complete Chapter 2
+    const res = await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-2' }),
+      })
+    );
+    expect(res.status).toBe(200);
+
+    expect(mockWallet.inventory['tool-firewall-patch']).toBe(initialPatch + 2);
+    expect(mockWallet.inventory['tool-static-injector']).toBe(initialInjector + 2);
+  });
+
+  it('rewards Tactical Care Package (Frequency Probe x2 + Cryo-Pulse Spike x1) on accepting Chapter 3', async () => {
+    const initialProbe = mockWallet.inventory['tool-frequency-probe'] || 0;
+    const initialCryo = mockWallet.inventory['tool-cryo-pulse'] || 0;
+
+    const res = await acceptRoute(
+      new Request('http://localhost/api/mock/campaign/accept', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-3' }),
+      })
+    );
+    expect(res.status).toBe(200);
+
+    expect(mockWallet.inventory['tool-frequency-probe']).toBe(initialProbe + 2);
+    expect(mockWallet.inventory['tool-cryo-pulse']).toBe(initialCryo + 1);
+  });
+
+  it('enforces Black Market lock on Cryo-Pulse Spike until Chapter 3 is completed, and Zero-Day until Chapter 4', async () => {
+    // 1. Attempt to buy Cryo-Pulse Spike before Chapter 3 is cleared -> blocked (403)
+    const cryoReq1 = new Request('http://localhost/api/mock/wallet/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ itemId: 'tool-cryo-pulse' }),
+    });
+    const cryoRes1 = await purchaseRoute(cryoReq1);
+    expect(cryoRes1.status).toBe(403);
+    const cryoErr1 = await cryoRes1.json();
+    expect(cryoErr1.error).toContain('requires clearing Chapter 3');
+
+    // 2. Complete Chapters 1, 2, and 3
+    await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-1' }),
+      })
+    );
+    await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-2' }),
+      })
+    );
+    await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-3' }),
+      })
+    );
+
+    // Now purchasing Cryo-Pulse Spike succeeds!
+    const cryoRes2 = await purchaseRoute(
+      new Request('http://localhost/api/mock/wallet/purchase', {
+        method: 'POST',
+        body: JSON.stringify({ itemId: 'tool-cryo-pulse' }),
+      })
+    );
+    expect(cryoRes2.status).toBe(200);
+
+    // 3. Attempt to buy Zero-Day Exploit before Chapter 4 is cleared -> blocked (403)
+    const zdRes1 = await purchaseRoute(
+      new Request('http://localhost/api/mock/wallet/purchase', {
+        method: 'POST',
+        body: JSON.stringify({ itemId: 'tool-zero-day' }),
+      })
+    );
+    expect(zdRes1.status).toBe(403);
+    const zdErr1 = await zdRes1.json();
+    expect(zdErr1.error).toContain('requires clearing Chapter 4');
+
+    // Complete Chapter 4
+    await completeRoute(
+      new Request('http://localhost/api/mock/campaign/complete', {
+        method: 'POST',
+        body: JSON.stringify({ chapterId: 'chapter-4' }),
+      })
+    );
+
+    // Now purchasing Zero-Day Exploit succeeds!
+    const zdRes2 = await purchaseRoute(
+      new Request('http://localhost/api/mock/wallet/purchase', {
+        method: 'POST',
+        body: JSON.stringify({ itemId: 'tool-zero-day' }),
+      })
+    );
+    expect(zdRes2.status).toBe(200);
+  });
+});
+

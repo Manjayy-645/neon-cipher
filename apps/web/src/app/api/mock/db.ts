@@ -14,6 +14,8 @@ import {
   calculateDoubleOrNothing,
   isExploitAllowed,
   SABOTAGE_RULES,
+  SABOTAGE_TOOL_CATALOG,
+  normalizeSabotageToolId,
   generateNullByteGuess,
   DuelMatchType,
   DuelPacingMode,
@@ -31,6 +33,25 @@ import {
   CoopStageConfig,
   CoopGuessRecord,
   CoopPayoutResult,
+  createCoopHeistState,
+  submitStage1Guess,
+  checkStage1SyncTimeout,
+  pingDigitStage2,
+  flushIceStage2,
+  submitStage2Guess,
+  submitStage3Guess,
+  triggerOverdriveStage3,
+  getNixCoopCallout,
+  getNixRoleBriefing,
+  CoopHeistState,
+  CoopHeistSecrets,
+  CoopTelemetryEvent,
+  DigitPingStatus,
+  CoopStageId,
+  CoopHeistStatus,
+  normalizeCoopRole,
+  DUAL_KEY_SYNC_WINDOW_MS,
+  OVERDRIVE_FREEZE_MS,
   DeckerProfile,
   SkillNode,
   FactionStanding,
@@ -41,9 +62,22 @@ import {
   AppNotification,
   calculateWinRate,
   canUnlockSkill,
+  respecSkillTree,
+  SPECIALIZATION_SKILLS,
+  FACTION_CATALOG,
+  analyzeBreachReplay,
   getStandingLevel,
   checkMutualExclusion,
   getDailyBreachSeed,
+  HardwareRailSlot,
+  RigHardwareId,
+  RigHardwareModule,
+  RIG_HARDWARE_MODULES,
+  RIG_PRESETS,
+  computeEffectiveRigStats,
+  calculateParityDistribution,
+  equipRailModule,
+  applyRigPreset,
 } from '@neon-cipher/game-rules/src/index';
 
 export interface ChapterProgress {
@@ -108,6 +142,7 @@ export interface WalletData {
   coins: number;
   inventory: Record<string, number>;
   equippedTools: string[];
+  equippedRails?: Partial<Record<HardwareRailSlot, RigHardwareId | null>>;
 }
 
 export interface RigHardwareItem {
@@ -116,9 +151,15 @@ export interface RigHardwareItem {
   installed: boolean;
   burned: boolean;
   repairCost: number;
-  slot: 'memory-1' | 'memory-2' | 'coprocessor';
+  slot: 'memory-1' | 'memory-2' | 'coprocessor' | 'memory_1' | 'memory_2' | 'bus_interconnect';
+  railSlot?: HardwareRailSlot;
+  buildArchetype?: string;
   effect: string;
+  mechanicalEffect?: string;
+  tradeOff?: string;
+  alexExplanation?: string;
   nixTip: string;
+  glitchPitch?: string;
 }
 
 export interface SafehouseProperty {
@@ -179,12 +220,152 @@ const defaultWallet: WalletData = {
   inventory: {
     'tool-static-injector': 2,
     'tool-firewall-patch': 1,
+    'cryo_spike': 1,
+    'cleanse_subroutine': 1,
+    'memory_buffer_mk1': 1,
     'rig-memory-buffer-1': 1,
   },
   equippedTools: ['tool-static-injector'],
+  equippedRails: {
+    memory_1: null,
+    memory_2: null,
+    coprocessor: null,
+    bus_interconnect: null,
+  },
 };
 
 const defaultRigHardware: Record<string, RigHardwareItem> = {
+  // --- 4-RAIL CYBERDECK MODULES ---
+  'memory_buffer_mk1': {
+    id: 'memory_buffer_mk1',
+    name: 'Memory Buffer Mk I',
+    installed: false,
+    burned: false,
+    repairCost: 650,
+    slot: 'memory_1',
+    railSlot: 'memory_1',
+    buildArchetype: 'Balanced / Rookie',
+    effect: '+1 max guess attempt on Tier 1 & Tier 2 nodes.',
+    mechanicalEffect: '+1 max guess attempt on Tier 1 & Tier 2 nodes.',
+    tradeOff: 'No attempt bonus on Tier 3+ corporate nodes.',
+    alexExplanation: "Solid starter RAM. Gives you one extra try on street locks so a bad guess doesn't fry your run.",
+    nixTip: 'Gives you breathing room on street terminals. An extra probe before ICE trips.',
+    glitchPitch: 'Street-grade RAM chips pulled from defunct ATMs. Reliable, simple, and cheap.',
+  },
+  'neural_reflex_cap': {
+    id: 'neural_reflex_cap',
+    name: 'Neural Reflex Capacitor',
+    installed: false,
+    burned: false,
+    repairCost: 2800,
+    slot: 'memory_1',
+    railSlot: 'memory_1',
+    buildArchetype: 'Speed / Duelist',
+    effect: 'Submitting a guess within 4 seconds of your previous turn does not consume an attempt pip (Triggers max once per breach).',
+    mechanicalEffect: 'Submitting a guess within 4 seconds of your previous turn does not consume an attempt pip (Triggers max once per breach).',
+    tradeOff: 'Requires quick decision making; triggers at most once per breach.',
+    alexExplanation: 'Built for fast fingers. Punch your follow-up guess in under 4 seconds and the capacitor gives you that turn for free.',
+    nixTip: 'If your deduction is mapped out ahead of time, double-tap quickly to earn a free turn.',
+    glitchPitch: 'Military twitch-capacitors wired straight into optical relays. Rewards split-second execution.',
+  },
+  'memory_buffer_mk2': {
+    id: 'memory_buffer_mk2',
+    name: 'Memory Buffer Mk II',
+    installed: false,
+    burned: false,
+    repairCost: 2200,
+    slot: 'memory_2',
+    railSlot: 'memory_2',
+    buildArchetype: 'Deep Breaker',
+    effect: '+1 max guess attempt on Tier 3, Tier 4 & Tier 5 nodes.',
+    mechanicalEffect: '+1 max guess attempt on Tier 3, Tier 4 & Tier 5 nodes.',
+    tradeOff: 'High heat density; provides no bonus on Tier 1 or 2 street locks.',
+    alexExplanation: 'Heavy-duty buffer for corporate vaults where every single attempt counts.',
+    nixTip: 'High-spec memory rail for corporate relays. Protects against tight attempt limits.',
+    glitchPitch: 'Enterprise server cache modules. When you hit downtown databanks, you will thank me.',
+  },
+  'syndicate_skimmer': {
+    id: 'syndicate_skimmer',
+    name: 'Syndicate Skimmer Chip',
+    installed: false,
+    burned: false,
+    repairCost: 3100,
+    slot: 'memory_2',
+    railSlot: 'memory_2',
+    buildArchetype: 'Cash Farmer',
+    effect: 'Every Pan (Green exact match) scored on your very first guess immediately deposits a $45 bonus into your wallet, win or lose.',
+    mechanicalEffect: 'Every Pan (Green exact match) scored on your very first guess immediately deposits a $45 bonus into your wallet, win or lose.',
+    tradeOff: 'Occupies Memory Rail 2; gives up the +1 attempt buffer of Memory Buffer Mk II.',
+    alexExplanation: 'Siphons loose credits right off the first handshake. Great for farming quick cash in The Slums.',
+    nixTip: 'Lead with diverse high-frequency probe digits on Turn 1 to maximize early Pan payouts.',
+    glitchPitch: 'Custom Kovacs firmware tap. Turns initial cryptographic syncs into pure street money.',
+  },
+  'heuristic_coproc': {
+    id: 'heuristic_coproc',
+    name: 'Heuristic Co-Processor',
+    installed: false,
+    burned: false,
+    repairCost: 1500,
+    slot: 'coprocessor',
+    railSlot: 'coprocessor',
+    buildArchetype: 'Eliminator',
+    effect: 'Automatically crosses off and dims 2 confirmed dead digits on the keypad as soon as you jack in.',
+    mechanicalEffect: 'Automatically crosses off and dims 2 confirmed dead digits on the keypad as soon as you jack in.',
+    tradeOff: 'Occupies Co-Processor socket; cannot equip Parity Scanner ASIC simultaneously.',
+    alexExplanation: 'Cuts the guesswork down before you even touch a key. Removes two dead numbers right on boot.',
+    nixTip: 'Instantly burns away two false digits right when you jack in. Cuts guesswork in half.',
+    glitchPitch: 'Pre-flight signal filter that purges dead carrier noise before you even touch the keys.',
+  },
+  'parity_scanner_asic': {
+    id: 'parity_scanner_asic',
+    name: 'Parity Scanner ASIC',
+    installed: false,
+    burned: false,
+    repairCost: 1800,
+    slot: 'coprocessor',
+    railSlot: 'coprocessor',
+    buildArchetype: 'Analytical',
+    effect: 'On boot, displays the exact count of EVEN vs. ODD digits in the secret code (e.g., [2 EVEN / 2 ODD]).',
+    mechanicalEffect: 'On boot, displays the exact count of EVEN vs. ODD digits in the secret code (e.g., [2 EVEN / 2 ODD]).',
+    tradeOff: 'Does not eliminate digits directly; relies on player mathematical deduction.',
+    alexExplanation: 'Instead of crossing off two numbers, this tells you the exact balance of Even and Odd numbers in the lock.',
+    nixTip: 'Even numbers are 0, 2, 4, 6, 8. Odd numbers are 1, 3, 5, 7, 9. Use this distribution to structure your probes.',
+    glitchPitch: 'Dedicated ASIC math coprocessor that sniffs bus parity harmonics in micro-seconds.',
+  },
+  'overclocked_quartz_bus': {
+    id: 'overclocked_quartz_bus',
+    name: 'Overclocked Quartz Bus',
+    installed: false,
+    burned: false,
+    repairCost: 2400,
+    slot: 'bus_interconnect',
+    railSlot: 'bus_interconnect',
+    buildArchetype: 'High-Risk Blitz',
+    effect: 'Grants +15 seconds to all trace timers and +20% Credit Bounty, but reduces max attempts by -1 (min 3 attempts).',
+    mechanicalEffect: 'Grants +15 seconds to all trace timers and +20% Credit Bounty, but reduces max attempts by -1 (min 3 attempts).',
+    tradeOff: 'Runs hot—reduces max attempts by 1 attempt.',
+    alexExplanation: 'Pushes your clock and payout through the roof, but runs hot—costs you 1 attempt slot. Only equip if your deduction is sharp.',
+    nixTip: 'High-risk, high-reward interconnect. The extra clock lets you think, but you have fewer attempts to fail.',
+    glitchPitch: 'Over-volted quartz oscillator. Drives up the score and buys you clock time, if you can stand the heat.',
+  },
+  'lead_shielded_chassis': {
+    id: 'lead_shielded_chassis',
+    name: 'Lead-Shielded Chassis',
+    installed: false,
+    burned: false,
+    repairCost: 1950,
+    slot: 'bus_interconnect',
+    railSlot: 'bus_interconnect',
+    buildArchetype: 'Tank / Low-Heat',
+    effect: 'Reduces failure fines by 60%, cuts Sector Heat buildup by 50%, and prevents hardware burn on Tier 5 lockouts.',
+    mechanicalEffect: 'Reduces failure fines by 60%, cuts Sector Heat buildup by 50%, and prevents hardware burn on Tier 5 lockouts.',
+    tradeOff: 'No timer extensions or bounty payout multipliers.',
+    alexExplanation: 'Heavy lead lining. If a tough vault locks you out, you barely pay a fine and your rig stays safe from burn damage.',
+    nixTip: 'Defensive chassis plating. Essential when probing high-security nodes where failure penalties are brutal.',
+    glitchPitch: 'Military-grade lead plating. Security trace spikes bounce right off your deck casing.',
+  },
+
+  // --- LEGACY COMPATIBILITY ALIASES ---
   'rig-memory-buffer-1': {
     id: 'rig-memory-buffer-1',
     name: 'Memory Buffer Mk I',
@@ -192,6 +373,8 @@ const defaultRigHardware: Record<string, RigHardwareItem> = {
     burned: false,
     repairCost: 650,
     slot: 'memory-1',
+    railSlot: 'memory_1',
+    buildArchetype: 'Balanced / Rookie',
     effect: '+1 maximum guess attempt on Tier 1 and 2 nodes permanently.',
     nixTip: "Gives you breathing room on street terminals. An extra probe before ICE trips.",
   },
@@ -202,6 +385,8 @@ const defaultRigHardware: Record<string, RigHardwareItem> = {
     burned: false,
     repairCost: 2200,
     slot: 'memory-2',
+    railSlot: 'memory_2',
+    buildArchetype: 'Deep Breaker',
     effect: '+1 maximum guess attempt on Tier 3 and 4 nodes permanently.',
     nixTip: "High-spec memory rail for corporate relays. Protects against tight attempt limits.",
   },
@@ -212,6 +397,8 @@ const defaultRigHardware: Record<string, RigHardwareItem> = {
     burned: false,
     repairCost: 1500,
     slot: 'coprocessor',
+    railSlot: 'coprocessor',
+    buildArchetype: 'Eliminator',
     effect: 'Automatically analyzes carrier waves to eliminate two dead digits at hack start.',
     nixTip: "Instantly burns away two false digits right when you jack in. Cuts guesswork in half.",
   },
@@ -630,11 +817,38 @@ export function recordTransaction(
  * Trigger catastrophic ICE burnout on a random installed hardware item (Tier 5 failure)
  */
 export function burnInstalledHardware(): RigHardwareItem | null {
+  // Lead-Shielded Chassis prevents hardware burn on Tier 5 lockouts
+  const shieldedChassis = mockRigHardware['lead_shielded_chassis'];
+  if (shieldedChassis && shieldedChassis.installed && !shieldedChassis.burned) {
+    return null;
+  }
   const installedItems = Object.values(mockRigHardware).filter((h) => h.installed && !h.burned);
   if (installedItems.length === 0) return null;
 
   const target = installedItems[Math.floor(Math.random() * installedItems.length)];
   target.burned = true;
+
+  // Sync alias in mockRigHardware
+  const aliasMap: Record<string, string> = {
+    'rig-memory-buffer-1': 'memory_buffer_mk1',
+    'memory_buffer_mk1': 'rig-memory-buffer-1',
+    'rig-memory-buffer-2': 'memory_buffer_mk2',
+    'memory_buffer_mk2': 'rig-memory-buffer-2',
+    'rig-heuristic-coprocessor': 'heuristic_coproc',
+    'heuristic_coproc': 'rig-heuristic-coprocessor',
+  };
+  const alias = aliasMap[target.id];
+  if (alias && mockRigHardware[alias]) {
+    mockRigHardware[alias].burned = true;
+  }
+  if (mockWallet.equippedRails) {
+    for (const [rail, modId] of Object.entries(mockWallet.equippedRails)) {
+      if (modId === target.id || modId === alias) {
+        mockWallet.equippedRails[rail as HardwareRailSlot] = null;
+      }
+    }
+  }
+
   return target;
 }
 
@@ -659,6 +873,15 @@ export function acceptChapterAssignment(chapterId: string): CampaignState {
   const account = getActiveAccount();
   if (account) {
     account.campaignProgress.chapter = chapter.number;
+  }
+
+  // Tactical Care Package reward for Chapter 3 acceptance/start:
+  // Frequency Probe (x2) and Cryo-Pulse Spike (x1) to counter Distortion ICE
+  if (chapterId === 'chapter-3' && !(mockCampaign as any).ch3CarePackageGranted) {
+    (mockCampaign as any).ch3CarePackageGranted = true;
+    mockWallet.inventory['tool-frequency-probe'] = (mockWallet.inventory['tool-frequency-probe'] || 0) + 2;
+    mockWallet.inventory['tool-cryo-pulse'] = (mockWallet.inventory['tool-cryo-pulse'] || 0) + 1;
+    recordTransaction('Kovacs Care Package: Frequency Probe (x2) + Cryo-Pulse Spike (x1)', 0, 'credits', 'payout');
   }
 
   return mockCampaign;
@@ -699,8 +922,15 @@ export function completeChapterAssignment(chapterId: string): {
       'payout'
     );
 
+    const account = getActiveAccount();
+
     if (chapterId === 'chapter-2' || chapter.unlocksReward === 'blackMarket') {
       mockCampaign.unlocks.blackMarket = true;
+      // Starter tool bundle for Chapter 2 completion:
+      // Firewall Patch (x2) and Static Injector (x2)
+      mockWallet.inventory['tool-firewall-patch'] = (mockWallet.inventory['tool-firewall-patch'] || 0) + 2;
+      mockWallet.inventory['tool-static-injector'] = (mockWallet.inventory['tool-static-injector'] || 0) + 2;
+      recordTransaction('Starter Intrusion Bundle: Firewall Patch (x2) + Static Injector (x2)', 0, 'credits', 'payout');
     }
     if (chapterId === 'chapter-3' || chapter.unlocksReward === 'bridge') {
       mockCampaign.unlocks.bridge = true;
@@ -771,6 +1001,7 @@ export function resetCampaignProgress(): CampaignState {
     'chapter-1': { completed: false, skipped: false },
     'chapter-2': { completed: false, skipped: false },
   };
+  (mockCampaign as any).ch3CarePackageGranted = false;
   return mockCampaign;
 }
 
@@ -915,18 +1146,24 @@ export interface DuelGuessRecord {
   isStealth?: boolean;
   falsified?: boolean;
   unmasked?: boolean;
+  parityLabel?: 'EVEN' | 'ODD';
 }
 
 export interface DuelParticipant {
   handle: string;
   avatar: string;
   guesses: DuelGuessRecord[];
-  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock' | 'snoop_packet' | 'false_flag_echo'>;
+  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock' | 'snoop_packet' | 'false_flag_echo' | 'key_latch' | 'logic_bomb' | 'parity_jam'>;
   staticExpiry?: number;
   shieldActive: boolean;
   cheatUsed: boolean;
   falseFlagActive?: boolean;
   snoopActive?: boolean;
+  latchedKeys?: string[];
+  activeLogicBomb?: { targetDigit: string; sourceDeckerId: string; armedBy?: string };
+  parityJamActive?: boolean;
+  defensiveBuffs?: any[];
+  stealthChargesRemaining?: number;
 }
 
 export interface DuelSessionState {
@@ -1368,7 +1605,6 @@ export function startDuelSession(data: {
 
   // Deduct player ante & wager
   if (totalCost > 0) {
-    mockWallet.credits -= totalCost;
     recordTransaction({
       source: `Duel Entry (${data.matchType})`,
       amount: -totalCost,
@@ -1412,6 +1648,8 @@ export function startDuelSession(data: {
       activeEffects: [],
       shieldActive: false,
       cheatUsed: false,
+      defensiveBuffs: [],
+      stealthChargesRemaining: 1,
     },
     rival: {
       handle: 'Null_Byte',
@@ -1420,6 +1658,8 @@ export function startDuelSession(data: {
       activeEffects: [],
       shieldActive: false,
       cheatUsed: false,
+      defensiveBuffs: [],
+      stealthChargesRemaining: 1,
     },
     currentTurn: 'player',
     feedEvents: [],
@@ -1452,16 +1692,55 @@ export function submitDuelGuess(data: {
     throw new Error('Duel session already resolved');
   }
 
-  // Handle stealth guess fee
+  // Handle stealth guess
+  let actualStealth = false;
   if (data.isStealth) {
-    if (mockWallet.credits < STEALTH_GUESS_COST) {
-      throw new Error(`Insufficient credits for Stealth Guess. Required: ${STEALTH_GUESS_COST} CR`);
+    if ((session.player.stealthChargesRemaining ?? 0) > 0) {
+      session.player.stealthChargesRemaining = (session.player.stealthChargesRemaining ?? 1) - 1;
+      actualStealth = true;
+    } else {
+      if (mockWallet.credits < STEALTH_GUESS_COST) {
+        throw new Error(`Insufficient credits for Stealth Guess. Required: ${STEALTH_GUESS_COST} CR`);
+      }
+      recordTransaction({
+        source: 'Stealth Guess Fee',
+        amount: -STEALTH_GUESS_COST,
+        currency: 'credits',
+        category: 'purchase',
+      });
+      actualStealth = true;
     }
-    recordTransaction({
-      source: 'Stealth Guess Fee',
-      amount: -STEALTH_GUESS_COST,
-      currency: 'credits',
-      category: 'purchase',
+  }
+
+  // Check key latch virus guard
+  if (session.player.latchedKeys && session.player.latchedKeys.length > 0) {
+    const latched = session.player.latchedKeys.find((k: string) => data.guess.includes(k));
+    if (latched) {
+      throw new Error(`Key [${latched}] is latched by virus! Cannot submit guess.`);
+    }
+    // Latch expires after submitting valid guess
+    session.player.latchedKeys = undefined;
+    session.player.activeEffects = session.player.activeEffects.filter((e) => e !== 'key_latch');
+  }
+
+  // Check logic bomb tripwire
+  if (session.player.activeLogicBomb && data.guess.includes(session.player.activeLogicBomb.targetDigit)) {
+    const trappedDigit = session.player.activeLogicBomb.targetDigit;
+    session.playerAttempts = Math.max(0, session.playerAttempts - 1);
+    session.turnClockSeconds = Math.max(0, session.turnClockSeconds - 5);
+    session.player.activeLogicBomb = undefined;
+    session.player.activeEffects = session.player.activeEffects.filter((e) => e !== 'logic_bomb');
+    session.feedEvents.push({
+      id: `ev-bomb-${Date.now()}`,
+      who: 'rival',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: 'Logic Bomb Detonation',
+        description: `Opponent's Logic Bomb on digit [${trappedDigit}] detonated! -1 attempt, -5s lost.`,
+      },
     });
   }
 
@@ -1490,6 +1769,15 @@ export function submitDuelGuess(data: {
   let displayPans = playerScore.pans;
   let wasFalsified = false;
 
+  // Parity jammer check
+  let parityLabel: 'EVEN' | 'ODD' | undefined;
+  if (session.player.parityJamActive || session.player.activeEffects.includes('parity_jam')) {
+    const hits = playerScore.pans + playerScore.pots;
+    parityLabel = hits % 2 === 0 ? 'EVEN' : 'ODD';
+    session.player.parityJamActive = false;
+    session.player.activeEffects = session.player.activeEffects.filter((e) => e !== 'parity_jam');
+  }
+
   // False Flag Echo: spoof public feedback for this guess
   if (session.player.falseFlagActive) {
     const fake = generateFalseFlagClue(playerScore.pots, playerScore.pans, session.digits);
@@ -1503,7 +1791,7 @@ export function submitDuelGuess(data: {
     throw new Error('Not your turn. Rival is currently calculating.');
   }
 
-  const isStealth = !!data.isStealth;
+  const isStealth = actualStealth;
   const isUnmasked = isStealth && !!session.rival.snoopActive;
   if (isUnmasked) {
     session.rival.snoopActive = false;
@@ -1518,6 +1806,7 @@ export function submitDuelGuess(data: {
     isStealth,
     falsified: wasFalsified,
     unmasked: isUnmasked,
+    parityLabel,
   };
   session.player.guesses.push(playerRecord);
   session.playerAttempts = Math.max(0, session.playerAttempts - 1);
@@ -1546,7 +1835,6 @@ export function submitDuelGuess(data: {
 
     // Award net pot
     if (session.netPot > 0) {
-      mockWallet.credits += session.netPot;
       recordTransaction({
         source: `Duel Victory (${session.matchType})`,
         amount: session.netPot,
@@ -1716,7 +2004,9 @@ export function applyDuelSabotage(data: {
   }
   if (session.status !== 'active') throw new Error('Duel already ended');
 
-  const rule = SABOTAGE_RULES[data.toolId];
+  const normId = normalizeSabotageToolId(data.toolId);
+  const rule = (normId in SABOTAGE_TOOL_CATALOG ? SABOTAGE_TOOL_CATALOG[normId as keyof typeof SABOTAGE_TOOL_CATALOG] : undefined) ||
+    (data.toolId in SABOTAGE_RULES ? SABOTAGE_RULES[data.toolId as keyof typeof SABOTAGE_RULES] : undefined);
   if (!rule) throw new Error('Unknown sabotage tool');
 
   if (mockWallet.credits < rule.creditCost) {
@@ -1724,7 +2014,6 @@ export function applyDuelSabotage(data: {
   }
 
   // Deduct cost
-  mockWallet.credits -= rule.creditCost;
   recordTransaction({
     source: `Sabotage (${rule.name})`,
     amount: -rule.creditCost,
@@ -1732,8 +2021,15 @@ export function applyDuelSabotage(data: {
     category: 'purchase',
   });
 
-  if (rule.effectType === 'firewall_shield') {
+  // 1. Priming defensive buffs (Firewall Patch / Mirror Daemon)
+  if (rule.isDefensive || rule.effectType === 'firewall_shield' || rule.effectType === 'mirror_shield') {
     session.player.shieldActive = true;
+    session.player.defensiveBuffs = session.player.defensiveBuffs || [];
+    session.player.defensiveBuffs.push({
+      type: normId === 'mirror_daemon' ? 'mirror_daemon' : 'firewall_patch',
+      sourceDeckerId: 'player',
+      timestamp: Date.now(),
+    });
     session.feedEvents.push({
       id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       who: 'player',
@@ -1743,18 +2039,19 @@ export function applyDuelSabotage(data: {
       timestamp: Date.now() - session.startedAt,
       sabotageEvent: {
         toolName: rule.name,
-        description: 'Firewall Patch activated. Shield primed against next attack.',
+        description: `${rule.name} primed on your rig deck.`,
       },
     });
     return {
       success: true,
       shielded: false,
-      effectApplied: 'firewall_shield',
+      effectApplied: rule.effectType,
       remainingCredits: mockWallet.credits,
-      message: 'Firewall Patch activated. Shield primed against next attack.',
+      message: `${rule.name} primed on your deck!`,
     };
   }
 
+  // 2. Utility self-effects
   if (rule.effectType === 'snoop_packet') {
     session.player.snoopActive = true;
     session.rival.guesses.forEach((g) => {
@@ -1769,7 +2066,7 @@ export function applyDuelSabotage(data: {
       timestamp: Date.now() - session.startedAt,
       sabotageEvent: {
         toolName: rule.name,
-        description: 'Snoop Packet deployed: rival encrypted moves unmasked.',
+        description: 'Packet Sniffer deployed: opponent encrypted moves unmasked.',
       },
     });
     return {
@@ -1777,7 +2074,7 @@ export function applyDuelSabotage(data: {
       shielded: false,
       effectApplied: 'snoop_packet',
       remainingCredits: mockWallet.credits,
-      message: 'Snoop Packet activated. Rival encrypted moves unmasked.',
+      message: 'Packet Sniffer active. Opponent moves unmasked.',
     };
   }
 
@@ -1792,7 +2089,7 @@ export function applyDuelSabotage(data: {
       timestamp: Date.now() - session.startedAt,
       sabotageEvent: {
         toolName: rule.name,
-        description: 'False Flag Echo armed: next guess broadcasts falsified clues.',
+        description: 'Echo Decoy armed: next guess broadcasts falsified clues.',
       },
     });
     return {
@@ -1800,13 +2097,25 @@ export function applyDuelSabotage(data: {
       shielded: false,
       effectApplied: 'false_flag_echo',
       remainingCredits: mockWallet.credits,
-      message: 'False Flag Echo armed. Next guess broadcasts falsified clues.',
+      message: 'Echo Decoy armed. Next guess broadcasts spoofed Pan/Pot counts.',
     };
   }
 
-  // Target rival
-  if (session.rival.shieldActive) {
-    session.rival.shieldActive = false; // Blocked!
+  // 3. Offensive attack against opponent: evaluate opponent's defensiveBuffs in LIFO order
+  const rivalDefense = session.rival.defensiveBuffs?.pop();
+  if (rivalDefense?.type === 'mirror_daemon') {
+    session.rival.shieldActive = (session.rival.defensiveBuffs?.length ?? 0) > 0;
+    // Reflect 50% back to player
+    if (normId === 'clock_drainer') {
+      session.playerLastGuessAt -= 4000;
+      session.turnClockSeconds = Math.max(0, session.turnClockSeconds - 4);
+    } else if (normId === 'key_latch_virus') {
+      session.player.latchedKeys = ['7'];
+      session.player.activeEffects.push('key_latch');
+    } else if (normId === 'parity_jammer') {
+      session.player.parityJamActive = true;
+      session.player.activeEffects.push('parity_jam');
+    }
     session.feedEvents.push({
       id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       who: 'player',
@@ -1816,26 +2125,61 @@ export function applyDuelSabotage(data: {
       timestamp: Date.now() - session.startedAt,
       sabotageEvent: {
         toolName: rule.name,
-        description: "Opponent's Firewall Patch absorbed your attack!",
+        description: `Opponent's Mirror Daemon deflected ${rule.name} and reflected 50% back!`,
       },
     });
     return {
       success: true,
       shielded: true,
+      effectApplied: rule.effectType,
       remainingCredits: mockWallet.credits,
-      message: "Opponent's Firewall Patch absorbed the attack!",
+      message: `Opponent's Mirror Daemon reflected ${rule.name} back at you!`,
     };
   }
 
-  // Apply effect to rival
-  if (rule.effectType === 'scramble_keypad') {
-    session.rival.activeEffects.push('scramble_keypad');
-  } else if (rule.effectType === 'static_history') {
+  if (rivalDefense?.type === 'firewall_patch' || session.rival.shieldActive) {
+    session.rival.shieldActive = (session.rival.defensiveBuffs?.length ?? 0) > 0;
+    session.feedEvents.push({
+      id: `ev-sab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      who: 'player',
+      guess: null,
+      pans: null,
+      pots: null,
+      timestamp: Date.now() - session.startedAt,
+      sabotageEvent: {
+        toolName: rule.name,
+        description: `Opponent's Firewall Patch absorbed your ${rule.name}!`,
+      },
+    });
+    return {
+      success: true,
+      shielded: true,
+      effectApplied: rule.effectType,
+      remainingCredits: mockWallet.credits,
+      message: `Opponent's Firewall Patch absorbed the attack!`,
+    };
+  }
+
+  // 4. Apply offensive effect to rival
+  if (normId === 'clock_drainer') {
+    session.rival.activeEffects.push('drain_clock');
+    session.rivalLastGuessAt -= 8000;
+  } else if (normId === 'parity_jammer') {
+    session.rival.activeEffects.push('parity_jam');
+    session.rival.parityJamActive = true;
+  } else if (normId === 'key_latch_virus') {
+    session.rival.activeEffects.push('key_latch');
+    const allDigits = '0123456789'.split('');
+    const nonWinning = allDigits.filter((d) => !session.secret.includes(d));
+    session.rival.latchedKeys = nonWinning.slice(0, 2);
+  } else if (normId === 'logic_bomb') {
+    session.rival.activeEffects.push('logic_bomb');
+    session.rival.activeLogicBomb = { targetDigit: '3', armedBy: 'player', sourceDeckerId: 'player' };
+  } else if (normId === 'static_injector' || rule.effectType === 'static_history') {
     session.rival.activeEffects.push('static_history');
     session.rival.staticExpiry = Date.now() + 6000;
-  } else if (rule.effectType === 'drain_clock') {
-    session.rival.activeEffects.push('drain_clock');
-    session.rivalLastGuessAt -= 10000;
+  } else if (rule.effectType === 'scramble_keypad') {
+    session.rival.activeEffects.push('scramble_keypad');
   }
 
   session.feedEvents.push({
@@ -1847,7 +2191,7 @@ export function applyDuelSabotage(data: {
     timestamp: Date.now() - session.startedAt,
     sabotageEvent: {
       toolName: rule.name,
-      description: `${rule.name} successfully deployed against opponent!`,
+      description: `${rule.name} deployed against opponent!`,
     },
   });
 
@@ -1942,6 +2286,14 @@ export interface CoopSessionState {
   startedAt: number;
   timeLimitSeconds: number;
   bounty: number;
+  mode?: '3-stage' | 'legacy';
+  playerRole?: 'ALPHA' | 'BRAVO';
+  isBotPartner?: boolean;
+  partnerCallsign?: string;
+  partnerAction?: string;
+  latestTelemetryEvent?: CoopTelemetryEvent;
+  heistState?: CoopHeistState;
+  heistSecrets?: CoopHeistSecrets;
   alpha: {
     secret: string; // SERVER ONLY!
     digits: number;
@@ -1970,13 +2322,54 @@ if (process.env.NODE_ENV !== 'production') {
 
 export function getSafeCoopSession(session: CoopSessionState) {
   const isFinished = session.status !== 'active';
+
+  let safeHeist: any = undefined;
+  if (session.heistState && session.heistSecrets) {
+    const s1AlphaSolved = session.heistState.stage1.alpha.solved;
+    const s1BravoSolved = session.heistState.stage1.bravo.solved;
+    const s2Solved = session.heistState.stage2.solved;
+    const s3Solved = session.heistState.stage3.solved;
+
+    safeHeist = {
+      ...session.heistState,
+      stage1: {
+        ...session.heistState.stage1,
+        alpha: {
+          ...session.heistState.stage1.alpha,
+          secret: (isFinished || s1AlphaSolved) ? session.heistSecrets.alphaStage1Code : undefined,
+        },
+        bravo: {
+          ...session.heistState.stage1.bravo,
+          secret: (isFinished || s1BravoSolved) ? session.heistSecrets.bravoStage1Code : undefined,
+        },
+      },
+      stage2: {
+        ...session.heistState.stage2,
+        secret: (isFinished || s2Solved) ? session.heistSecrets.stage2Code : undefined,
+      },
+      stage3: {
+        ...session.heistState.stage3,
+        secret: (isFinished || s3Solved) ? session.heistSecrets.stage3Code : undefined,
+      },
+      playerRole: session.playerRole || 'BRAVO',
+      partnerCallsign: session.partnerCallsign || (session.playerRole === 'ALPHA' ? 'BRAVO // GLITCH (AI)' : 'ALPHA // NIX (AI)'),
+      partnerAction: session.partnerAction || 'Carrier link active',
+      isBotPartner: session.isBotPartner ?? true,
+      latestTelemetryEvent: session.latestTelemetryEvent,
+      nixCallout: session.latestTelemetryEvent
+        ? getNixCoopCallout(session.latestTelemetryEvent, session.playerRole || 'BRAVO')
+        : null,
+    };
+  }
+
   return {
     id: session.id,
     status: session.status,
     startedAt: session.startedAt,
     timeLimitSeconds: session.timeLimitSeconds,
     bounty: session.bounty,
-    payout: session.payout,
+    payout: session.payout || session.heistState?.payout,
+    mode: session.mode,
     alpha: {
       digits: session.alpha.digits,
       attemptsLeft: session.alpha.attemptsLeft,
@@ -2000,6 +2393,7 @@ export function getSafeCoopSession(session: CoopSessionState) {
         secret: (isFinished || st.completed) ? st.secret : undefined,
       })),
     },
+    heist: safeHeist,
   };
 }
 
@@ -2008,22 +2402,50 @@ export function startCoopSession(options?: {
   difficulty?: number;
   initialAlphaSecret?: string;
   initialBetaSecrets?: string[];
+  isBotPartner?: boolean;
+  stage2Ice?: IceType;
+  mode?: '3-stage' | 'legacy';
+  bounty?: number;
 }): CoopSessionState {
   const sessionId = `coop-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-  const alphaSecret = options?.initialAlphaSecret || generateCode(4, false);
+  const role = options?.playerRole ? normalizeCoopRole(options.playerRole) : 'BRAVO';
+  const mode = options?.mode || (options?.initialAlphaSecret && options.initialAlphaSecret.length === 4 ? 'legacy' : '3-stage');
+  const isBotPartner = options?.isBotPartner ?? true;
 
+  // Legacy state
+  const alphaSecret = options?.initialAlphaSecret || generateCode(4, false);
   const stages: CoopStageServerState[] = COOP_STAGE_TEMPLATES.map((tmpl, idx) => ({
     ...tmpl,
     secret: (options?.initialBetaSecrets && options.initialBetaSecrets[idx]) || generateCode(tmpl.digits, false),
     completed: false,
   }));
 
+  // 3-Stage Heist state
+  const { state: heistState, secrets: heistSecrets } = createCoopHeistState({
+    id: sessionId,
+    bounty: options?.bounty ?? 5000,
+    stage2Ice: options?.stage2Ice ?? 'Liar',
+    initialSecrets: {
+      alphaStage1Code: (options?.initialBetaSecrets && options.initialBetaSecrets[0]?.length === 3)
+        ? options.initialBetaSecrets[0]
+        : undefined,
+      bravoStage1Code: (options?.initialBetaSecrets && options.initialBetaSecrets[1]?.length === 3)
+        ? options.initialBetaSecrets[1]
+        : undefined,
+    },
+  });
+
   const session: CoopSessionState = {
     id: sessionId,
     status: 'active',
     startedAt: Date.now(),
     timeLimitSeconds: 180,
-    bounty: 2500,
+    bounty: options?.bounty ?? 5000,
+    mode,
+    playerRole: role,
+    isBotPartner,
+    partnerCallsign: role === 'ALPHA' ? 'BRAVO // GLITCH (AI)' : 'ALPHA // NIX (AI)',
+    partnerAction: 'Carrier link established. Awaiting synchronized handshake.',
     alpha: {
       secret: alphaSecret,
       digits: 4,
@@ -2037,6 +2459,8 @@ export function startCoopSession(options?: {
       stages,
       guesses: [],
     },
+    heistState,
+    heistSecrets,
   };
 
   mockCoopSessions.set(sessionId, session);
@@ -2051,11 +2475,116 @@ export function submitCoopGuess(data: {
   session: ReturnType<typeof getSafeCoopSession>;
   guessRecord: CoopGuessRecord;
   rewardMessage?: string;
+  event?: CoopTelemetryEvent;
 } {
   const session = mockCoopSessions.get(data.sessionId);
   if (!session) throw new Error('Co-op session not found');
   if (session.status !== 'active') throw new Error('Co-op session is no longer active');
 
+  const normalizedRole = normalizeCoopRole(data.role);
+
+  // 3-Stage Heist Path
+  if (session.mode === '3-stage' && session.heistState && session.heistSecrets) {
+    const stage = session.heistState.currentStage;
+    let rec: CoopGuessRecord;
+    let rewardMessage: string | undefined;
+    let event: CoopTelemetryEvent | undefined;
+
+    if (stage === 1) {
+      const outcome = submitStage1Guess(session.heistState, session.heistSecrets, normalizedRole, data.guess);
+      rec = outcome.result;
+      rewardMessage = outcome.message;
+      event = outcome.event;
+      session.latestTelemetryEvent = event;
+
+      // Automated Nix Bot Partner response for Stage 1
+      if (session.isBotPartner) {
+        if (session.heistState.stage1.firstCrackedBy === normalizedRole && outcome.event?.type === 'STAGE1_PARTNER_WAITING') {
+          // Bot cracks partner lock within the 8s sync window!
+          const botRole = normalizedRole === 'ALPHA' ? 'BRAVO' : 'ALPHA';
+          const botSecret = botRole === 'ALPHA' ? session.heistSecrets.alphaStage1Code : session.heistSecrets.bravoStage1Code;
+          const botOutcome = submitStage1Guess(session.heistState, session.heistSecrets, botRole, botSecret);
+          session.latestTelemetryEvent = botOutcome.event;
+          event = botOutcome.event;
+          rewardMessage = botOutcome.message;
+          session.partnerAction = 'SYNC CONFIRMED! Dual-key handshake bypassed.';
+        } else {
+          session.partnerAction = 'Scanning 3-digit perimeter frequency band...';
+        }
+      }
+    } else if (stage === 2) {
+      if (normalizedRole === 'BRAVO') {
+        const outcome = submitStage2Guess(session.heistState, session.heistSecrets, data.guess);
+        rec = outcome.result;
+        rewardMessage = outcome.message;
+        event = outcome.event;
+        session.latestTelemetryEvent = event;
+
+        // Bot (Alpha) automatic support in Stage 2
+        if (session.isBotPartner && session.heistState.currentStage === 2) {
+          if (outcome.event?.type === 'STAGE2_ICE_DETECTED' && session.heistState.stage2.reconChargesRemaining > 0) {
+            flushIceStage2(session.heistState);
+            session.latestTelemetryEvent = {
+              type: 'STAGE2_ICE_FLUSHED',
+              stage: 2,
+              actorRole: 'ALPHA',
+              targetRole: 'BRAVO',
+              message: 'Nix Bot flushed carrier line! ICE distortion purged.',
+            };
+            session.partnerAction = 'FLUSHED ACTIVE ICE: Bravo telemetry restored.';
+          } else if (session.heistState.stage2.reconChargesRemaining > 0) {
+            // Ping an un-scanned digit
+            const unScanned = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(
+              (d) => session.heistState!.stage2.pingedDigits[d] === undefined
+            );
+            if (unScanned.length > 0) {
+              const pingResult = pingDigitStage2(session.heistState, session.heistSecrets, unScanned[0]);
+              session.latestTelemetryEvent = pingResult.event;
+              session.partnerAction = `Carrier scan: Digit [${unScanned[0]}] ${pingResult.status}.`;
+            }
+          }
+        }
+      } else {
+        throw new Error('Alpha cannot submit direct guesses in Stage 2. Use [PING DIGIT] or [FLUSH ICE]!');
+      }
+    } else {
+      // Stage 3: Master Vault
+      const outcome = submitStage3Guess(session.heistState, session.heistSecrets, normalizedRole, data.guess);
+      rec = outcome.result;
+      rewardMessage = outcome.message;
+      event = outcome.event;
+      session.latestTelemetryEvent = event;
+
+      if (session.heistState.status === 'WON' && session.heistState.payout) {
+        session.status = 'won';
+        session.payout = session.heistState.payout;
+        recordTransaction({
+          source: 'Co-op Core Vault Payout',
+          amount: session.heistState.payout.eachPlayerShare,
+          currency: 'credits',
+          category: 'payout',
+        });
+      } else if (session.heistState.status === 'LOST') {
+        session.status = 'lost';
+      } else if (session.isBotPartner && session.heistState.stage3.activeTurn !== normalizedRole) {
+        // Bot takes alternating turn
+        const botRole = normalizedRole === 'ALPHA' ? 'BRAVO' : 'ALPHA';
+        const botGuess = generateCode(5, false);
+        const botOutcome = submitStage3Guess(session.heistState, session.heistSecrets, botRole, botGuess);
+        session.latestTelemetryEvent = botOutcome.event;
+        session.partnerAction = `Injected probe: ${botGuess} [${botOutcome.result.pans} Pan, ${botOutcome.result.pots} Pot]`;
+      }
+    }
+
+    return {
+      session: getSafeCoopSession(session),
+      guessRecord: rec!,
+      rewardMessage,
+      event,
+    };
+  }
+
+  // Legacy Co-op Heist Path
   const isValid = validateCoopGuess(data.role, data.guess);
   if (!isValid) throw new Error(`Invalid guess format for role ${data.role}`);
 
@@ -2175,6 +2704,77 @@ export function submitCoopGuess(data: {
   }
 }
 
+export function pingCoopDigit(sessionId: string, digit: number) {
+  const session = mockCoopSessions.get(sessionId);
+  if (!session || !session.heistState || !session.heistSecrets) {
+    throw new Error('3-Stage Co-op heist session not found');
+  }
+
+  const result = pingDigitStage2(session.heistState, session.heistSecrets, digit);
+  session.latestTelemetryEvent = result.event;
+  session.partnerAction = result.message;
+
+  return {
+    session: getSafeCoopSession(session),
+    status: result.status,
+    message: result.message,
+    event: result.event,
+  };
+}
+
+export function flushCoopIce(sessionId: string) {
+  const session = mockCoopSessions.get(sessionId);
+  if (!session || !session.heistState) {
+    throw new Error('3-Stage Co-op heist session not found');
+  }
+
+  const result = flushIceStage2(session.heistState);
+  session.latestTelemetryEvent = result.event;
+  session.partnerAction = result.message;
+
+  return {
+    session: getSafeCoopSession(session),
+    message: result.message,
+    event: result.event,
+  };
+}
+
+export function triggerCoopOverdrive(sessionId: string) {
+  const session = mockCoopSessions.get(sessionId);
+  if (!session || !session.heistState) {
+    throw new Error('3-Stage Co-op heist session not found');
+  }
+
+  const result = triggerOverdriveStage3(session.heistState);
+  session.latestTelemetryEvent = result.event;
+  session.partnerAction = result.message;
+
+  return {
+    session: getSafeCoopSession(session),
+    message: result.message,
+    event: result.event,
+  };
+}
+
+export function tickCoopSync(sessionId: string, deltaMs: number) {
+  const session = mockCoopSessions.get(sessionId);
+  if (!session || !session.heistState || !session.heistSecrets) {
+    return null;
+  }
+
+  const result = checkStage1SyncTimeout(session.heistState, session.heistSecrets, deltaMs);
+  if (result.reset && result.event) {
+    session.latestTelemetryEvent = result.event;
+    session.partnerAction = 'Sync window timed out! Outer locks rotated.';
+  }
+
+  return {
+    session: getSafeCoopSession(session),
+    reset: result.reset,
+    event: result.event,
+  };
+}
+
 export function simulatePartnerBetaStage(sessionId: string): {
   session: ReturnType<typeof getSafeCoopSession>;
   guessRecord: CoopGuessRecord;
@@ -2182,6 +2782,20 @@ export function simulatePartnerBetaStage(sessionId: string): {
 } {
   const session = mockCoopSessions.get(sessionId);
   if (!session) throw new Error('Co-op session not found');
+
+  if (session.mode === '3-stage' && session.heistState && session.heistSecrets) {
+    const stage = session.heistState.currentStage;
+    if (stage === 1) {
+      const botRole = session.playerRole === 'ALPHA' ? 'BRAVO' : 'ALPHA';
+      const secret = botRole === 'ALPHA' ? session.heistSecrets.alphaStage1Code : session.heistSecrets.bravoStage1Code;
+      return submitCoopGuess({ sessionId, role: botRole, guess: secret });
+    } else if (stage === 2) {
+      return submitCoopGuess({ sessionId, role: 'BRAVO', guess: session.heistSecrets.stage2Code });
+    } else {
+      return submitCoopGuess({ sessionId, role: 'ALPHA', guess: session.heistSecrets.stage3Code });
+    }
+  }
+
   const stage = session.beta.stages[session.beta.currentStageIndex];
   if (!stage) throw new Error('No active Beta stage');
 
@@ -2240,149 +2854,14 @@ const defaultTask13Data: MockTask13Data = {
       unlockedFrames: ['frame-carbon-hex', 'frame-matte-black', 'frame-brass-industrial'],
     },
   },
-  availableSkillPoints: 3,
-  skills: [
-    {
-      id: 'pattern-recognition',
-      name: 'Pattern Recognition',
-      branch: 'analysis',
-      description: 'Algorithmic scan of code matrices highlights probability density of non-zero digits.',
-      tier: 1,
-      pointCost: 1,
-      prerequisites: [],
-      unlocked: true,
-      effectKey: 'HEATMAP_DENSITY',
-      effectSummary: 'Identifies 1 high-probability digit location on initial probe.',
-    },
-    {
-      id: 'entropy-reduction',
-      name: 'Entropy Reduction',
-      branch: 'analysis',
-      description: 'Cuts through scrambled parity checks to eliminate candidate combinations.',
-      tier: 2,
-      pointCost: 2,
-      prerequisites: ['pattern-recognition'],
-      unlocked: false,
-      effectKey: 'ELIMINATE_FALSE_PAIRS',
-      effectSummary: 'Removes 1 candidate pair after second pan result.',
-    },
-    {
-      id: 'ghost-protocol',
-      name: 'Ghost Protocol',
-      branch: 'stealth',
-      description: 'Masks RF emissions and hardware signatures to delay countermeasures.',
-      tier: 1,
-      pointCost: 1,
-      prerequisites: [],
-      unlocked: true,
-      effectKey: 'TRACE_DILATION',
-      effectSummary: '+25% time before security trace initiates.',
-    },
-    {
-      id: 'ice-scrambler',
-      name: 'ICE Scrambler',
-      branch: 'stealth',
-      description: 'Injects dummy packets into carrier lines to disrupt active ICE routines.',
-      tier: 2,
-      pointCost: 2,
-      prerequisites: ['ghost-protocol'],
-      unlocked: false,
-      effectKey: 'ICE_SUPPRESSION',
-      effectSummary: 'Suppresses 1 ICE countermeasure activation per breach attempt.',
-    },
-    {
-      id: 'social-engineer',
-      name: 'Social Engineer',
-      branch: 'social',
-      description: 'Extracts operator notes and terminal logs from local sysadmin records.',
-      tier: 1,
-      pointCost: 1,
-      prerequisites: [],
-      unlocked: false,
-      effectKey: 'NOTE_EXCERPT',
-      effectSummary: 'Reveals whether the code contains repeating digits before guessing.',
-    },
-    {
-      id: 'insider-credentials',
-      name: 'Insider Credentials',
-      branch: 'social',
-      description: 'Purchased black market keycards and vendor access tokens.',
-      tier: 2,
-      pointCost: 2,
-      prerequisites: ['social-engineer'],
-      unlocked: false,
-      effectKey: 'FIRST_GUESS_BUFFER',
-      effectSummary: 'First guess consumes 0 attempts on Tier 1-3 terminals.',
-    },
-  ],
-  factions: [
-    {
-      id: 'the-collective',
-      name: 'The Collective',
-      motto: 'Open source the city. Liberate the grid.',
-      description: 'Decentralized activist network fighting corporate data cartels across the Slums.',
-      reputation: 45,
-      standingLevel: 'Favored',
-      perks: ['10% discount on Black Market software', 'Free safehouse trace scrubbing once per day'],
-      opposingFactionId: 'aegis-corp',
-      exclusiveContracts: [
-        {
-          id: 'contract-col-1',
-          title: 'Operation Iron Siphon',
-          targetNode: 'c4',
-          bounty: 3500,
-          reputationReward: 15,
-          repPenaltyOpponents: 25,
-          opposingFactionId: 'aegis-corp',
-          description: 'Siphon biometric logs from Canal Bank ATM to expose private militia surveillance.',
-        },
-      ],
-    },
-    {
-      id: 'aegis-corp',
-      name: 'Aegis Defense',
-      motto: 'Order through deterrence and immutable custody.',
-      description: 'Private security and defense syndicate controlling Commercial core data infrastructure.',
-      reputation: -15,
-      standingLevel: 'Neutral',
-      perks: ['Access to high-security Tier 4 vault nodes', '15% bonus credits on corporate contracts'],
-      opposingFactionId: 'the-collective',
-      exclusiveContracts: [
-        {
-          id: 'contract-aegis-1',
-          title: 'Asset Recovery Protocol',
-          targetNode: 's6',
-          bounty: 4200,
-          reputationReward: 20,
-          repPenaltyOpponents: 30,
-          opposingFactionId: 'the-collective',
-          description: 'Recover stolen cryptographic ciphers from the Chop-Shop Safe in the Slums.',
-        },
-      ],
-    },
-    {
-      id: 'iron-guild',
-      name: 'Iron Guild',
-      motto: 'In hardware we trust.',
-      description: 'Pragmatic syndicate of rig engineers, component fabricators, and street hardware brokers.',
-      reputation: 65,
-      standingLevel: 'Allied',
-      perks: ['25% discount on cyberdeck repairs', 'Exclusive access to expansion bay hardware'],
-      opposingFactionId: '',
-      exclusiveContracts: [
-        {
-          id: 'contract-iron-1',
-          title: 'Silicon Salvage',
-          targetNode: 's8',
-          bounty: 2800,
-          reputationReward: 10,
-          repPenaltyOpponents: 0,
-          opposingFactionId: '',
-          description: 'Harvest carrier wave frequency modulators from the Water Tower Relay.',
-        },
-      ],
-    },
-  ],
+  availableSkillPoints: 4,
+  skills: SPECIALIZATION_SKILLS.map((s) => {
+    if (s.id === 'slipstream_boot' || s.id === 'dead_channel_sweep') {
+      return { ...s, unlocked: true };
+    }
+    return { ...s };
+  }),
+  factions: JSON.parse(JSON.stringify(FACTION_CATALOG)),
   dailyBreach: {
     date: '2026-10-12',
     seed: getDailyBreachSeed('2026-10-12'),
@@ -2608,7 +3087,7 @@ export function unlockSkillNode(skillId: string): { success: boolean; skill?: Sk
   if (!target) return { success: false, remainingPoints: mockTask13.availableSkillPoints, error: 'Skill node not found' };
 
   const unlockedIds = mockTask13.skills.filter((s) => s.unlocked).map((s) => s.id);
-  const check = canUnlockSkill(target, unlockedIds, mockTask13.availableSkillPoints);
+  const check = canUnlockSkill(target, unlockedIds, mockTask13.availableSkillPoints, mockTask13.skills);
   if (!check.canUnlock) {
     return { success: false, remainingPoints: mockTask13.availableSkillPoints, error: check.reason };
   }
@@ -2619,6 +3098,17 @@ export function unlockSkillNode(skillId: string): { success: boolean; skill?: Sk
     success: true,
     skill: target,
     remainingPoints: mockTask13.availableSkillPoints,
+  };
+}
+
+export function respecSkills(): { success: boolean; skills: SkillNode[]; availablePoints: number } {
+  const res = respecSkillTree(mockTask13.skills, mockTask13.availableSkillPoints);
+  mockTask13.skills = res.skills;
+  mockTask13.availableSkillPoints = res.totalAvailablePoints;
+  return {
+    success: true,
+    skills: mockTask13.skills,
+    availablePoints: mockTask13.availableSkillPoints,
   };
 }
 
@@ -2713,7 +3203,17 @@ export function getAchievements(): Achievement[] {
 }
 
 export function getReplays(): BreachReplay[] {
-  return mockTask13.replays;
+  return mockTask13.replays.map((r) => {
+    const report = analyzeBreachReplay(r.secretCodeRevealed, r.guesses, { length: r.targetDigits });
+    return {
+      ...r,
+      analysis: report,
+      guesses: r.guesses.map((g, idx) => ({
+        ...g,
+        analysis: report.steps[idx],
+      })),
+    };
+  });
 }
 
 export function getFriends(): FriendProfile[] {

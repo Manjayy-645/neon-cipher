@@ -44,6 +44,18 @@
   --touch-min: 44px;
   --nav-height: 64px;
   --hud-height: 56px;
+  --hud-top-height: 56px;
+  --nav-bottom-height: 64px;
+
+  /* Explicit collision-free Z-Index token scale */
+  --z-map-canvas: 0;
+  --z-map-markers: 10;
+  --z-map-controls: 20;
+  --z-nix-pip: 30;
+  --z-bottom-sheet: 40;
+  --z-hud-bars: 50;
+  --z-terminal-modal: 60;
+  --z-tooltip-inspector: 70;
 
   --time-tint: #FFFFFF;
   --time-tint-opacity: 0;

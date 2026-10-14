@@ -12,7 +12,7 @@ export default function Tier2AtmSkin({ nodeName, nodeType }: SkinProps = {}) {
   const typeTag = nodeType ? nodeType.toUpperCase() : 'REGISTER // ATM';
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden terminal-chassis-trim">
       {/* Top Metallic Bezel */}
       <div className="w-full bg-[var(--terminal-panel,#24292e)] border-b-2 border-[var(--terminal-line,#3d454e)] px-3 py-1 flex items-center justify-between text-[10px] font-data text-ink-muted">
         <div className="flex items-center gap-2">

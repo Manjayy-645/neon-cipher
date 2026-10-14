@@ -13,6 +13,8 @@ export interface TerminalToolSlotsProps {
   toolFeedback?: string | null;
   onClearFeedback?: () => void;
   iceShieldArmed?: boolean;
+  activatedTools?: string[];
+  isTimerFrozen?: boolean;
 }
 
 export function TerminalToolSlots({
@@ -24,6 +26,8 @@ export function TerminalToolSlots({
   toolFeedback,
   onClearFeedback,
   iceShieldArmed = false,
+  activatedTools = [],
+  isTimerFrozen = false,
 }: TerminalToolSlotsProps) {
   return (
     <section
@@ -39,14 +43,25 @@ export function TerminalToolSlots({
           </span>
         </div>
 
-        {iceShieldArmed && (
-          <div
-            data-testid="ice-shield-status"
-            className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-terminal-phosphor/15 border border-terminal-phosphor text-terminal-phosphor text-[10px] font-bold uppercase tracking-wider"
-          >
-            <span>SHIELD ARMED</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isTimerFrozen && (
+            <div
+              data-testid="timer-frozen-status"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-cyan-950/60 border border-cyan-400 text-cyan-300 text-[10px] font-bold uppercase tracking-wider animate-pulse"
+            >
+              <span>CLOCK FROZEN</span>
+            </div>
+          )}
+
+          {iceShieldArmed && (
+            <div
+              data-testid="ice-shield-status"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-terminal-phosphor/15 border border-terminal-phosphor text-terminal-phosphor text-[10px] font-bold uppercase tracking-wider"
+            >
+              <span>SHIELD ARMED</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tool Feedback Notice */}
@@ -76,7 +91,8 @@ export function TerminalToolSlots({
           const toolId = equippedTools[slotIdx];
           const item = toolId ? CATALOG.find((it) => it.id === toolId) : null;
           const count = toolId ? inventory[toolId] || 0 : 0;
-          const canUse = item && count > 0 && !disabled && !isActivating;
+          const isActivated = toolId ? activatedTools.includes(toolId) : false;
+          const canUse = item && count > 0 && !disabled && !isActivating && !isActivated;
 
           if (!item) {
             return (
@@ -110,7 +126,7 @@ export function TerminalToolSlots({
                     {item.name}
                   </span>
                   <span className="font-data text-[10px] text-terminal-muted">
-                    {count > 0 ? `x${count} in deck` : 'Depleted'}
+                    {isActivated ? 'Deployed' : count > 0 ? `x${count} in deck` : 'Depleted'}
                   </span>
                 </div>
               </div>
@@ -124,7 +140,7 @@ export function TerminalToolSlots({
                 data-testid={`activate-tool-${item.id}`}
                 className="h-[32px] min-h-[32px] px-2.5 text-[10px] font-data font-bold tracking-wider uppercase shrink-0"
               >
-                {count > 0 ? 'USE' : 'EMPTY'}
+                {isActivated ? 'USED' : count > 0 ? 'USE' : 'EMPTY'}
               </Button>
             </div>
           );

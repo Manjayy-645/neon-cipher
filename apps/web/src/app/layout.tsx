@@ -20,9 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fontHeading.variable} ${fontData.variable}`}>
-      <body className="bg-panel text-ink overflow-hidden w-full h-full fixed inset-0 font-data text-[14px]">
+      <body className="bg-panel text-ink overflow-hidden w-full h-[100dvh] min-h-[100dvh] max-h-[100dvh] fixed inset-0 font-data text-[14px]">
         <AppShell>
-          <div className="mx-auto w-full max-w-[480px] h-full bg-panel text-ink flex flex-col relative sm:border-x sm:border-line overflow-hidden">
+          <div className="mx-auto w-full max-w-[480px] h-[100dvh] min-h-[100dvh] max-h-[100dvh] bg-panel text-ink flex flex-col relative sm:border-x sm:border-line overflow-hidden">
             {/* Network & Mid-duel status banner */}
             <ConnectionBanner />
 

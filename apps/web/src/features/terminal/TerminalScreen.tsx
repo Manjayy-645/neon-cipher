@@ -40,6 +40,10 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const [isActivatingTool, setIsActivatingTool] = useState(false);
   const [iceShieldArmed, setIceShieldArmed] = useState(false);
   const [eliminatedByTools, setEliminatedByTools] = useState<string[]>([]);
+  const [activatedTools, setActivatedTools] = useState<string[]>([]);
+  const [isTimerFrozen, setIsTimerFrozen] = useState(false);
+  const [revealedSlots, setRevealedSlots] = useState<Array<{ slotIndex: number; digit: string }>>([]);
+  const [showParityTooltip, setShowParityTooltip] = useState(false);
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +109,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
   // Client-side timer calculated from single server startedAt timestamp (no polling)
   useEffect(() => {
-    if (!session || !session.config.timerSeconds || session.config.timerSeconds === 0 || status !== 'playing') return;
+    if (!session || !session.config.timerSeconds || session.config.timerSeconds === 0 || status !== 'playing' || isTimerFrozen) return;
 
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
@@ -132,7 +136,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [session, status, nodeId, subtractCredits]);
+  }, [session, status, nodeId, subtractCredits, isTimerFrozen]);
 
   // Auto-advance tutorial if input completed
   useEffect(() => {
@@ -148,11 +152,11 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   // Derived state
   const best = useMemo(() => bestGuess(history), [history]);
   const deadDigits = useMemo(() => {
-    const fromHistory = provenDeadDigits(history);
+    const fromHistory = assistMode === 'rookie' ? Array.from(provenDeadDigits(history)) : [];
     const fromPreConfig = (session?.config.eliminatedDigits || []).map((d) => parseInt(d, 10));
     const fromTools = eliminatedByTools.map((d) => parseInt(d, 10));
     return new Set([...fromHistory, ...fromPreConfig, ...fromTools]);
-  }, [history, session, eliminatedByTools]);
+  }, [history, session, eliminatedByTools, assistMode]);
   const latestRecord = history.length > 0 ? history[history.length - 1] : null;
   const tacticalHint = useMemo(() => {
     if (!latestRecord || !session) return null;
@@ -165,13 +169,16 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
   const handleActivateTool = useCallback(
     async (toolId: string) => {
-      if (!session || status !== 'playing' || isActivatingTool) return;
+      if (!session || status !== 'playing' || isActivatingTool || activatedTools.includes(toolId)) return;
       setIsActivatingTool(true);
       setToolFeedback(null);
 
       try {
         const res = await terminalService.useTool(session.sessionId, toolId);
         setIsActivatingTool(false);
+
+        // Record tool usage in this breach (max 1 use per slot per run)
+        setActivatedTools((prev) => [...prev, toolId]);
 
         if (res.inventory) {
           syncWallet({
@@ -194,20 +201,84 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           setIceShieldArmed(true);
         }
 
-        if (res.timeAddedSeconds) {
+        if (res.timerFrozenSeconds || res.effectType === 'freeze_timer') {
+          const freezeSec = res.timerFrozenSeconds || 15;
+          setIsTimerFrozen(true);
+          // Advance startedAt by the freeze window so resume is seamless
+          setSession((prev) =>
+            prev ? { ...prev, startedAt: prev.startedAt + freezeSec * 1000 } : prev
+          );
+          setTimeout(() => {
+            setIsTimerFrozen(false);
+          }, freezeSec * 1000);
+        } else if (res.timeAddedSeconds) {
+          setSession((prev) =>
+            prev ? { ...prev, startedAt: prev.startedAt + (res.timeAddedSeconds || 0) * 1000 } : prev
+          );
           setElapsedSeconds((prev) => Math.max(0, prev - (res.timeAddedSeconds || 0)));
+        }
+
+        if (res.cleanseIce) {
+          triggerToast(res.message || 'ICE purged for 2 turns. Real clue values confirmed.');
+          if (res.uncorruptedScore && history.length > 0) {
+            setHistory((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last) {
+                updated[updated.length - 1] = {
+                  ...last,
+                  pans: res.uncorruptedScore!.pans,
+                  pots: res.uncorruptedScore!.pots,
+                };
+              }
+              return updated;
+            });
+          }
+        }
+
+        if (res.revealedSlot) {
+          setRevealedSlots((prev) => [...prev, res.revealedSlot!]);
+        }
+
+        if (res.extraAttempts) {
+          setAttemptsLeft((prev) => prev + (res.extraAttempts || 0));
+          setSession((prev) => {
+            if (!prev) return prev;
+            const newAttempts = (prev.config.attempts ?? 0) + (res.extraAttempts || 0);
+            return {
+              ...prev,
+              config: {
+                ...prev.config,
+                attempts: newAttempts,
+                maxAttempts: newAttempts,
+              },
+            };
+          });
+        }
+
+        if (res.autoCrack && res.secret) {
+          setStatus('won');
+          setSecret(res.secret);
+          setPayout(0);
+          emit({ type: 'terminal:won', nodeId, guesses: 1 });
         }
       } catch (err: any) {
         setIsActivatingTool(false);
         setToolFeedback(err.message || 'Failed to deploy intrusion tool');
       }
     },
-    [session, status, isActivatingTool, syncWallet]
+    [session, status, isActivatingTool, activatedTools, syncWallet, nodeId]
   );
 
   const handleDigit = useCallback(
     (digit: number) => {
       if (status !== 'playing' || !session) return;
+
+      if (deadDigits.has(digit)) {
+        setValidationError('Digit eliminated — not in code');
+        setShakeKey((k) => k + 1);
+        return;
+      }
 
       if (entry.length >= session.config.digits) {
         setValidationError(`Needs ${session.config.digits} digits`);
@@ -224,7 +295,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
       setEntry((prev) => [...prev, digit]);
       setValidationError(null);
     },
-    [status, session, entry]
+    [status, session, entry, deadDigits]
   );
 
   const handleBackspace = useCallback(() => {
@@ -312,6 +383,14 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
       setAttemptsLeft(res.attemptsLeft ?? attemptsLeft - 1);
       setEntry([]);
       setValidationError(null);
+
+      if (res.firstTurnBonus) {
+        addCredits(res.firstTurnBonus);
+        triggerToast(`Syndicate Skimmer: +$${res.firstTurnBonus} CR bonus!`);
+      }
+      if (res.refundedAttempt) {
+        triggerToast('Neural Reflex Capacitor: Rapid guess refunded attempt!');
+      }
 
       // Advance tutorial if awaiting submit
       if (activeTutorialStep?.actionRequired === 'submit-guess') {
@@ -410,68 +489,133 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   return (
     <TerminalFrame tier={config.tier} nodeName={nodeName} nodeType={nodeType}>
       <div
-        className="flex flex-col h-full w-full bg-terminal-bg text-terminal-ink overflow-hidden relative"
+        className="flex flex-col h-[100dvh] max-h-[100dvh] w-full bg-terminal-bg text-terminal-ink overflow-hidden relative md:grid md:grid-cols-12 md:grid-rows-1"
         data-surface="terminal"
       >
         {/* CRT Scanline Layer (3% opacity) */}
         <div className="terminal-scanline absolute inset-0 pointer-events-none z-10" />
 
-        {/* 1. Header (72px) */}
-        <TerminalHeader
-          nodeName={nodeName}
-          nodeId={nodeId}
-          config={config}
-          usedAttempts={usedAttempts}
-          elapsedSeconds={elapsedSeconds}
-          onOpenLegend={() => setIsLegendOpen(true)}
-        />
+        {/* Left Column (Mobile: Top rows, Desktop: 7 cols) */}
+        <div className="flex flex-col min-h-0 flex-1 md:col-span-7 md:h-full md:border-r md:border-terminal-line/40 overflow-hidden">
+          {/* 1. Header (72px / 48px compact) */}
+          <TerminalHeader
+            nodeName={nodeName}
+            nodeId={nodeId}
+            config={config}
+            usedAttempts={usedAttempts}
+            elapsedSeconds={elapsedSeconds}
+            onOpenLegend={() => setIsLegendOpen(true)}
+          />
 
-        {/* 2. Progress Strip (32px) */}
-        <ProgressStrip
-          currentAttempt={usedAttempts + (status === 'playing' ? 1 : 0)}
-          maxAttempts={config.attempts}
-          best={best}
-          totalSeconds={config.timerSeconds}
-          elapsedSeconds={elapsedSeconds}
-        />
+          {/* 2. Progress Strip (32px) */}
+          <ProgressStrip
+            currentAttempt={usedAttempts + (status === 'playing' ? 1 : 0)}
+            maxAttempts={config.attempts}
+            best={best}
+            totalSeconds={config.timerSeconds}
+            elapsedSeconds={elapsedSeconds}
+          />
 
-        {/* 3. History (Flex-fills and scrolls, newest at bottom) */}
-        <HistoryList history={history} length={config.digits} />
+          {/* 3. History (Flex-fills and scrolls, newest at bottom) */}
+          <HistoryList history={history} length={config.digits} />
+        </div>
 
-        {/* 4. Guess Entry Row */}
-        <GuessEntry
-          digits={config.digits}
-          entry={entry}
-          validationError={validationError}
-          shakeKey={shakeKey}
-          hint={tacticalHint}
-        />
+        {/* Right Column (Mobile: Pinned Control Deck, Desktop: 5 cols) */}
+        <div className="flex flex-col shrink-0 md:col-span-5 md:h-full md:justify-between md:overflow-y-auto z-10">
+          <div className="flex flex-col shrink-0">
+            {/* 4. Guess Entry Row */}
+            <GuessEntry
+              digits={config.digits}
+              entry={entry}
+              validationError={validationError}
+              shakeKey={shakeKey}
+              hint={tacticalHint}
+              revealedSlots={revealedSlots}
+            />
 
-        {/* 5. Tool Slots Row (Equipped intrusion tools) */}
-        <TerminalToolSlots
-          equippedTools={equippedTools}
-          inventory={inventory}
-          onActivateTool={handleActivateTool}
-          isActivating={isActivatingTool}
-          disabled={status !== 'playing'}
-          toolFeedback={toolFeedback}
-          onClearFeedback={() => setToolFeedback(null)}
-          iceShieldArmed={iceShieldArmed}
-        />
+            {/* 5. Tool Slots Row (Equipped intrusion tools) */}
+            <TerminalToolSlots
+              equippedTools={equippedTools}
+              inventory={inventory}
+              onActivateTool={handleActivateTool}
+              isActivating={isActivatingTool}
+              disabled={status !== 'playing'}
+              toolFeedback={toolFeedback}
+              onClearFeedback={() => setToolFeedback(null)}
+              iceShieldArmed={iceShieldArmed}
+              activatedTools={activatedTools}
+              isTimerFrozen={isTimerFrozen}
+            />
 
-        {/* 6. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
-        <Keypad
-          onDigit={handleDigit}
-          onBackspace={handleBackspace}
-          onSubmit={handleSubmit}
-          onClear={handleClear}
-          isSubmitDisabled={isSubmitDisabled}
-          deadDigits={deadDigits}
-          usedDigitsInEntry={entry}
-          allowDuplicates={config.allowDuplicates}
-          assistMode={assistMode}
-          onIllegalAttempt={handleIllegalAttempt}
-        />
+            {/* Tactile Stencil Readout Banner for Parity Scanner ASIC */}
+            {config.parityDistribution && (
+              <div
+                data-testid="carrier-parity-banner"
+                className="mx-4 mt-2 px-3 py-1.5 rounded-[6px] bg-terminal-panel border border-terminal-phosphor/70 flex items-center justify-between text-terminal-phosphor font-data text-xs shadow-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-terminal-phosphor animate-pulse" />
+                  <span className="font-bold tracking-wider uppercase font-data">
+                    {config.parityDistribution.stencilFormatted || `CARRIER PARITY: [ ${config.parityDistribution.evenCount} EVEN // ${config.parityDistribution.oddCount} ODD ]`}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowParityTooltip((v) => !v)}
+                  aria-label="Explain parity distribution"
+                  data-testid="parity-tooltip-trigger"
+                  className="w-5 h-5 rounded-full border border-terminal-phosphor/60 hover:bg-terminal-phosphor/20 flex items-center justify-center text-[11px] font-bold text-terminal-phosphor transition-colors shrink-0"
+                >
+                  ?
+                </button>
+              </div>
+            )}
+
+            {/* Parity Tooltip Explainer Popover */}
+            {config.parityDistribution && showParityTooltip && (
+              <div
+                data-testid="parity-tooltip-popover"
+                className="mx-4 mt-1 p-2.5 rounded-[6px] bg-terminal-bg border border-terminal-phosphor text-terminal-phosphor font-data text-xs flex items-start gap-2 shadow-card"
+              >
+                <div className="w-6 h-6 rounded-full border border-terminal-phosphor overflow-hidden shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold uppercase tracking-wider text-[10px] block text-terminal-phosphor">
+                    NIX TACTICAL MENTOR
+                  </span>
+                  <p className="text-[11px] leading-tight text-terminal-ink mt-0.5">
+                    Even numbers are 0, 2, 4, 6, 8. Odd numbers are 1, 3, 5, 7, 9.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowParityTooltip(false)}
+                  className="text-terminal-muted hover:text-terminal-ink text-xs p-0.5"
+                  aria-label="Dismiss parity explanation"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 6. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
+          <Keypad
+            onDigit={handleDigit}
+            onBackspace={handleBackspace}
+            onSubmit={handleSubmit}
+            onClear={handleClear}
+            isSubmitDisabled={isSubmitDisabled}
+            deadDigits={deadDigits}
+            usedDigitsInEntry={entry}
+            allowDuplicates={config.allowDuplicates}
+            assistMode={assistMode}
+            onIllegalAttempt={handleIllegalAttempt}
+          />
+        </div>
 
         {/* Clue Legend Drawer */}
         <ClueLegendDrawer

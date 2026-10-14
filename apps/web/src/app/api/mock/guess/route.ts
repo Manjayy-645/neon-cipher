@@ -34,7 +34,10 @@ export async function POST(request: Request) {
         if (isCourtesy) {
           (session as any).courtesyUsed = true;
         }
-        const fine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+        const fineReduction = (session as any).effectiveRig?.fineReductionPercent || 0;
+        const rawFine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+        const fine = Math.round(rawFine * (1 - fineReduction / 100));
+
         if (fine > 0) {
           recordTransaction(`Trace Fine: ${session.node.name} (Timeout)`, -fine, 'credits', 'fine');
 
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
         }
 
         let burnedHardwareName: string | undefined;
-        if (session.node.tier === 5) {
+        if (session.node.tier === 5 && !(session as any).effectiveRig?.preventTier5Burnout) {
           const burned = burnInstalledHardware();
           if (burned) burnedHardwareName = burned.name;
         }
@@ -63,9 +66,40 @@ export async function POST(request: Request) {
     const isValid = validateGuess(guess, session.node.digits, session.node.allowDuplicates);
     if (!isValid) return NextResponse.json({ error: 'Invalid guess format' }, { status: 400 });
 
-    session.attemptsLeft--;
+    // Track turns & Neural Reflex Capacitor (4-second follow-up free turn)
+    (session as any).turnCount = ((session as any).turnCount || 0) + 1;
+    const now = Date.now();
+    const timeSinceLastTurn = (now - ((session as any).lastTurnTime || session.startedAt)) / 1000;
+    (session as any).lastTurnTime = now;
+
+    let refundedAttempt = false;
+    if (
+      (session as any).effectiveRig?.fastTurnRefundActive &&
+      !(session as any).fastTurnRefundUsed &&
+      (session as any).turnCount > 1 &&
+      timeSinceLastTurn <= 4
+    ) {
+      (session as any).fastTurnRefundUsed = true;
+      refundedAttempt = true;
+      // Capacitor absorbs the attempt cost!
+    } else {
+      session.attemptsLeft--;
+    }
+
     const ice = session.ice || 'None';
     const rawScore = calculateScore(session.secret, guess);
+
+    // Syndicate Skimmer: $45 per Pan on Turn 1
+    let firstTurnBonus = 0;
+    if (
+      (session as any).turnCount === 1 &&
+      (session as any).effectiveRig?.firstTurnPanBonusCredits &&
+      rawScore.pans > 0
+    ) {
+      firstTurnBonus = rawScore.pans * (session as any).effectiveRig.firstTurnPanBonusCredits;
+      recordTransaction(`Syndicate Skimmer: ${session.node.name}`, firstTurnBonus, 'credits', 'payout');
+    }
+
     const isWin = rawScore.pans === session.node.digits;
 
     if (isWin) {
@@ -96,6 +130,8 @@ export async function POST(request: Request) {
         payout: session.node.bounty,
         campaign: campaignResult,
         ice,
+        refundedAttempt,
+        firstTurnBonus: firstTurnBonus > 0 ? firstTurnBonus : undefined,
       });
     }
 
@@ -105,15 +141,21 @@ export async function POST(request: Request) {
       (session as any).iceShield = false; // consumed by defensive action
     }
 
-    // Liar ICE: 35% chance to falsify feedback (blocked if shield active)
-    const isLiarFalsified = !isShieldActive && ice === 'Liar' && Math.random() < 0.35;
-    const effectiveIce = isShieldActive ? 'None' : ice;
+    // Cleanse Subroutine: purges active ICE for 2 turns
+    const isCleanseActive = ((session as any).cleanseTurnsLeft || 0) > 0;
+    if (isCleanseActive) {
+      (session as any).cleanseTurnsLeft -= 1;
+    }
+
+    // Liar ICE: 35% chance to falsify feedback (blocked if shield or cleanse active)
+    const isLiarFalsified = !isShieldActive && !isCleanseActive && ice === 'Liar' && Math.random() < 0.35;
+    const effectiveIce = isShieldActive || isCleanseActive ? 'None' : ice;
     const iceScore = calculateScoreWithIce(session.secret, guess, effectiveIce, {
       isFalsified: isLiarFalsified,
     });
 
     // Drift ICE: Mutate 1 digit of the secret after an unsuccessful attempt if game continues
-    if (!isShieldActive && ice === 'Drift' && session.attemptsLeft > 0) {
+    if (!isShieldActive && !isCleanseActive && ice === 'Drift' && session.attemptsLeft > 0) {
       session.secret = driftSecret(session.secret, session.node.allowDuplicates);
     }
 
@@ -123,7 +165,10 @@ export async function POST(request: Request) {
       if (isCourtesy) {
         (session as any).courtesyUsed = true;
       }
-      const fine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+      const fineReduction = (session as any).effectiveRig?.fineReductionPercent || 0;
+      const rawFine = isCourtesy ? 0 : Math.floor(session.node.bounty / 2);
+      const fine = Math.round(rawFine * (1 - fineReduction / 100));
+
       if (fine > 0) {
         recordTransaction(`Trace Fine: ${session.node.name} (Attempts)`, -fine, 'credits', 'fine');
 
@@ -134,7 +179,7 @@ export async function POST(request: Request) {
       }
 
       let burnedHardwareName: string | undefined;
-      if (session.node.tier === 5) {
+      if (session.node.tier === 5 && !(session as any).effectiveRig?.preventTier5Burnout) {
         const burned = burnInstalledHardware();
         if (burned) burnedHardwareName = burned.name;
       }
@@ -149,6 +194,8 @@ export async function POST(request: Request) {
         secret: session.secret,
         fine,
         burnedHardware: burnedHardwareName,
+        refundedAttempt,
+        firstTurnBonus: firstTurnBonus > 0 ? firstTurnBonus : undefined,
       });
     }
 
@@ -159,6 +206,8 @@ export async function POST(request: Request) {
       ice,
       attemptsLeft: session.attemptsLeft,
       status: 'active',
+      refundedAttempt,
+      firstTurnBonus: firstTurnBonus > 0 ? firstTurnBonus : undefined,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

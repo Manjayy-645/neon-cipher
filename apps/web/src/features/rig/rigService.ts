@@ -1,9 +1,31 @@
 import { RigHardwareItem, SafehouseProperty, Transaction } from '@/app/api/mock/db';
+import { HardwareRailSlot, RigHardwareId, RigPreset } from '@neon-cipher/game-rules';
 
 export interface RigStateResponse {
   hardware: Record<string, RigHardwareItem>;
+  equippedRails: Partial<Record<HardwareRailSlot, RigHardwareId | null>>;
   equippedTools: string[];
   inventory: Record<string, number>;
+}
+
+export interface EquipRailResult {
+  success: boolean;
+  equippedRails?: Partial<Record<HardwareRailSlot, RigHardwareId | null>>;
+  hardware?: Record<string, RigHardwareItem>;
+  swappedModuleId?: RigHardwareId | null;
+  message?: string;
+  error?: string;
+}
+
+export interface ApplyPresetResult {
+  success: boolean;
+  presetId?: string;
+  preset?: RigPreset;
+  equippedRails?: Partial<Record<HardwareRailSlot, RigHardwareId | null>>;
+  missingModules?: RigHardwareId[];
+  hardware?: Record<string, RigHardwareItem>;
+  message?: string;
+  error?: string;
 }
 
 export interface SafehouseStateResponse {
@@ -58,6 +80,43 @@ export const rigService = {
       throw new Error(err.error || 'Failed to fetch cyberdeck rig status.');
     }
     return res.json();
+  },
+
+  equipRail: async (
+    railSlot: HardwareRailSlot,
+    hardwareId: RigHardwareId | null
+  ): Promise<EquipRailResult> => {
+    const res = await fetch('/api/mock/rig/equip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ railSlot, hardwareId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to equip module to rail.',
+      };
+    }
+    return data;
+  },
+
+  applyPreset: async (
+    presetId: 'safe_learner' | 'cash_farmer' | 'pvp_duelist'
+  ): Promise<ApplyPresetResult> => {
+    const res = await fetch('/api/mock/rig/equip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ presetId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to apply rig loadout preset.',
+      };
+    }
+    return data;
   },
 
   repairHardware: async (hardwareId: string): Promise<RepairHardwareResult> => {

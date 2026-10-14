@@ -159,13 +159,30 @@ export const NixGuide: React.FC = () => {
   const bannerAdjustedTop = isDistrictView ? 132 : 76;
   const topPos = activeChapterId ? bannerAdjustedTop : defaultTop;
 
+  const isSheetRaised = isNodeView && (sheetState === 'half' || sheetState === 'expanded' || sheetHeight > 100);
+
+  // Auto-collapse speech bubble when bottom sheet rises to Half or Expanded
+  useEffect(() => {
+    if (isSheetRaised && isNixBubbleOpen) {
+      setNixBubbleOpen(false);
+    }
+  }, [isSheetRaised, isNixBubbleOpen, setNixBubbleOpen]);
+
   const positionStyles = isNodeView
-    ? {
-        position: 'absolute' as const,
-        left: 16,
-        bottom: sheetHeight + 12,
-        top: 'auto',
-      }
+    ? isSheetRaised
+      ? {
+          position: 'absolute' as const,
+          right: 16,
+          top: topPos,
+          bottom: 'auto',
+          left: 'auto',
+        }
+      : {
+          position: 'absolute' as const,
+          left: 16,
+          bottom: sheetHeight + 12,
+          top: 'auto',
+        }
     : {
         position: 'absolute' as const,
         left: 12,
@@ -178,7 +195,7 @@ export const NixGuide: React.FC = () => {
   return (
     <div
       data-testid="nix-guide-container"
-      className="z-40 pointer-events-none transition-all duration-300 ease-out flex flex-col items-start gap-2"
+      className="z-nix-pip pointer-events-none transition-all duration-300 ease-out flex flex-col items-start gap-2"
       style={positionStyles}
     >
       <div className="flex items-start gap-2 pointer-events-auto">
@@ -221,13 +238,13 @@ export const NixGuide: React.FC = () => {
               transition={
                 prefersReducedMotion ? { duration: 0.05 } : { duration: 0.2, ease: 'easeOut' }
               }
-              className="relative max-w-[280px] sm:max-w-[340px] bg-panel-light border border-line border-l-4 border-l-accent rounded-[14px] shadow-card p-3.5 pr-10 cursor-pointer select-none text-ink text-left"
+              className="relative max-w-[min(92vw,340px)] bg-panel-light border border-line border-l-4 border-l-accent rounded-[14px] shadow-card p-3.5 pr-10 cursor-pointer select-none text-ink text-left"
               onClick={handleBubbleClick}
             >
               <div className="font-heading text-[11px] font-bold tracking-[1px] uppercase text-accent-text mb-1">
                 NIX
               </div>
-              <p className="font-data text-[13px] leading-[18px] text-ink font-normal whitespace-pre-wrap">
+              <p className="font-data text-[13px] leading-[18px] text-ink font-normal whitespace-pre-wrap max-h-[120px] overflow-y-auto pr-1">
                 {displayedText}
               </p>
 

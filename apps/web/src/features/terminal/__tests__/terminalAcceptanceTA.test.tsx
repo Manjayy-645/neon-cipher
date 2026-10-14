@@ -203,7 +203,9 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
     expect(screen.getByText(/Your assignment is waiting/i)).toBeInTheDocument();
     fireEvent.click(returnButton);
 
-    expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
+    });
     expect(useCampaignStore.getState().activeChapterId).toBe('chapter-2');
   });
 

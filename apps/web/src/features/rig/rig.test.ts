@@ -7,6 +7,7 @@ import { GET as safehouseGET } from '@/app/api/mock/safehouse/route';
 import { POST as safehousePurchasePOST } from '@/app/api/mock/safehouse/purchase/route';
 import { POST as safehouseClaimPOST } from '@/app/api/mock/safehouse/claim/route';
 import { GET as historyGET } from '@/app/api/mock/wallet/history/route';
+import { POST as equipPOST } from '@/app/api/mock/rig/equip/route';
 import {
   mockWallet,
   mockRigHardware,
@@ -29,16 +30,18 @@ describe('Task 9: Rig Workbench, Safehouse & Wallet History', () => {
       'tool-firewall-patch': 1,
     };
     mockWallet.equippedTools = ['tool-static-injector'];
+    mockWallet.equippedRails = {
+      memory_1: null,
+      memory_2: null,
+      coprocessor: null,
+      bus_interconnect: null,
+    };
 
-    // Reset hardware items
-    mockRigHardware['rig-memory-buffer-1'].installed = false;
-    mockRigHardware['rig-memory-buffer-1'].burned = false;
-
-    mockRigHardware['rig-memory-buffer-2'].installed = false;
-    mockRigHardware['rig-memory-buffer-2'].burned = false;
-
-    mockRigHardware['rig-heuristic-coprocessor'].installed = false;
-    mockRigHardware['rig-heuristic-coprocessor'].burned = false;
+    // Reset all hardware items
+    Object.values(mockRigHardware).forEach((h) => {
+      h.installed = false;
+      h.burned = false;
+    });
 
     // Reset safehouses
     Object.values(mockSafehouses).forEach((s) => {
@@ -330,6 +333,169 @@ describe('Task 9: Rig Workbench, Safehouse & Wallet History', () => {
       expect(dataCoins.totalCount).toBe(1);
       expect(dataCoins.transactions[0].currency).toBe('coins');
       expect(dataCoins.transactions[0].amount).toBe(-10);
+    });
+  });
+
+  describe('4-Rail Cyberdeck System, Presets & Advanced Modules', () => {
+    it('equips and hot-swaps hardware modules across all 4 rails via POST /api/mock/rig/equip', async () => {
+      mockWallet.inventory['memory_buffer_mk1'] = 1;
+      mockWallet.inventory['neural_reflex_cap'] = 1;
+
+      // Equip memory_buffer_mk1 to memory_1
+      const req1 = new Request('http://localhost/api/mock/rig/equip', {
+        method: 'POST',
+        body: JSON.stringify({ railSlot: 'memory_1', hardwareId: 'memory_buffer_mk1' }),
+      });
+      const res1 = await equipPOST(req1);
+      const data1 = await res1.json();
+      expect(res1.status).toBe(200);
+      expect(data1.success).toBe(true);
+      expect(data1.equippedRails.memory_1).toBe('memory_buffer_mk1');
+
+      // Hot-swap memory_1 with neural_reflex_cap
+      const req2 = new Request('http://localhost/api/mock/rig/equip', {
+        method: 'POST',
+        body: JSON.stringify({ railSlot: 'memory_1', hardwareId: 'neural_reflex_cap' }),
+      });
+      const res2 = await equipPOST(req2);
+      const data2 = await res2.json();
+      expect(res2.status).toBe(200);
+      expect(data2.equippedRails.memory_1).toBe('neural_reflex_cap');
+      expect(data2.swappedModuleId).toBe('memory_buffer_mk1');
+    });
+
+    it('applies 1-tap archetype loadout presets (Safe Learner, Cash Farmer, PvP Duelist)', async () => {
+      // Give player all parts for Safe Learner preset
+      mockWallet.inventory['memory_buffer_mk1'] = 1;
+      mockWallet.inventory['heuristic_coproc'] = 1;
+      mockWallet.inventory['lead_shielded_chassis'] = 1;
+
+      const req = new Request('http://localhost/api/mock/rig/equip', {
+        method: 'POST',
+        body: JSON.stringify({ presetId: 'safe_learner' }),
+      });
+      const res = await equipPOST(req);
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.equippedRails.memory_1).toBe('memory_buffer_mk1');
+      expect(data.equippedRails.coprocessor).toBe('heuristic_coproc');
+      expect(data.equippedRails.bus_interconnect).toBe('lead_shielded_chassis');
+      expect(data.missingModules).toEqual([]);
+    });
+
+    it('reveals parity distribution when Parity Scanner ASIC is equipped', async () => {
+      mockWallet.inventory['parity_scanner_asic'] = 1;
+      mockWallet.equippedRails!.coprocessor = 'parity_scanner_asic';
+      mockRigHardware['parity_scanner_asic'].installed = true;
+
+      const t1Node = getNodes().find((n) => n.tier === 1)!;
+      const req = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: t1Node.id }),
+      });
+      const res = await sessionPOST(req);
+      const data = await res.json();
+      expect(res.status).toBe(200);
+
+      expect(data.config.parityDistribution).toBeDefined();
+      expect(data.config.parityDistribution.formatted).toBeDefined();
+      expect(data.config.parityDistribution.evenCount + data.config.parityDistribution.oddCount).toBe(
+        t1Node.digits
+      );
+    });
+
+    it('applies Overclocked Quartz Bus (+15s clock, +20% bounty, -1 attempt floored at 3)', async () => {
+      mockWallet.inventory['overclocked_quartz_bus'] = 1;
+      mockWallet.equippedRails!.bus_interconnect = 'overclocked_quartz_bus';
+      mockRigHardware['overclocked_quartz_bus'].installed = true;
+
+      const t3Node = getNodes().find((n) => n.tier === 3)!;
+      const req = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: t3Node.id }),
+      });
+      const res = await sessionPOST(req);
+      const data = await res.json();
+      expect(res.status).toBe(200);
+
+      expect(data.config.timerSeconds).toBe((t3Node.timerSeconds || 0) + 15);
+      expect(data.config.bounty).toBe(Math.round(t3Node.bounty * 1.2));
+      expect(data.config.attempts).toBe(Math.max(3, t3Node.attempts - 1));
+    });
+
+    it('awards Syndicate Skimmer turn-1 Pan bonus', async () => {
+      mockWallet.inventory['syndicate_skimmer'] = 1;
+      mockWallet.equippedRails!.memory_2 = 'syndicate_skimmer';
+      mockRigHardware['syndicate_skimmer'].installed = true;
+      const initialCredits = mockWallet.credits;
+
+      const t1Node = getNodes().find((n) => n.tier === 1)!;
+      const reqSession = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: t1Node.id }),
+      });
+      const resSession = await sessionPOST(reqSession);
+      const dataSession = await resSession.json();
+
+      const session = mockSessions.get(dataSession.sessionId)!;
+      // Make a guess with at least 1 Pan (match first digit of secret)
+      const secret = session.secret;
+      const guessDigits = secret[0] + '999'.slice(0, secret.length - 1);
+
+      const reqGuess = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: dataSession.sessionId, guess: guessDigits }),
+      });
+      const resGuess = await guessPOST(reqGuess);
+      const dataGuess = await resGuess.json();
+
+      if (dataGuess.result && dataGuess.result.pans > 0) {
+        expect(dataGuess.firstTurnBonus).toBe(dataGuess.result.pans * 45);
+        expect(mockWallet.credits).toBe(initialCredits + dataGuess.result.pans * 45);
+      }
+    });
+
+    it('prevents hardware burnout upon Tier 5 failure when Lead-Shielded Chassis is equipped', async () => {
+      const t5Node = getNodes().find((n) => n.tier === 5)!;
+      mockWallet.inventory['memory_buffer_mk1'] = 1;
+      mockWallet.equippedRails!.memory_1 = 'memory_buffer_mk1';
+      mockRigHardware['memory_buffer_mk1'].installed = true;
+      mockRigHardware['memory_buffer_mk1'].burned = false;
+
+      // Equip Lead-Shielded Chassis
+      mockWallet.inventory['lead_shielded_chassis'] = 1;
+      mockWallet.equippedRails!.bus_interconnect = 'lead_shielded_chassis';
+      mockRigHardware['lead_shielded_chassis'].installed = true;
+
+      const reqSession = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: t5Node.id }),
+      });
+      const resSession = await sessionPOST(reqSession);
+      const dataSession = await resSession.json();
+
+      const session = mockSessions.get(dataSession.sessionId)!;
+      session.attemptsLeft = 1;
+
+      // Fail final attempt with incorrect guess matching node digits
+      const allDigits = '0123456789'.split('');
+      const candidateGuess = allDigits.slice(0, t5Node.digits).join('');
+      const wrongGuess =
+        candidateGuess === session.secret
+          ? allDigits.slice(1, t5Node.digits + 1).join('')
+          : candidateGuess;
+      const reqGuess = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: dataSession.sessionId, guess: wrongGuess }),
+      });
+      const resGuess = await guessPOST(reqGuess);
+      const dataGuess = await resGuess.json();
+
+      expect(dataGuess.status).toBe('lost');
+      // Lead shielded chassis prevents burn
+      expect(dataGuess.burnedHardware).toBeUndefined();
+      expect(mockRigHardware['memory_buffer_mk1'].burned).toBe(false);
     });
   });
 });

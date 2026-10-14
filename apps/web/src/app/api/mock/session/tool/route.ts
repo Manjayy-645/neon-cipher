@@ -52,6 +52,9 @@ export async function POST(request: Request) {
       secret: session.secret,
       eliminatedDigits: session.eliminatedDigits || [],
       timerSeconds: session.node.timerSeconds,
+      attemptsLeft: session.attemptsLeft,
+      tier: session.node.tier,
+      revealedSlots: (session as any).revealedSlots || [],
     });
 
     if (!toolResult.success) {
@@ -67,9 +70,29 @@ export async function POST(request: Request) {
       (session as any).iceShield = true;
     }
 
+    if (toolResult.revealedSlot) {
+      (session as any).revealedSlots = [
+        ...((session as any).revealedSlots || []),
+        toolResult.revealedSlot.slotIndex,
+      ];
+    }
+
     if (toolResult.timeAddedSeconds) {
       // Add time by pushing startedAt forward
       session.startedAt = (session.startedAt || Date.now()) + toolResult.timeAddedSeconds * 1000;
+    }
+
+    if (toolResult.extraAttempts) {
+      session.attemptsLeft = (session.attemptsLeft || 0) + toolResult.extraAttempts;
+    }
+
+    if (toolResult.cleanseIce) {
+      (session as any).cleanseTurnsLeft = toolResult.cleanseTurns || 2;
+    }
+
+    if (toolResult.autoCrack) {
+      session.status = 'won';
+      session.node.bounty = 0; // Skeleton key grants 0 bounty payout
     }
 
     return NextResponse.json({
@@ -80,6 +103,14 @@ export async function POST(request: Request) {
       hasDuplicates: toolResult.hasDuplicates,
       shieldArmed: toolResult.shieldArmed,
       timeAddedSeconds: toolResult.timeAddedSeconds,
+      timerFrozenSeconds: toolResult.timerFrozenSeconds,
+      cleanseIce: toolResult.cleanseIce,
+      cleanseTurns: toolResult.cleanseTurns,
+      uncorruptedScore: toolResult.uncorruptedScore,
+      extraAttempts: toolResult.extraAttempts,
+      revealedSlot: toolResult.revealedSlot,
+      autoCrack: toolResult.autoCrack,
+      secret: toolResult.autoCrack ? session.secret : undefined,
       message: toolResult.message,
       inventory: mockWallet.inventory,
       equippedTools: mockWallet.equippedTools,

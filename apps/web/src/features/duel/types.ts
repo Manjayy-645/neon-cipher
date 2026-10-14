@@ -18,13 +18,14 @@ export interface DuelRoom {
 
 export interface DuelGuess {
   guess: string;
-  pots: number;
-  pans: number;
+  pots: number | null;
+  pans: number | null;
   timestamp: number;
   cheatUsed?: boolean;
   isStealth?: boolean;
   falsified?: boolean;
   unmasked?: boolean;
+  parityLabel?: 'EVEN' | 'ODD';
 }
 
 export interface DuelFeedEvent {
@@ -38,6 +39,7 @@ export interface DuelFeedEvent {
   unmasked?: boolean;
   cheatUsed?: boolean;
   falsified?: boolean;
+  parityLabel?: 'EVEN' | 'ODD';
   sabotageEvent?: {
     toolName: string;
     description: string;
@@ -49,19 +51,36 @@ export type SabotageEffectType =
   | 'static_history'
   | 'drain_clock'
   | 'firewall_shield'
+  | 'mirror_shield'
   | 'snoop_packet'
-  | 'false_flag_echo';
+  | 'false_flag_echo'
+  | 'key_latch'
+  | 'logic_bomb'
+  | 'parity_jam';
 
 export interface DuelParticipant {
   handle: string;
   avatar: string;
   guesses: DuelGuess[];
-  activeEffects: Array<'scramble_keypad' | 'static_history' | 'drain_clock' | 'snoop_packet' | 'false_flag_echo'>;
+  activeEffects: SabotageEffectType[];
   staticExpiry?: number;
   shieldActive: boolean;
   cheatUsed: boolean;
   falseFlagActive?: boolean;
   snoopActive?: boolean;
+  defensiveBuffs?: Array<{
+    type: 'firewall_patch' | 'mirror_daemon';
+    sourceDeckerId: string;
+    timestamp: number;
+  }>;
+  stealthChargesRemaining?: number;
+  latchedKeys?: string[];
+  parityJamActive?: boolean;
+  activeLogicBomb?: {
+    targetDigit: string;
+    sourceDeckerId: string;
+    armedBy?: string;
+  };
 }
 
 export interface DuelSession {
@@ -101,4 +120,6 @@ export interface SabotageTool {
   effect: string;
   durationSeconds?: number;
   effectType: SabotageEffectType;
+  nixExplanation?: string;
+  counterPlayTip?: string;
 }

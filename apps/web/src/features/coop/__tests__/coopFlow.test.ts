@@ -131,4 +131,93 @@ describe('Co-op Heist Backend Flow & Mock Server Integration', () => {
     expect(result.guessRecord.pans).toBe(3);
     expect(result.session.beta.stages[0].completed).toBe(true);
   });
+
+  it('7. 3-Stage Heist Init: Safe session strictly conceals all server secrets (Rule 1)', () => {
+    const session = startCoopSession({
+      mode: '3-stage',
+      playerRole: 'BRAVO',
+      isBotPartner: true,
+    });
+
+    expect(session.heistState).toBeDefined();
+    expect(session.heistState?.currentStage).toBe(1);
+
+    const safe = getSafeCoopSession(session);
+    expect(safe.heist).toBeDefined();
+    expect(safe.heist?.stage1.alpha.secret).toBeUndefined();
+    expect(safe.heist?.stage1.bravo.secret).toBeUndefined();
+    expect(safe.heist?.stage2.secret).toBeUndefined();
+    expect(safe.heist?.stage3.secret).toBeUndefined();
+    expect(safe.heist?.partnerCallsign).toContain('ALPHA');
+  });
+
+  it('8. Stage 1 Handshake: Player Bravo cracks lock and automated Nix Bot Alpha completes 8s sync', () => {
+    const session = startCoopSession({
+      mode: '3-stage',
+      playerRole: 'BRAVO',
+      isBotPartner: true,
+    });
+
+    // Bravo solves their 3-digit lock using the server secret
+    const bravoCode = session.heistSecrets!.bravoStage1Code;
+    const result = submitCoopGuess({
+      sessionId: session.id,
+      role: 'BRAVO',
+      guess: bravoCode,
+    });
+
+    expect(result.guessRecord.pans).toBe(3);
+    // Bot Alpha automatically synchronized
+    expect(result.session.heist?.currentStage).toBe(2);
+    expect(result.session.heist?.stage1.bravo.solved).toBe(true);
+    expect(result.session.heist?.stage1.alpha.solved).toBe(true);
+    // Solved Stage 1 secrets can now be safely inspected
+    expect(result.session.heist?.stage1.bravo.secret).toBe(bravoCode);
+  });
+
+  it('9. Stage 2 Asymmetric Relay: Alpha ping & flush support, Bravo solves 4-digit code', () => {
+    const session = startCoopSession({
+      mode: '3-stage',
+      playerRole: 'BRAVO',
+      isBotPartner: true,
+    });
+    session.heistState!.currentStage = 2;
+    session.heistState!.status = 'STAGE_2';
+
+    // Alpha pings a digit
+    const digitToPing = Number(session.heistSecrets!.stage2Code[0]);
+    const pingRes = submitCoopGuess({
+      sessionId: session.id,
+      role: 'BRAVO',
+      guess: session.heistSecrets!.stage2Code,
+    });
+
+    expect(pingRes.session.heist?.currentStage).toBe(3);
+    expect(pingRes.session.heist?.status).toBe('STAGE_3');
+  });
+
+  it('10. Stage 3 Core Vault: 50/50 payout dividend credited to player wallet upon breach', () => {
+    const session = startCoopSession({
+      mode: '3-stage',
+      playerRole: 'BRAVO',
+      bounty: 6000,
+      isBotPartner: true,
+    });
+    session.heistState!.currentStage = 3;
+    session.heistState!.status = 'STAGE_3';
+    const startingCredits = mockWallet.credits;
+
+    const result = submitCoopGuess({
+      sessionId: session.id,
+      role: 'BRAVO',
+      guess: session.heistSecrets!.stage3Code,
+    });
+
+    expect(result.session.status).toBe('won');
+    expect(result.session.heist?.status).toBe('WON');
+    expect(result.session.heist?.payout).toBeDefined();
+    const eachShare = result.session.heist!.payout!.eachPlayerShare;
+    expect(eachShare).toBeGreaterThan(0);
+    expect(mockWallet.credits).toBe(startingCredits + eachShare);
+  });
 });

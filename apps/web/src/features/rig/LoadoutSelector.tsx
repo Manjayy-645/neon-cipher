@@ -36,7 +36,7 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
   if (!isOpen) return null;
 
   const ownedTools = CATALOG.filter(
-    (it) => it.category === 'tools' && (inventory[it.id] || 0) > 0
+    (it) => (it.category === 'tools' || it.category === 'exploits') && (inventory[it.id] || 0) > 0
   );
 
   return (

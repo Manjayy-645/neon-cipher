@@ -52,6 +52,10 @@ export function Keypad({
 
       if (e.key >= '0' && e.key <= '9') {
         const digit = parseInt(e.key, 10);
+        if (deadDigits.has(digit)) {
+          onIllegalAttempt?.('Digit eliminated — not in code');
+          return;
+        }
         if (!allowDuplicates && usedDigitsInEntry.includes(digit)) {
           onIllegalAttempt?.('No repeats on this tier');
           return;
@@ -80,6 +84,7 @@ export function Keypad({
     isSubmitDisabled,
     allowDuplicates,
     usedDigitsInEntry,
+    deadDigits,
     onIllegalAttempt,
   ]);
 
@@ -138,9 +143,9 @@ export function Keypad({
         {keys.map((k) => {
           if (k.type === 'digit') {
             const digit = k.value as number;
-            const isDead = assistMode === 'rookie' && deadDigits.has(digit);
+            const isDead = deadDigits.has(digit);
             const isUsedInEntry = !allowDuplicates && usedDigitsInEntry.includes(digit);
-            const isDisabled = isUsedInEntry;
+            const isDisabled = isUsedInEntry || isDead;
 
             return (
               <button
@@ -156,30 +161,34 @@ export function Keypad({
                 }
                 disabled={isDisabled}
                 onClick={() => {
+                  if (isDead) {
+                    onIllegalAttempt?.('Digit eliminated — not in code');
+                    return;
+                  }
                   if (isUsedInEntry) {
                     onIllegalAttempt?.('No repeats on this tier');
                     return;
                   }
                   onDigit(digit);
                 }}
-                className={`relative h-[56px] min-h-[56px] rounded-[8px] border font-data text-xl font-bold transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
+                className={`relative h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border font-data text-xl font-bold transition-transform duration-120 flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
                   isDisabled
-                    ? 'border-terminal-line/30 bg-terminal-panel/20 text-terminal-muted/40 cursor-not-allowed'
-                    : isDead
-                    ? 'border-terminal-line/40 bg-terminal-panel/40 text-terminal-muted/35'
-                    : 'border-terminal-line bg-terminal-panel text-terminal-ink hover:border-terminal-phosphor/60'
+                    ? isDead
+                      ? 'border-terminal-line/20 bg-terminal-panel/20 text-terminal-muted/30 line-through cursor-not-allowed opacity-40'
+                      : 'border-terminal-line/30 bg-terminal-panel/20 text-terminal-muted/40 cursor-not-allowed'
+                    : 'border-terminal-line bg-terminal-panel text-terminal-ink hover:border-terminal-phosphor/60 active:scale-[0.96]'
                 }`}
               >
                 <span>{k.label}</span>
 
-                {/* Diagonal slash for dead key under Rookie Assist */}
+                {/* Diagonal slash for dead key */}
                 {isDead && (
                   <svg
-                    className="absolute inset-0 w-full h-full pointer-events-none stroke-terminal-danger/60"
+                    className="absolute inset-0 w-full h-full pointer-events-none stroke-terminal-danger/70"
                     viewBox="0 0 56 56"
                     preserveAspectRatio="none"
                   >
-                    <line x1="12" y1="44" x2="44" y2="12" strokeWidth="2" />
+                    <line x1="10" y1="46" x2="46" y2="10" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
                 )}
               </button>
@@ -193,7 +202,7 @@ export function Keypad({
                 type="button"
                 aria-label="Backspace"
                 onClick={onBackspace}
-                className="h-[56px] min-h-[56px] rounded-[8px] border border-terminal-line bg-terminal-panel text-terminal-muted hover:text-terminal-ink font-data text-lg font-bold transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg"
+                className="h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border border-terminal-line bg-terminal-panel text-terminal-muted hover:text-terminal-ink font-data text-lg font-bold transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg"
               >
                 ⌫
               </button>
@@ -210,7 +219,7 @@ export function Keypad({
                 data-tutorial="submit"
                 disabled={isSubmitDisabled}
                 onClick={onSubmit}
-                className={`h-[56px] min-h-[56px] rounded-[8px] border font-data text-sm font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
+                className={`h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border font-data text-sm font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
                   isSubmitDisabled
                     ? 'border-terminal-line/30 bg-terminal-panel/30 text-terminal-muted/40 cursor-not-allowed'
                     : 'border-terminal-phosphor bg-terminal-phosphor text-terminal-bg shadow-[0_0_12px_rgba(111,191,122,0.3)] hover:brightness-105'

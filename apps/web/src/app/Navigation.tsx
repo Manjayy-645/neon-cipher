@@ -78,7 +78,7 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
   return (
     <nav 
       aria-label="Main Navigation"
-      className="h-[calc(var(--nav-height)_+_env(safe-area-inset-bottom))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel flex items-stretch justify-around pb-[env(safe-area-inset-bottom)] z-20 relative select-none"
+      className="h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel flex items-stretch justify-around pb-[max(env(safe-area-inset-bottom),0.5rem)] z-hud-bars relative select-none"
     >
       <AnimatePresence>
         {toastMessage && (

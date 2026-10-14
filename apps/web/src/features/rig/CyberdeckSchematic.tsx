@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 
 interface CyberdeckSchematicProps {
   hardware: Record<string, RigHardwareItem>;
+  equippedRails?: Partial<Record<string, string | null>>;
   equippedTools: string[];
   onSelectSlot: (slotId: string) => void;
   selectedSlotId: string | null;
@@ -14,16 +15,40 @@ interface CyberdeckSchematicProps {
 
 export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
   hardware,
+  equippedRails,
   equippedTools,
   onSelectSlot,
   selectedSlotId,
 }) => {
-  const mb1 = hardware['rig-memory-buffer-1'];
-  const mb2 = hardware['rig-memory-buffer-2'];
-  const coproc = hardware['rig-heuristic-coprocessor'];
+  // Resolve equipped or fallback hardware for each of the 4 rails
+  const r1Id = equippedRails?.memory_1 || (hardware['neural_reflex_cap']?.installed ? 'neural_reflex_cap' : hardware['memory_buffer_mk1']?.installed ? 'memory_buffer_mk1' : hardware['rig-memory-buffer-1']?.installed ? 'rig-memory-buffer-1' : 'rig-memory-buffer-1');
+  const mb1 = hardware[r1Id] || hardware['memory_buffer_mk1'] || hardware['rig-memory-buffer-1'];
+
+  const r2Id = equippedRails?.memory_2 || (hardware['syndicate_skimmer']?.installed ? 'syndicate_skimmer' : hardware['memory_buffer_mk2']?.installed ? 'memory_buffer_mk2' : hardware['rig-memory-buffer-2']?.installed ? 'rig-memory-buffer-2' : 'rig-memory-buffer-2');
+  const mb2 = hardware[r2Id] || hardware['memory_buffer_mk2'] || hardware['rig-memory-buffer-2'];
+
+  const r3Id = equippedRails?.coprocessor || (hardware['parity_scanner_asic']?.installed ? 'parity_scanner_asic' : hardware['heuristic_coproc']?.installed ? 'heuristic_coproc' : hardware['rig-heuristic-coprocessor']?.installed ? 'rig-heuristic-coprocessor' : 'rig-heuristic-coprocessor');
+  const coproc = hardware[r3Id] || hardware['heuristic_coproc'] || hardware['rig-heuristic-coprocessor'];
+
+  const r4Id = equippedRails?.bus_interconnect || (hardware['lead_shielded_chassis']?.installed ? 'lead_shielded_chassis' : hardware['overclocked_quartz_bus']?.installed ? 'overclocked_quartz_bus' : 'overclocked_quartz_bus');
+  const busItem = hardware[r4Id] || hardware['overclocked_quartz_bus'] || hardware['lead_shielded_chassis'];
 
   const tool1 = CATALOG.find((it) => it.id === equippedTools[0]);
   const tool2 = CATALOG.find((it) => it.id === equippedTools[1]);
+
+  const getSlotTitle = (item?: RigHardwareItem, defaultTitle: string = '') => {
+    if (!item) return defaultTitle;
+    if (item.id === 'rig-memory-buffer-1' || item.id === 'memory_buffer_mk1') {
+      return 'MEM BUFFER MK I';
+    }
+    if (item.id === 'rig-memory-buffer-2' || item.id === 'memory_buffer_mk2') {
+      return 'MEM BUFFER MK II';
+    }
+    if (item.id === 'rig-heuristic-coprocessor' || item.id === 'heuristic_coproc') {
+      return 'HEURISTIC CO-PROCESSOR';
+    }
+    return item.name.toUpperCase();
+  };
 
   return (
     <div className="w-full relative flex flex-col items-center">
@@ -35,7 +60,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-accent" />
             <span className="font-bold text-accent-text tracking-widest uppercase">
-              FIELD RIG // MERIDIAN-480
+              FIELD RIG // 4-RAIL CYBERDECK CHASSIS
             </span>
           </div>
           <span className="opacity-70">BUS FREQ: 800MHz</span>
@@ -43,37 +68,51 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
 
         {/* Schematic Layout Grid */}
         <div className="grid grid-cols-2 gap-3 relative z-10 font-data">
-          {/* Slot 1: Memory Buffer Mk I */}
+          {/* Rail 1: Memory Rail 1 */}
           <HardwareSlotCard
-            title="MEM BUFFER MK I"
+            title={getSlotTitle(mb1, 'MEM BUFFER MK I')}
+            railLabel="RAIL 1 // MEMORY"
             item={mb1}
-            isSelected={selectedSlotId === 'rig-memory-buffer-1'}
-            onClick={() => onSelectSlot('rig-memory-buffer-1')}
+            isSelected={selectedSlotId === mb1?.id || selectedSlotId === 'rig-memory-buffer-1' || selectedSlotId === 'memory_buffer_mk1'}
+            onClick={() => onSelectSlot(mb1?.id || 'rig-memory-buffer-1')}
             tier="T1 / T2"
-            icon="/icons/icon-memory-buffer.svg"
+            subtitle={mb1?.installed ? (mb1.tradeOff ? `${mb1.effect}` : '+1 Extra Probe') : 'Slot Available'}
+            icon={mb1?.id ? (mb1.id.includes('neural') ? '/icons/icon-trace-accelerator.svg' : '/icons/icon-memory-buffer.svg') : '/icons/icon-memory-buffer.svg'}
           />
 
-          {/* Slot 2: Memory Buffer Mk II */}
+          {/* Rail 2: Memory Rail 2 */}
           <HardwareSlotCard
-            title="MEM BUFFER MK II"
+            title={getSlotTitle(mb2, 'MEM BUFFER MK II')}
+            railLabel="RAIL 2 // MEMORY"
             item={mb2}
-            isSelected={selectedSlotId === 'rig-memory-buffer-2'}
-            onClick={() => onSelectSlot('rig-memory-buffer-2')}
+            isSelected={selectedSlotId === mb2?.id || selectedSlotId === 'rig-memory-buffer-2' || selectedSlotId === 'memory_buffer_mk2'}
+            onClick={() => onSelectSlot(mb2?.id || 'rig-memory-buffer-2')}
             tier="T3 / T4"
-            icon="/icons/icon-memory-buffer.svg"
+            subtitle={mb2?.installed ? (mb2.tradeOff ? `${mb2.effect}` : '+1 Extra Probe') : 'Slot Available'}
+            icon={mb2?.id ? (mb2.id.includes('skimmer') ? '/icons/glyph-power.svg' : '/icons/icon-memory-buffer.svg') : '/icons/icon-memory-buffer.svg'}
           />
 
-          {/* Slot 3: Heuristic Co-Processor (Full Width) */}
-          <div className="col-span-2">
-            <HardwareSlotCard
-              title="HEURISTIC CO-PROCESSOR"
-              item={coproc}
-              isSelected={selectedSlotId === 'rig-heuristic-coprocessor'}
-              onClick={() => onSelectSlot('rig-heuristic-coprocessor')}
-              subtitle="Carrier Wave Filter // 2 Digits Pre-Removed"
-              icon="/icons/icon-heuristic-coprocessor.svg"
-            />
-          </div>
+          {/* Rail 3: Co-Processor Socket */}
+          <HardwareSlotCard
+            title={getSlotTitle(coproc, 'HEURISTIC CO-PROCESSOR')}
+            railLabel="SOCKET // CO-PROCESSOR"
+            item={coproc}
+            isSelected={selectedSlotId === coproc?.id || selectedSlotId === 'rig-heuristic-coprocessor' || selectedSlotId === 'heuristic_coproc'}
+            onClick={() => onSelectSlot(coproc?.id || 'rig-heuristic-coprocessor')}
+            subtitle={coproc?.installed ? coproc.effect : 'Slot Available'}
+            icon={coproc?.id ? (coproc.id.includes('parity') ? '/icons/glyph-router.svg' : '/icons/icon-heuristic-coprocessor.svg') : '/icons/icon-heuristic-coprocessor.svg'}
+          />
+
+          {/* Rail 4: Bus Interconnect */}
+          <HardwareSlotCard
+            title={busItem?.name ? busItem.name.toUpperCase() : 'BUS INTERCONNECT'}
+            railLabel="INTERCONNECT // BUS"
+            item={busItem}
+            isSelected={selectedSlotId === busItem?.id || selectedSlotId === 'overclocked_quartz_bus' || selectedSlotId === 'lead_shielded_chassis'}
+            onClick={() => onSelectSlot(busItem?.id || 'overclocked_quartz_bus')}
+            subtitle={busItem?.installed ? busItem.effect : 'Slot Available'}
+            icon={busItem?.id ? (busItem.id.includes('lead') ? '/icons/icon-firewall-patch.svg' : '/icons/icon-stopwatch.svg') : '/icons/icon-stopwatch.svg'}
+          />
 
           {/* Tool Bay 1 */}
           <ToolSlotCard
@@ -109,6 +148,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
    ========================================================================= */
 function HardwareSlotCard({
   title,
+  railLabel,
   item,
   isSelected,
   onClick,
@@ -117,6 +157,7 @@ function HardwareSlotCard({
   icon,
 }: {
   title: string;
+  railLabel?: string;
   item?: RigHardwareItem;
   isSelected: boolean;
   onClick: () => void;
@@ -152,7 +193,7 @@ function HardwareSlotCard({
           )}
           <div className="min-w-0">
             <span className="text-[9px] text-ink-muted uppercase tracking-wider block">
-              {tier ? `BUS ${tier}` : 'CO-PROC RAIL'}
+              {railLabel || (tier ? `BUS ${tier}` : 'CO-PROC RAIL')}
             </span>
             <h4
               className={`font-heading text-xs font-bold truncate ${

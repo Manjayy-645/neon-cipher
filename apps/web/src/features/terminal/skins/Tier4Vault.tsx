@@ -12,7 +12,7 @@ export default function Tier4VaultSkin({ nodeName, nodeType }: SkinProps = {}) {
   const typeTag = nodeType ? nodeType.toUpperCase() : 'SECURED VAULT';
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden terminal-chassis-trim">
       {/* Heavy Steel Armor Top with Caution Hazard Stripes */}
       <div className="w-full bg-[var(--terminal-bg,#181a1d)] border-b-2 border-[var(--terminal-line,#2b3138)] px-3 py-1 flex items-center justify-between text-[10px] font-data">
         <div className="flex items-center gap-2">

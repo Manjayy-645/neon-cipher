@@ -12,7 +12,7 @@ export default function Tier5MainframeSkin({ nodeName, nodeType }: SkinProps = {
   const typeTag = nodeType ? nodeType.toUpperCase() : 'MAINFRAME';
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden terminal-chassis-trim">
       {/* Supercomputer Head Rail with Phosphor Bus LED Traces */}
       <div className="w-full bg-[var(--terminal-bg,#060807)] border-b border-accent/40 px-3 py-1 flex items-center justify-between text-[10px] font-data">
         <div className="flex items-center gap-2">

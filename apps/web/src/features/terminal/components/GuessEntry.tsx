@@ -9,6 +9,7 @@ interface GuessEntryProps {
   validationError: string | null;
   shakeKey: number;
   hint?: string | null;
+  revealedSlots?: Array<{ slotIndex: number; digit: string }>;
 }
 
 export function GuessEntry({
@@ -17,6 +18,7 @@ export function GuessEntry({
   validationError,
   shakeKey,
   hint,
+  revealedSlots,
 }: GuessEntryProps) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -43,21 +45,36 @@ export function GuessEntry({
           const isFilled = i < entry.length;
           const isActive = i === entry.length;
           const digit = isFilled ? entry[i] : null;
+          const revealed = revealedSlots?.find((r) => r.slotIndex === i);
 
           return (
             <div
               key={i}
+              data-testid={`digit-slot-${i}`}
               className={`w-[48px] h-[56px] rounded-[6px] border flex flex-col items-center justify-center relative bg-terminal-panel transition-colors ${
                 isActive
                   ? 'border-terminal-phosphor shadow-[0_0_8px_rgba(111,191,122,0.2)]'
+                  : revealed
+                  ? 'border-terminal-phosphor/80 bg-terminal-phosphor/10 shadow-[0_0_6px_rgba(111,191,122,0.15)]'
                   : isFilled
                   ? 'border-terminal-line/80'
                   : 'border-terminal-line/50'
               }`}
             >
-              <span className="font-data text-2xl font-bold text-terminal-ink select-none">
-                {digit !== null ? digit : ''}
-              </span>
+              {digit !== null ? (
+                <span className="font-data text-2xl font-bold text-terminal-ink select-none">
+                  {digit}
+                </span>
+              ) : revealed ? (
+                <span
+                  data-testid={`revealed-slot-${i}`}
+                  className="font-data text-2xl font-bold text-terminal-phosphor/75 select-none animate-pulse"
+                >
+                  {revealed.digit}
+                </span>
+              ) : (
+                <span className="font-data text-2xl font-bold text-terminal-ink select-none" />
+              )}
 
               {/* Cursor underline for active slot */}
               {isActive && (
@@ -66,6 +83,16 @@ export function GuessEntry({
                     shouldReduceMotion ? '' : 'animate-pulse'
                   }`}
                 />
+              )}
+
+              {/* Unmasked Peek Badge */}
+              {revealed && (
+                <div
+                  data-testid={`slot-unmasked-badge-${i}`}
+                  className="absolute -top-1.5 -right-1 px-1 rounded-[3px] bg-terminal-phosphor text-terminal-bg text-[8px] font-bold font-data uppercase tracking-tighter"
+                >
+                  PEEK
+                </div>
               )}
             </div>
           );

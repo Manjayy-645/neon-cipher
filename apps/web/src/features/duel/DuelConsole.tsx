@@ -9,11 +9,21 @@ import {
   ScrambleKeypadBanner,
   ClockDrainAlert,
   ShieldAlert,
+  ParityJammerBanner,
+  KeyLatchBanner,
+  NixTacticalCalloutBanner,
+  NixDuelOnboardingCard,
 } from './SabotageOverlay';
 import { ResolutionModal } from './ResolutionModal';
 import { usePlayerStore } from '@/stores/player-store';
 import { useSettingsStore } from '@/stores/settings-store';
-import { validateGuess, isExploitAllowed } from '@neon-cipher/game-rules';
+import {
+  validateGuess,
+  isExploitAllowed,
+  getNixDuelCallout,
+  NIX_DUEL_BRIEFINGS,
+  NixDialogueTrigger,
+} from '@neon-cipher/game-rules';
 
 import { useDuelStore } from '@/stores/duel-store';
 import { Button } from '@/components/ui/Button';
@@ -92,6 +102,32 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
 
   const { credits, setBalances } = usePlayerStore();
   const colorBlindMode = useSettingsStore((s) => s.colorBlindMode);
+  const seenFeatureGuides = useSettingsStore((s) => s.seenFeatureGuides) || [];
+  const markFeatureGuideSeen = useSettingsStore((s) => s.markFeatureGuideSeen);
+
+  const [activeNixCallout, setActiveNixCallout] = useState<NixDialogueTrigger | null>(null);
+  const lastProcessedEventId = useRef<string | null>(null);
+
+  // Monitor feed events for tactical Nix callouts
+  useEffect(() => {
+    if (!session || !session.feedEvents || session.feedEvents.length === 0) return;
+    const latestEvent = session.feedEvents[session.feedEvents.length - 1];
+    if (latestEvent.id === lastProcessedEventId.current) return;
+    lastProcessedEventId.current = latestEvent.id;
+
+    if (latestEvent.sabotageEvent) {
+      const toolName = latestEvent.sabotageEvent.toolName.toLowerCase();
+      if (toolName.includes('parity')) {
+        setActiveNixCallout(getNixDuelCallout({ type: 'parity_jammer' }));
+      } else if (toolName.includes('latch')) {
+        setActiveNixCallout(getNixDuelCallout({ type: 'key_latch_virus' }));
+      } else if (toolName.includes('bomb')) {
+        setActiveNixCallout(getNixDuelCallout({ type: 'logic_bomb' }));
+      }
+    } else if (latestEvent.who === 'rival' && latestEvent.isStealth) {
+      setActiveNixCallout(getNixDuelCallout({ type: 'stealth_probe' }));
+    }
+  }, [session?.feedEvents]);
 
   const isScrambled = session?.player.activeEffects.includes('scramble_keypad') ?? false;
   const hasStatic = session?.player.activeEffects.includes('static_history') ?? false;
@@ -209,6 +245,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const handleKeyPress = useCallback((digit: string) => {
     if (!session) return;
     if (session.pacingMode === 'turn_based' && session.currentTurn !== 'player') return;
+    if (session.player.latchedKeys?.includes(digit)) return;
     if (input.length < session.digits && !input.includes(digit)) {
       setInput((prev) => prev + digit);
     }
@@ -246,7 +283,13 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   }) => {
     setBalances(result.remainingCredits, usePlayerStore.getState().coins);
 
-    if (result.effectApplied === 'firewall_shield') {
+    if (result.shielded) {
+      setActiveNixCallout(getNixDuelCallout({ type: 'firewall_blocked' }));
+    } else if (result.effectApplied === 'mirror_shield') {
+      setActiveNixCallout(getNixDuelCallout({ type: 'mirror_reflected' }));
+    }
+
+    if (result.effectApplied === 'firewall_shield' || result.effectApplied === 'mirror_shield') {
       setSession((prev) => {
         if (!prev) return null;
         return {
@@ -344,7 +387,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const lastRivalSummary = useMemo(() => {
     if (!session || session.rival.guesses.length === 0) return 'NONE';
     const last = session.rival.guesses[session.rival.guesses.length - 1];
-    if (last.isStealth && !last.unmasked) return '[ENCRYPTED]';
+    if ((last.isStealth && !last.unmasked) || last.pans == null || last.pots == null) return '[ENCRYPTED]';
     if (last.pans === 0 && last.pots === 0) return '0 PAN 0 POT';
     return `${last.pans > 0 ? `${last.pans} PAN ` : ''}${last.pots > 0 ? `${last.pots} POT` : ''}`.trim();
   }, [session]);
@@ -469,6 +512,30 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
           </Button>
         </div>
       </header>
+
+      {/* Nix Duel Onboarding Briefings */}
+      {!seenFeatureGuides.includes('guide-shared-feed') && (
+        <NixDuelOnboardingCard
+          guideId="guide-shared-feed"
+          title={NIX_DUEL_BRIEFINGS.shared_feed.title}
+          body={NIX_DUEL_BRIEFINGS.shared_feed.body}
+          onDismiss={() => markFeatureGuideSeen('guide-shared-feed')}
+        />
+      )}
+      {!seenFeatureGuides.includes('guide-sabotage-deck') && (
+        <NixDuelOnboardingCard
+          guideId="guide-sabotage-deck"
+          title={NIX_DUEL_BRIEFINGS.sabotage_deck.title}
+          body={NIX_DUEL_BRIEFINGS.sabotage_deck.body}
+          onDismiss={() => markFeatureGuideSeen('guide-sabotage-deck')}
+        />
+      )}
+
+      {/* Contextual Nix Tactical Callout Banner */}
+      <NixTacticalCalloutBanner
+        callout={activeNixCallout}
+        onDismiss={() => setActiveNixCallout(null)}
+      />
 
       {/* 2. RIVAL STATUS STRIP with live guess countdown clock bar */}
       <section
@@ -730,6 +797,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
                       pots={ev.pots ?? 0}
                       digits={session.digits}
                       colorBlindMode={colorBlindMode}
+                      parityLabel={ev.parityLabel}
                     />
                   )}
                 </div>
@@ -739,8 +807,13 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         </div>
       </div>
 
-      {/* 5. SCRAMBLE NOTIFICATION BANNER */}
+      {/* 5. EFFECT BANNERS: Scramble, Key Latch, Parity Jammer */}
       <ScrambleKeypadBanner active={isScrambled} />
+      <KeyLatchBanner latchedKeys={session.player.latchedKeys} />
+      <ParityJammerBanner
+        active={session.player.parityJamActive || session.player.activeEffects.includes('parity_jam')}
+        label={session.player.guesses[session.player.guesses.length - 1]?.parityLabel}
+      />
 
       {/* 6. MODIFIER TOGGLES & PLAYER 20S GUESS CLOCK BAR */}
       <div className="px-3 py-1.5 bg-ink border-t border-line/50 flex flex-col gap-1.5 text-xs font-data">
@@ -859,8 +932,9 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         {orderedDigits.slice(0, 8).map((digit) => {
           const isEntered = input.includes(digit);
           const isDead = deadDigits.has(digit);
+          const isLatched = session.player.latchedKeys?.includes(digit) ?? false;
           const isDisabled =
-            isEntered || isDead || session.status !== 'active' || !isPlayerTurn;
+            isEntered || isDead || isLatched || session.status !== 'active' || !isPlayerTurn;
 
           return (
             <Button
@@ -870,9 +944,17 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
               data-testid={`keypad-${digit}`}
               disabled={isDisabled}
               onClick={() => handleKeyPress(digit)}
-              title={isDead ? `Digit ${digit} eliminated (0 pan, 0 pot)` : undefined}
+              title={
+                isLatched
+                  ? `Digit ${digit} locked by Key Latch Virus!`
+                  : isDead
+                  ? `Digit ${digit} eliminated (0 pan, 0 pot)`
+                  : undefined
+              }
               className={`min-h-[44px] h-11 font-data text-lg font-bold p-0 ${
-                isDead
+                isLatched
+                  ? 'border-danger/80 bg-danger/20 text-danger-text cursor-not-allowed'
+                  : isDead
                   ? 'line-through opacity-30 text-ink-muted/50 border-line/20 bg-panel-dark/20 cursor-not-allowed'
                   : 'bg-panel-dark border-line text-panel-light'
               }`}
@@ -886,8 +968,9 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         {orderedDigits.slice(8, 10).map((digit) => {
           const isEntered = input.includes(digit);
           const isDead = deadDigits.has(digit);
+          const isLatched = session.player.latchedKeys?.includes(digit) ?? false;
           const isDisabled =
-            isEntered || isDead || session.status !== 'active' || !isPlayerTurn;
+            isEntered || isDead || isLatched || session.status !== 'active' || !isPlayerTurn;
 
           return (
             <Button
@@ -897,9 +980,17 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
               data-testid={`keypad-${digit}`}
               disabled={isDisabled}
               onClick={() => handleKeyPress(digit)}
-              title={isDead ? `Digit ${digit} eliminated (0 pan, 0 pot)` : undefined}
+              title={
+                isLatched
+                  ? `Digit ${digit} locked by Key Latch Virus!`
+                  : isDead
+                  ? `Digit ${digit} eliminated (0 pan, 0 pot)`
+                  : undefined
+              }
               className={`min-h-[44px] h-11 font-data text-lg font-bold p-0 ${
-                isDead
+                isLatched
+                  ? 'border-danger/80 bg-danger/20 text-danger-text cursor-not-allowed'
+                  : isDead
                   ? 'line-through opacity-30 text-ink-muted/50 border-line/20 bg-panel-dark/20 cursor-not-allowed'
                   : 'bg-panel-dark border-line text-panel-light'
               }`}
@@ -964,6 +1055,7 @@ interface DuelClueDisplayProps {
   pots: number;
   digits: number;
   colorBlindMode?: boolean;
+  parityLabel?: 'EVEN' | 'ODD';
 }
 
 const DuelClueDisplay: React.FC<DuelClueDisplayProps> = ({
@@ -971,7 +1063,21 @@ const DuelClueDisplay: React.FC<DuelClueDisplayProps> = ({
   pots,
   digits,
   colorBlindMode = false,
+  parityLabel,
 }) => {
+  if (parityLabel) {
+    return (
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          data-testid="parity-label-badge"
+          className="font-data text-xs font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-900 border border-amber-500/40"
+        >
+          [{parityLabel}]
+        </span>
+      </div>
+    );
+  }
+
   const misses = Math.max(0, digits - (pans + pots));
   const summaryText =
     pans === 0 && pots === 0

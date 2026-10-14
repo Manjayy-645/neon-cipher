@@ -21,9 +21,9 @@ export async function POST(request: Request) {
     // Validate that each tool exists in catalog under 'tools' and is owned
     for (const toolId of toolIds) {
       const item = CATALOG.find((it) => it.id === toolId);
-      if (!item || item.category !== 'tools') {
+      if (!item || (item.category !== 'tools' && item.category !== 'exploits')) {
         return NextResponse.json(
-          { error: `Item ${toolId} is not a valid consumable tool.` },
+          { error: `Item ${toolId} is not a valid consumable intrusion tool or exploit.` },
           { status: 400 }
         );
       }

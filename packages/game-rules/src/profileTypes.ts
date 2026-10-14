@@ -28,10 +28,12 @@ export interface DeckerProfile {
   };
 }
 
+export type SkillBranch = 'infiltration' | 'analysis' | 'exploitation' | 'stealth' | 'social';
+
 export interface SkillNode {
   id: string;
   name: string;
-  branch: 'analysis' | 'stealth' | 'social';
+  branch: SkillBranch;
   description: string;
   tier: number;
   pointCost: number;
@@ -39,6 +41,16 @@ export interface SkillNode {
   unlocked: boolean;
   effectKey: string;
   effectSummary: string;
+  isCapstone?: boolean;
+}
+
+export type FactionRepRank = 'Neutral' | 'Known' | 'Trusted' | 'Inner Circle';
+
+export interface FactionMilestone {
+  rank: 1 | 2 | 3;
+  name: 'Rank 1: Known' | 'Rank 2: Trusted' | 'Rank 3: Inner Circle';
+  repRequired: number;
+  perk: string;
 }
 
 export interface FactionStanding {
@@ -48,6 +60,9 @@ export interface FactionStanding {
   description: string;
   reputation: number; // -100 to +100
   standingLevel: 'Hostile' | 'Neutral' | 'Favored' | 'Allied';
+  repRank?: 'Rank 1: Known' | 'Rank 2: Trusted' | 'Rank 3: Inner Circle';
+  glitchCommentary?: string;
+  milestones?: FactionMilestone[];
   perks: string[];
   exclusiveContracts: {
     id: string;
@@ -103,6 +118,39 @@ export interface Achievement {
   rewardCoins: number;
 }
 
+export type TurnEfficiencyTag =
+  | 'OPTIMAL_ELIMINATION'
+  | 'WASTED_DEAD_DIGIT'
+  | 'MISSED_POSITION_LOCK'
+  | 'CLUTCH_SOLVE'
+  | 'STANDARD_PROBE';
+
+export interface ReplayStepAnalysis {
+  step: number;
+  guess: string;
+  pans: number;
+  pots: number;
+  candidatesBefore: number;
+  candidatesAfter: number;
+  eliminatedPercent: number;
+  efficiencyTag: TurnEfficiencyTag;
+  wastedDigits?: number[];
+  nixCommentary: string;
+  funnelSummary: string;
+}
+
+export interface ReplayAnalysisReport {
+  initialCandidatesCount: number;
+  finalCandidatesCount: number;
+  solved: boolean;
+  totalGuesses: number;
+  optimalTurnsCount: number;
+  mistakesCount: number;
+  steps: ReplayStepAnalysis[];
+  funnelFlow: string;
+  nixOverallReview: string;
+}
+
 export interface GuessReplayStep {
   step: number;
   guess: string;
@@ -110,6 +158,7 @@ export interface GuessReplayStep {
   pans: number;
   timeElapsedSeconds: number;
   note?: string;
+  analysis?: ReplayStepAnalysis;
 }
 
 export interface BreachReplay {
@@ -120,6 +169,7 @@ export interface BreachReplay {
   targetDigits: number;
   guesses: GuessReplayStep[];
   secretCodeRevealed: string;
+  analysis?: ReplayAnalysisReport;
 }
 
 export interface FriendProfile {

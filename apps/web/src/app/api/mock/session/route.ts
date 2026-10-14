@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import { mockSessions, mockRigHardware, mockCampaign, getNodeDefense } from '../db';
+import { mockSessions, mockRigHardware, mockCampaign, mockWallet, getNodeDefense } from '../db';
 import type { Session } from '../db';
-import { generateCode, getChapterById } from '@neon-cipher/game-rules/src/index';
+import {
+  generateCode,
+  getChapterById,
+  computeEffectiveRigStats,
+  calculateParityDistribution,
+  normalizeHardwareId,
+  HardwareRailSlot,
+  RigHardwareId,
+} from '@neon-cipher/game-rules';
 import { getNodes, getNodeById } from '@/features/map/nodeService';
 import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
 
@@ -67,7 +75,8 @@ export async function POST(request: Request) {
 
     if (nodeId === 'tutorial-soda') {
       const sessionId = Math.random().toString(36).substring(2, 15);
-      const secret = generateCode(3, false);
+      // Fixed secret without 1, 2, or 3 so Nix's tutorial prompt to type '1-2-3' guarantees 0 pans 0 pots
+      const secret = '489';
       const session = {
         id: sessionId,
         nodeId: 'tutorial-soda',
@@ -125,58 +134,100 @@ export async function POST(request: Request) {
     const node = getNodeById(nodeId) || nodes.find((n) => n.id === nodeId);
     if (!node) return NextResponse.json({ error: 'Node not found' }, { status: 404 });
 
-    // Use node's challenge parameters so terminal matches the marker/sheet
-    const digits = node.digits;
-    const allowDuplicates = node.allowDuplicates;
-    const baseAttempts = node.attempts;
-    const timerSeconds = node.timerSeconds;
-
-    // Check if node is part of the active campaign chapter for ICE
+    // Check if node is part of the active campaign chapter for rules & ICE
     const activeChapter = mockCampaign.activeChapterId
       ? getChapterById(mockCampaign.activeChapterId)
       : null;
     const isCampaignTarget = activeChapter && activeChapter.mapNodeId === node.id;
     const iceTypeFromCampaign = isCampaignTarget ? activeChapter.rules.ice : undefined;
 
+    // Use chapter challenge parameters if attacking active campaign target, else node parameters
+    const digits = isCampaignTarget && activeChapter ? activeChapter.rules.digits : node.digits;
+    const allowDuplicates = isCampaignTarget && activeChapter ? activeChapter.rules.allowDuplicates : node.allowDuplicates;
+    const baseAttempts = isCampaignTarget && activeChapter ? activeChapter.rules.attempts : node.attempts;
+    const timerSeconds = isCampaignTarget && activeChapter ? activeChapter.rules.timerSeconds : node.timerSeconds;
+
     // Check if node has a custom defense deployed by a player/decker
     const defense = getNodeDefense(node.id);
     const configuredCode = defense ? defense.code : null;
 
     const sessionId = Math.random().toString(36).substring(2, 15);
-    const secret = configuredCode || generateCode(digits, allowDuplicates);
+    const isChapter1 = Boolean(isCampaignTarget && activeChapter && activeChapter.id === 'chapter-1');
+    const secret = configuredCode || (isChapter1 ? '489' : generateCode(digits, allowDuplicates));
 
-    // --- APPLY INSTALLED RIG UPGRADES (SERVER-SIDE DECISION) ---
-    let totalAttempts = baseAttempts;
+    // --- DETERMINE EQUIPPED RAILS ---
+    const effectiveEquippedRails: Partial<Record<HardwareRailSlot, RigHardwareId | null>> = {
+      memory_1: mockWallet.equippedRails?.memory_1 || null,
+      memory_2: mockWallet.equippedRails?.memory_2 || null,
+      coprocessor: mockWallet.equippedRails?.coprocessor || null,
+      bus_interconnect: mockWallet.equippedRails?.bus_interconnect || null,
+    };
 
-    // Memory Buffer Mk I (+1 attempt on Tiers 1 and 2)
-    const mb1 = mockRigHardware['rig-memory-buffer-1'];
-    if (mb1 && mb1.installed && !mb1.burned && node.tier <= 2) {
-      totalAttempts += 1;
+    // Also sync installed hardware from mockRigHardware (supporting direct test mutations)
+    for (const [id, item] of Object.entries(mockRigHardware)) {
+      if (item.installed && !item.burned) {
+        const norm = normalizeHardwareId(id);
+        const slot = item.railSlot || (item.slot === 'memory-1' ? 'memory_1' : item.slot === 'memory-2' ? 'memory_2' : item.slot === 'coprocessor' ? 'coprocessor' : null);
+        if (norm && slot) {
+          effectiveEquippedRails[slot] = norm;
+        }
+      }
     }
 
-    // Memory Buffer Mk II (+1 attempt on Tiers 3 and 4)
-    const mb2 = mockRigHardware['rig-memory-buffer-2'];
-    if (mb2 && mb2.installed && !mb2.burned && (node.tier === 3 || node.tier === 4)) {
-      totalAttempts += 1;
+    // Ensure any burned item does not provide bonuses
+    const aliasMap: Record<string, string> = {
+      'rig-memory-buffer-1': 'memory_buffer_mk1',
+      'memory_buffer_mk1': 'rig-memory-buffer-1',
+      'rig-memory-buffer-2': 'memory_buffer_mk2',
+      'memory_buffer_mk2': 'rig-memory-buffer-2',
+      'rig-heuristic-coprocessor': 'heuristic_coproc',
+      'heuristic_coproc': 'rig-heuristic-coprocessor',
+    };
+
+    for (const [slot, modId] of Object.entries(effectiveEquippedRails) as [HardwareRailSlot, RigHardwareId | null][]) {
+      if (modId) {
+        const item1 = mockRigHardware[modId];
+        const alias = aliasMap[modId];
+        const item2 = alias ? mockRigHardware[alias] : undefined;
+        if (item1?.burned || item2?.burned) {
+          effectiveEquippedRails[slot] = null;
+        }
+      }
     }
 
-    // Heuristic Co-Processor (pre-removes two non-code digits at start)
+    // --- APPLY STAT MODIFIERS VIA PURE FUNCTION ---
+    const effectiveRig = computeEffectiveRigStats(
+      {
+        tier: node.tier,
+        attempts: baseAttempts,
+        timerSeconds: timerSeconds,
+        bounty: node.bounty,
+        failureFine: Math.floor(node.bounty / 2),
+      },
+      effectiveEquippedRails
+    );
+
+    // Heuristic Co-Processor pre-removes dead digits
     let eliminatedDigits: string[] = [];
-    const coProcessor = mockRigHardware['rig-heuristic-coprocessor'];
-    if (coProcessor && coProcessor.installed && !coProcessor.burned) {
+    if (effectiveRig.autoDeadDigitsCount > 0) {
       const allDigits = '0123456789'.split('');
       const nonCodeDigits = allDigits.filter((d) => !secret.includes(d));
-      // Shuffle and pick up to 2
       const shuffled = nonCodeDigits.sort(() => Math.random() - 0.5);
-      eliminatedDigits = shuffled.slice(0, 2);
+      eliminatedDigits = shuffled.slice(0, effectiveRig.autoDeadDigitsCount);
     }
+
+    // Parity Scanner ASIC calculates secret distribution
+    const parity = effectiveRig.revealParityDistribution
+      ? calculateParityDistribution(secret)
+      : null;
 
     const sessionNode = {
       ...node,
       digits,
       allowDuplicates,
-      attempts: totalAttempts,
-      timerSeconds,
+      attempts: effectiveRig.maxAttempts,
+      timerSeconds: effectiveRig.timerSeconds,
+      bounty: effectiveRig.effectiveBounty,
     };
 
     const iceTypes = ['Liar', 'Drift', 'Pot-only', 'Ghost', 'Sticky', 'None'] as const;
@@ -187,7 +238,7 @@ export async function POST(request: Request) {
       id: sessionId,
       nodeId: node.id,
       secret,
-      attemptsLeft: totalAttempts,
+      attemptsLeft: effectiveRig.maxAttempts,
       startedAt: Date.now(),
       status: 'active' as const,
       node: sessionNode,
@@ -195,6 +246,11 @@ export async function POST(request: Request) {
       ice: activeIce,
       courtesy: Boolean(courtesy),
       courtesyUsed: false,
+      effectiveRig,
+      parityDistribution: parity,
+      turnCount: 0,
+      lastTurnTime: Date.now(),
+      fastTurnRefundUsed: false,
     };
 
     mockSessions.set(sessionId, session as any);
@@ -205,16 +261,17 @@ export async function POST(request: Request) {
         length: digits,
         digits,
         allowDuplicates,
-        attempts: totalAttempts,
-        maxAttempts: totalAttempts,
-        timerSeconds,
+        attempts: effectiveRig.maxAttempts,
+        maxAttempts: effectiveRig.maxAttempts,
+        timerSeconds: effectiveRig.timerSeconds,
         tier: node.tier,
         ice: activeIce,
         eliminatedDigits,
         nodeName: node.name,
         nodeType: node.type,
-        bounty: node.bounty,
+        bounty: effectiveRig.effectiveBounty,
         district: node.district,
+        parityDistribution: parity,
       },
       startedAt: session.startedAt,
     });

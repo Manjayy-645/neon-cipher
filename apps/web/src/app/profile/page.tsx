@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [activeSection, setActiveSection] = useState<'profile' | 'skills' | 'factions' | 'daily' | 'extras'>('profile');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRespeccing, setIsRespeccing] = useState(false);
+  const [unlockingSkillId, setUnlockingSkillId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -44,6 +46,7 @@ export default function ProfilePage() {
   };
 
   const handleUnlockSkill = async (skillId: string) => {
+    setUnlockingSkillId(skillId);
     try {
       const res = await profileService.unlockSkill(skillId);
       if (data) {
@@ -60,6 +63,30 @@ export default function ProfilePage() {
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err: any) {
       setStatusMessage(err.message || 'Failed to unlock skill.');
+    } finally {
+      setUnlockingSkillId(null);
+    }
+  };
+
+  const handleRespecSkills = async () => {
+    setIsRespeccing(true);
+    try {
+      const res = await profileService.respecSkills();
+      if (data) {
+        setData({
+          ...data,
+          skillTree: {
+            skills: res.skills,
+            availablePoints: res.availablePoints,
+          },
+        });
+      }
+      setStatusMessage('Skill tree reset! All skill points refunded.');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (err: any) {
+      setStatusMessage(err.message || 'Failed to respec skills.');
+    } finally {
+      setIsRespeccing(false);
     }
   };
 
@@ -165,6 +192,9 @@ export default function ProfilePage() {
           skills={data.skillTree.skills}
           availablePoints={data.skillTree.availablePoints}
           onUnlockSkill={handleUnlockSkill}
+          unlockingId={unlockingSkillId}
+          onRespec={handleRespecSkills}
+          isRespeccing={isRespeccing}
         />
       )}
 

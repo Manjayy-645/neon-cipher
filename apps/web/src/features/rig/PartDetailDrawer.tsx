@@ -5,13 +5,23 @@ import { motion } from 'framer-motion';
 import { RigHardwareItem } from '@/app/api/mock/db';
 import { getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
+import {
+  HardwareRailSlot,
+  RigHardwareId,
+  normalizeHardwareId,
+  getHardwareStatPreview,
+  RIG_HARDWARE_MODULES,
+} from '@neon-cipher/game-rules';
 
 interface PartDetailDrawerProps {
   slotId: string;
   hardware: Record<string, RigHardwareItem>;
+  equippedRails?: Partial<Record<HardwareRailSlot, RigHardwareId | null>>;
+  inventory?: Record<string, number>;
   credits: number;
   isRepairing: boolean;
   onRepair: (hardwareId: string) => void;
+  onEquipRail?: (slot: HardwareRailSlot, hardwareId: RigHardwareId | null) => void;
   onClose: () => void;
   onNavigateToMarket?: () => void;
 }
@@ -19,9 +29,12 @@ interface PartDetailDrawerProps {
 export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
   slotId,
   hardware,
+  equippedRails,
+  inventory = {},
   credits,
   isRepairing,
   onRepair,
+  onEquipRail,
   onClose,
   onNavigateToMarket,
 }) => {
@@ -29,6 +42,27 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
   if (!item) return null;
 
   const canAffordRepair = credits >= item.repairCost;
+  const normalizedId = normalizeHardwareId(item.id);
+  const catalogModule = normalizedId ? RIG_HARDWARE_MODULES[normalizedId] : null;
+
+  const alexText = item.alexExplanation || catalogModule?.alexExplanation;
+  const nixText = item.nixTip || catalogModule?.nixTip;
+  const tradeOffText = item.tradeOff || catalogModule?.tradeOff;
+  const archetype = item.buildArchetype || catalogModule?.buildArchetype;
+  const railSlot = (item.railSlot || catalogModule?.railSlot) as HardwareRailSlot | undefined;
+
+  const currentRails = equippedRails || {
+    memory_1: null,
+    memory_2: null,
+    coprocessor: null,
+    bus_interconnect: null,
+  };
+
+  const isEquipped = railSlot ? currentRails[railSlot] === normalizedId || item.installed : item.installed;
+  const isOwned = (inventory[item.id] || 0) > 0 || (normalizedId && (inventory[normalizedId] || 0) > 0) || item.installed;
+
+  // Stat preview diff
+  const statPreview = normalizedId ? getHardwareStatPreview(normalizedId, currentRails) : null;
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,9 +88,10 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-[480px] bg-panel border-t border-line rounded-t-lg p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
       >
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2">
           <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted">
-            HARDWARE DIAGNOSTICS // {item.slot.toUpperCase()}
+            HARDWARE DIAGNOSTICS // {(railSlot || item.slot).toUpperCase()}
           </span>
           <Button
             variant="icon"
@@ -85,7 +120,7 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
                 <span className="bg-danger/20 text-danger-text border border-danger/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
                   OVERVOLT BURN
                 </span>
-              ) : item.installed ? (
+              ) : isEquipped ? (
                 <span className="bg-accent/20 text-accent-text border border-accent/40 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                   OPERATIONAL
                 </span>
@@ -95,23 +130,122 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
                 </span>
               )}
             </div>
+            {archetype && (
+              <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-widest text-accent font-data">
+                ARCHETYPE: [{archetype}]
+              </span>
+            )}
             <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
           </div>
         </div>
 
+        {/* Live Impact Preview Card */}
+        {statPreview && (
+          <div
+            data-testid="live-impact-preview-card"
+            className="bg-panel-light p-3.5 rounded-md border border-accent/40 flex flex-col gap-2 font-data text-xs"
+          >
+            <div className="flex justify-between items-center border-b border-line/60 pb-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                LIVE IMPACT PREVIEW // 4-DIGIT BASELINE
+              </span>
+              <span className="text-[9px] text-ink-muted uppercase">HOT-SWAP PREVIEW</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5 pt-1">
+              {statPreview.changes.map((ch, idx) => (
+                <div key={idx} className="flex justify-between items-center">
+                  <span className="text-ink-muted">{ch.label}:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-ink-muted">{ch.before} &rarr;</span>
+                    <span
+                      className={`font-bold ${
+                        ch.tone === 'positive'
+                          ? 'text-money-text'
+                          : ch.tone === 'warning'
+                          ? 'text-danger-text'
+                          : 'text-ink'
+                      }`}
+                    >
+                      {ch.after} ({ch.delta})
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Trade-Off Notice */}
+            {(tradeOffText || statPreview.tradeOffNote) && (
+              <div className="mt-1 p-2 rounded bg-danger/10 border border-danger/30 text-[11px] text-danger-text leading-snug">
+                <span className="font-bold uppercase tracking-wider">Trade-off: </span>
+                <span>{tradeOffText || statPreview.tradeOffNote}</span>
+              </div>
+            )}
+
+            {/* Slot Swap Notice */}
+            {statPreview.slotSwapNotice && (
+              <div className="mt-1 p-2 rounded bg-accent/10 border border-accent/30 text-[11px] text-accent-text leading-snug">
+                <span className="font-bold uppercase tracking-wider">Slot Notice: </span>
+                <span>{statPreview.slotSwapNotice}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Alex Hardware Tech Guidance */}
+        {alexText && (
+          <div className="bg-panel-dark/10 p-3 rounded-md border border-line flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full border border-line overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Character portraits/Alex.png" alt="Alex" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 text-xs font-data">
+              <span className="font-bold text-ink uppercase tracking-wider text-[10px] block mb-0.5">
+                Alex&apos;s Tech Bench Guidance
+              </span>
+              <p className="italic text-ink leading-snug">&quot;{alexText}&quot;</p>
+            </div>
+          </div>
+        )}
+
         {/* Nix Plain-Language Explanation */}
-        <div className="bg-panel-dark/10 p-3.5 rounded-md border border-ink-muted/30 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full border border-accent overflow-hidden shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
+        {nixText && (
+          <div className="bg-panel-dark/10 p-3.5 rounded-md border border-ink-muted/30 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full border border-accent overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 text-xs font-data">
+              <span className="font-bold text-accent uppercase tracking-wider text-[10px] block mb-0.5">
+                Nix Field Briefing
+              </span>
+              <p className="italic text-ink leading-snug">&quot;{nixText}&quot;</p>
+            </div>
           </div>
-          <div className="flex-1 text-xs font-data">
-            <span className="font-bold text-accent uppercase tracking-wider text-[10px] block mb-0.5">
-              Nix Field Briefing
-            </span>
-            <p className="italic text-ink leading-snug">&quot;{item.nixTip}&quot;</p>
+        )}
+
+        {/* Hot-Swap / Equip Controls */}
+        {railSlot && onEquipRail && isOwned && !item.burned && (
+          <div className="flex gap-2">
+            {isEquipped ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => onEquipRail(railSlot, null)}
+              >
+                UNEQUIP MODULE
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => onEquipRail(railSlot, normalizedId)}
+              >
+                EQUIP TO {(railSlot || '').toUpperCase()}
+              </Button>
+            )}
           </div>
-        </div>
+        )}
 
         {/* State-specific actions */}
         {item.burned ? (
@@ -155,11 +289,11 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
                 : `CANNOT AFFORD REPAIR (SHORT BY $${(item.repairCost - credits).toLocaleString()})`}
             </Button>
           </div>
-        ) : !item.installed ? (
+        ) : !isOwned ? (
           <div className="bg-panel-dark/5 border border-ink-muted/30 rounded-md p-4 flex flex-col gap-2 font-data text-xs text-center">
             <p className="text-ink-muted">
-              This bus slot is currently vacant. Acquire permanent upgrades from the Black Market
-              to slot into your deck.
+              This module is not currently owned in your storage inventory. Acquire permanent modules
+              from Glitch&apos;s Black Market.
             </p>
             {onNavigateToMarket && (
               <Button
@@ -173,12 +307,12 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
               </Button>
             )}
           </div>
-        ) : (
+        ) : isEquipped ? (
           <div className="bg-accent/10 border border-accent/30 rounded-md p-3 font-data text-xs text-accent-text flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent" />
             <span>Bus online. This upgrade automatically applies to eligible terminal infiltrations.</span>
           </div>
-        )}
+        ) : null}
 
         <Button
           variant="secondary"
@@ -191,3 +325,4 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
     </motion.div>
   );
 };
+

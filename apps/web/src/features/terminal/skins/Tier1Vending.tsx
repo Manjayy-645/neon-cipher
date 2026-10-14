@@ -12,7 +12,7 @@ export default function Tier1VendingSkin({ nodeName, nodeType }: SkinProps = {})
   const typeTag = nodeType ? nodeType.toUpperCase() : 'VEND-LINE';
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden terminal-chassis-trim">
       {/* Top Header Framing */}
       <div className="w-full bg-[var(--terminal-panel,#1c221e)] border-b border-[var(--terminal-line,#2d3a31)] px-3 py-1 flex items-center justify-between text-[10px] font-data text-ink-muted">
         <div className="flex items-center gap-2">

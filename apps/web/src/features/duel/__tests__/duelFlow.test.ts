@@ -158,20 +158,30 @@ describe('Task 11: Duel Full Flow & Mock Backend Integration', () => {
     }).toThrow(/disabled in ranked/i);
   });
 
-  it('8. Stealth Guess: deducts 150 CR stealth fee and marks guess as stealth', () => {
+  it('8. Stealth Guess: uses free charge first, then deducts 150 CR fee when exhausted', () => {
     const session = startDuelSession({
       matchType: 'casual',
       wager: 0,
     });
     mockWallet.credits = 5000;
 
-    const result = submitDuelGuess({
+    // 1. First stealth guess consumes free charge without charging credits
+    const firstResult = submitDuelGuess({
       duelId: session.id,
       guess: '1234',
       isStealth: true,
     });
+    expect(firstResult.playerGuess.isStealth).toBe(true);
+    expect(session.player.stealthChargesRemaining).toBe(0);
+    expect(mockWallet.credits).toBe(5000);
 
-    expect(result.playerGuess.isStealth).toBe(true);
+    // 2. Second stealth guess charges 150 CR stealth fee
+    const secondResult = submitDuelGuess({
+      duelId: session.id,
+      guess: '5678',
+      isStealth: true,
+    });
+    expect(secondResult.playerGuess.isStealth).toBe(true);
     expect(mockWallet.credits).toBe(5000 - 150);
   });
 

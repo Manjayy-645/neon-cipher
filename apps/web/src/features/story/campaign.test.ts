@@ -69,8 +69,8 @@ describe('Task 10: Campaign Data & Progression Rules', () => {
     expect(c2.id).toBe('chapter-2');
     expect(c2.title).toBe('The Corner Store Job');
     expect(c2.rules.digits).toBe(4);
-    expect(c2.rules.attempts).toBe(7);
-    expect(c2.rules.timerSeconds).toBe(90);
+    expect(c2.rules.attempts).toBe(8);
+    expect(c2.rules.timerSeconds).toBe(120);
     expect(c2.mapNodeId).toBe('n4');
     expect(c2.unlocksReward).toBe('blackMarket');
     expect(c2.contract.debtReduction).toBe(2500);

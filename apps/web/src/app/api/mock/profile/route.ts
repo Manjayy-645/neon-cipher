@@ -4,6 +4,7 @@ import {
   updateCosmetics,
   getSkillTree,
   unlockSkillNode,
+  respecSkills,
   getFactions,
   acceptFactionContract,
   getDailyBreach,
@@ -78,6 +79,11 @@ export async function POST(request: Request) {
       if (!res.success) {
         return NextResponse.json({ error: res.error }, { status: 400 });
       }
+      return NextResponse.json(res);
+    }
+
+    if (action === 'respec-skills') {
+      const res = respecSkills();
       return NextResponse.json(res);
     }
 

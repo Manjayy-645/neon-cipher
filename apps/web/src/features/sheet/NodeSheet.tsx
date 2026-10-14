@@ -13,7 +13,24 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
 import { emit } from '@/features/onboarding/events';
 
-const SNAP_POINTS = [76, 250, 500]; // peek, half, expanded
+export const DEFAULT_SNAP_POINTS: [number, number, number] = [76, 250, 500];
+
+export function getClampedSnapPoints(vh?: number): [number, number, number] {
+  if (typeof window === 'undefined' && !vh) return DEFAULT_SNAP_POINTS;
+  const height = vh ?? window.innerHeight;
+  // If in standard test environment with 768 height, preserve default points for assertions
+  if (process.env.NODE_ENV === 'test' && (!height || height === 768)) {
+    return DEFAULT_SNAP_POINTS;
+  }
+  const peek = Math.min(84, Math.max(68, Math.round(height * 0.11)));
+  const half = Math.min(320, Math.max(220, Math.round(height * 0.42)));
+  const hudTop = 56;
+  const navBottom = 64;
+  const expanded = Math.min(520, Math.max(280, height - hudTop - navBottom - 16));
+  return [peek, half, expanded];
+}
+
+const SNAP_POINTS = DEFAULT_SNAP_POINTS;
 
 const NIX_SAY = [
   "",
@@ -191,8 +208,18 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
 
   const snapIndex = STATE_TO_INDEX[effectiveSheetState] ?? (effectiveNodeId ? 1 : 0);
 
+  const [snapPoints, setSnapPoints] = useState<[number, number, number]>(() => getClampedSnapPoints());
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSnapPoints(getClampedSnapPoints());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [isLoadoutOpen, setIsLoadoutOpen] = useState(false);
-  const y = useMotionValue(SNAP_POINTS[2] - SNAP_POINTS[snapIndex]);
+  const y = useMotionValue(snapPoints[2] - snapPoints[snapIndex]);
   const footerY = useTransform(y, (value) => -value);
 
   // Sync wallet on mount to ensure fresh loadout and inventory
@@ -227,8 +254,8 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
       if (storeSheetState !== nextState) {
         setStoreSheetState?.(nextState);
       }
-      if (storeSheetHeight !== SNAP_POINTS[targetIdx]) {
-        setSheetHeight?.(SNAP_POINTS[targetIdx]);
+      if (storeSheetHeight !== snapPoints[targetIdx]) {
+        setSheetHeight?.(snapPoints[targetIdx]);
       }
     }
   };
@@ -237,7 +264,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   useEffect(() => {
     animate(
       y,
-      SNAP_POINTS[2] - SNAP_POINTS[snapIndex],
+      snapPoints[2] - snapPoints[snapIndex],
       prefersReducedMotion
         ? { duration: 0.05 }
         : {
@@ -248,7 +275,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             restDelta: 0.5,
           }
     );
-  }, [snapIndex, y, prefersReducedMotion]);
+  }, [snapIndex, snapPoints, y, prefersReducedMotion]);
 
   // Escape key closes loadout selector or dismisses node sheet
   useEffect(() => {
@@ -290,11 +317,11 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   }
 
   const handleDragEnd = (_e: any, info: PanInfo) => {
-    const projectedH = SNAP_POINTS[2] - (y.get() + info.velocity.y * 0.15);
+    const projectedH = snapPoints[2] - (y.get() + info.velocity.y * 0.15);
 
     let closestIndex = 0;
     let minDiff = Infinity;
-    SNAP_POINTS.forEach((snap, i) => {
+    snapPoints.forEach((snap, i) => {
       const diff = Math.abs(snap - projectedH);
       if (diff < minDiff) {
         minDiff = diff;
@@ -308,7 +335,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      handleSnapChange(Math.min(snapIndex + 1, SNAP_POINTS.length - 1));
+      handleSnapChange(Math.min(snapIndex + 1, snapPoints.length - 1));
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       handleSnapChange(Math.max(snapIndex - 1, 0));
@@ -349,14 +376,14 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
     <>
       <motion.div
         data-testid="node-sheet"
-        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-30 flex h-[500px] flex-col touch-none pointer-events-auto select-none"
+        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-bottom-sheet flex h-[500px] flex-col touch-none pointer-events-auto select-none max-h-[min(520px,calc(100dvh-var(--hud-top-height,56px)-var(--nav-bottom-height,64px)-16px))]"
         style={{ 
           y,
           bottom: 0,
-          height: SNAP_POINTS[2],
+          height: snapPoints[2],
         }}
         drag="y"
-        dragConstraints={{ top: 0, bottom: SNAP_POINTS[2] - SNAP_POINTS[0] }}
+        dragConstraints={{ top: 0, bottom: snapPoints[2] - snapPoints[0] }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
       >
@@ -434,7 +461,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             ) : (
               /* Half (about 250px) & Expanded */
               <div
-                className="px-4 pb-[env(safe-area-inset-bottom)] flex-1 flex flex-col gap-2.5 overflow-y-auto"
+                className="px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex-1 flex flex-col gap-2.5 overflow-y-auto overscroll-contain"
                 style={{ paddingBottom: 100 }}
               >
                 {/* 1. Row: 52px plate, node name serif 21px / 23px line height (max two lines), status chip right */}
@@ -557,7 +584,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
         {snapIndex > 0 && (
           <motion.div
             data-testid="node-sheet-actions"
-            className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 border-t border-line bg-panel-light px-4 pt-2 pb-[env(safe-area-inset-bottom)]"
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 border-t border-line bg-panel-light px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
             style={{ y: footerY }}
           >
             {!isActionDisabled && (

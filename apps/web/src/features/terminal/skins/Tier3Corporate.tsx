@@ -12,7 +12,7 @@ export default function Tier3CorporateSkin({ nodeName, nodeType }: SkinProps = {
   const typeTag = nodeType ? nodeType.toUpperCase() : 'RELAY // SENSOR';
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between overflow-hidden terminal-chassis-trim">
       {/* Sleek Anodized Top Rail with laser etching */}
       <div className="w-full bg-[var(--terminal-bg,#111613)] border-b border-[var(--terminal-line,#243328)] px-3 py-1 flex items-center justify-between text-[10px] font-data">
         <div className="flex items-center gap-2">
