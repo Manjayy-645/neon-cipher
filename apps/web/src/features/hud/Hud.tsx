@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { usePlayerStore } from '../../stores/player-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +17,18 @@ export interface HudProps {
 export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
   const { credits, coins, handle, avatarUrl, sectorHeat } = usePlayerStore();
   const { openDrawer } = useSettingsStore();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const isProfileActive = pathname === '/profile' || Boolean(pathname?.startsWith('/profile'));
+
+  const handleToggleProfile = () => {
+    if (isProfileActive) {
+      router.back();
+    } else {
+      router.push('/profile');
+    }
+  };
 
   const heatSegments = 8;
   const clampedHeat = Math.max(0, Math.min(100, Math.round(sectorHeat)));
@@ -23,16 +36,25 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
 
   return (
     <header className="min-h-[56px] h-[calc(56px_+_max(env(safe-area-inset-top),0.5rem))] pt-[max(env(safe-area-inset-top),0.5rem)] bg-panel border-b border-line px-3 grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center shrink-0 select-none gap-2 z-hud-bars relative">
-      {/* Group 1: Avatar 36px, Handle (max ~90px, ellipsis) with Credits under it, and Coins with 8px gap */}
+      {/* Group 1: Avatar 36px (profile toggle), Handle with Credits, Separate Settings button, and Coins */}
       <div className="flex items-center min-w-0">
+        {/* Profile Toggle (Avatar + Identity) */}
         <Button
           variant="ghost"
           compact
-          onClick={openDrawer}
-          aria-label="Open settings"
-          className="flex items-center gap-1.5 shrink-0 text-left border-none bg-transparent hover:bg-transparent p-0 h-auto min-h-[44px]"
+          onClick={handleToggleProfile}
+          aria-label={isProfileActive ? 'Exit decker profile' : 'Open decker profile'}
+          data-testid="hud-avatar-btn"
+          className="flex items-center gap-1.5 shrink-0 text-left border-none bg-transparent hover:bg-transparent p-0 h-auto min-h-[44px] group"
         >
-          <div className="w-[36px] h-[36px] rounded-[6px] border border-line bg-panel-light flex items-center justify-center overflow-hidden shrink-0">
+          <div
+            data-testid="hud-avatar-slot"
+            className={`w-[36px] h-[36px] rounded-[6px] border ${
+              isProfileActive
+                ? 'border-accent ring-1 ring-accent'
+                : 'border-line group-hover:border-ink/40'
+            } bg-panel-light flex items-center justify-center overflow-hidden shrink-0 transition-colors`}
+          >
             {avatarUrl && avatarUrl !== '/icons/glyph-camera.svg' ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={handle || 'Decker Avatar'} className="w-full h-full object-cover" />
@@ -46,31 +68,40 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
             )}
           </div>
           <div className="flex flex-col justify-center leading-none min-w-0">
-            <div className="flex items-center gap-1 min-w-0">
-              <span
-                title={handle}
-                className="font-data text-[12px] font-bold tracking-[1px] text-ink uppercase truncate max-w-[90px]"
-              >
-                {handle}
-              </span>
-              <svg
-                className="w-3 h-3 text-ink-muted/70 shrink-0 pointer-events-none"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </div>
+            <span
+              title={handle}
+              className="font-data text-[12px] font-bold tracking-[1px] text-ink uppercase truncate max-w-[90px]"
+            >
+              {handle}
+            </span>
             <span className="font-data text-[12px] font-semibold text-money-text tabular-nums mt-0.5 leading-tight">
               ${credits.toLocaleString()}
             </span>
           </div>
+        </Button>
+
+        {/* Separate Settings Button (min 44px touch target) */}
+        <Button
+          variant="ghost"
+          compact
+          onClick={openDrawer}
+          aria-label="Open settings"
+          data-testid="hud-settings-btn"
+          className="relative w-[36px] h-[36px] min-w-[36px] min-h-[36px] sm:w-[44px] sm:h-[44px] sm:min-w-[44px] sm:min-h-[44px] p-0 flex items-center justify-center border-none bg-transparent hover:bg-panel-light/60 text-ink-muted hover:text-ink shrink-0 rounded-[6px] transition-colors ml-0.5 before:absolute before:-inset-1 before:content-['']"
+        >
+          <svg
+            className="w-4 h-4 shrink-0 pointer-events-none"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
         </Button>
 
         {/* 8px gap between credits and coins */}

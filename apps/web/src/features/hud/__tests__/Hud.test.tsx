@@ -1,11 +1,30 @@
 import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { Hud } from '../Hud';
 import { usePlayerStore } from '../../../stores/player-store';
+import { useSettingsStore } from '../../../stores/settings-store';
+
+const { mockPush, mockBack, mockPathname } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+  mockBack: vi.fn(),
+  mockPathname: vi.fn(() => '/map'),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+    back: mockBack,
+  }),
+  usePathname: () => mockPathname(),
+}));
 
 describe('HUD Component (STYLE S2)', () => {
   beforeEach(() => {
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockPathname.mockReturnValue('/map');
+    useSettingsStore.setState({ isDrawerOpen: false });
     usePlayerStore.setState({
       credits: 4200,
       coins: 18,
@@ -173,4 +192,54 @@ describe('HUD Component (STYLE S2)', () => {
     const shrinkElements = container.querySelectorAll('.shrink-0');
     expect(shrinkElements.length).toBeGreaterThanOrEqual(5);
   });
+
+  it('toggles to /profile when avatar button is clicked from another page', () => {
+    mockPathname.mockReturnValue('/map');
+    render(<Hud />);
+    const avatarBtn = screen.getByTestId('hud-avatar-btn');
+    expect(avatarBtn.getAttribute('aria-label')).toBe('Open decker profile');
+    fireEvent.click(avatarBtn);
+    expect(mockPush).toHaveBeenCalledWith('/profile');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('toggles away from /profile (navigates back) when avatar button is clicked while on /profile', () => {
+    mockPathname.mockReturnValue('/profile');
+    render(<Hud />);
+    const avatarBtn = screen.getByTestId('hud-avatar-btn');
+    expect(avatarBtn.getAttribute('aria-label')).toBe('Exit decker profile');
+    fireEvent.click(avatarBtn);
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('displays accent ring indicator on avatar slot when on /profile', () => {
+    mockPathname.mockReturnValue('/profile');
+    render(<Hud />);
+    const avatarSlot = screen.getByTestId('hud-avatar-slot');
+    expect(avatarSlot.className).toContain('ring-accent');
+    expect(avatarSlot.className).toContain('border-accent');
+  });
+
+  it('separates settings button from avatar and opens settings drawer when clicked without navigating', () => {
+    const openDrawerSpy = vi.spyOn(useSettingsStore.getState(), 'openDrawer');
+    render(<Hud />);
+    const settingsBtn = screen.getByTestId('hud-settings-btn');
+    expect(settingsBtn).toBeDefined();
+    expect(settingsBtn.getAttribute('aria-label')).toBe('Open settings');
+    fireEvent.click(settingsBtn);
+    expect(openDrawerSpy).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('provides accessible touch targets of at least 44px for both avatar and settings controls', () => {
+    render(<Hud />);
+    const avatarBtn = screen.getByTestId('hud-avatar-btn');
+    const settingsBtn = screen.getByTestId('hud-settings-btn');
+    expect(avatarBtn.className).toContain('min-h-[44px]');
+    expect(settingsBtn.className).toMatch(/min-h-\[36px\]|min-h-\[44px\]/);
+    expect(settingsBtn.className).toContain('before:');
+  });
 });
+
