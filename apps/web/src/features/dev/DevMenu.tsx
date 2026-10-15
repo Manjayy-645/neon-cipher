@@ -41,6 +41,9 @@ export function DevMenu() {
     (Object.keys(featureFlags) as FeatureFlag[]).forEach((f) => {
       setFeatureFlagOverride(f, true);
     });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('neon_dev_unlock_black_market', 'true');
+    }
     mapStore.bumpDevFlagTick();
     mapStore.setBridgeUnlocked(true);
     useCampaignStore.setState({
@@ -50,11 +53,19 @@ export function DevMenu() {
         bridge: true,
       },
     });
+    fetch('/api/mock/campaign/unlock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: 'all' }),
+    }).catch(() => {});
     setFlagTick((t) => t + 1);
   };
 
   const resetAllFlags = () => {
     clearFeatureFlagOverrides();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('neon_dev_unlock_black_market');
+    }
     mapStore.bumpDevFlagTick();
     setFlagTick((t) => t + 1);
   };

@@ -12,12 +12,44 @@ export default function MarketPage() {
   const router = useRouter();
   const { unlocks, loadCampaign } = useCampaignStore();
   const [view, setView] = useState<'dialogue' | 'shop'>('dialogue');
+  const [devUnlocked, setDevUnlocked] = useState(false);
 
   useEffect(() => {
     loadCampaign();
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('neon_dev_unlock_black_market');
+      const params = new URLSearchParams(window.location.search);
+      if (stored === 'true' || params.get('dev') === 'true' || params.get('unlocked') === 'true') {
+        setDevUnlocked(true);
+      }
+      if (params.get('view') === 'shop') {
+        setView('shop');
+      }
+    }
   }, [loadCampaign]);
 
-  if (!unlocks.blackMarket) {
+  const handleDevUnlock = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('neon_dev_unlock_black_market', 'true');
+    }
+    setDevUnlocked(true);
+    useCampaignStore.setState((state) => ({
+      unlocks: { ...state.unlocks, blackMarket: true },
+    }));
+    try {
+      await fetch('/api/mock/campaign/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature: 'blackMarket' }),
+      });
+    } catch {}
+    triggerToast('Developer Override: Black Market Unlocked', { type: 'success' });
+    setView('shop');
+  };
+
+  const isUnlocked = unlocks.blackMarket || devUnlocked;
+
+  if (!isUnlocked) {
     const handleLockedCardClick = () => {
       triggerToast('Finish Chapter 2 to open this', { type: 'locked' });
     };
@@ -79,17 +111,31 @@ export default function MarketPage() {
             </p>
           </div>
 
-          <Button
-            variant="primary"
-            arrow
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push('/comms');
-            }}
-            data-testid="go-to-story-button"
-          >
-            VIEW CAMPAIGN ASSIGNMENTS
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center gap-2 mt-2 w-full max-w-sm">
+            <Button
+              variant="primary"
+              arrow
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push('/comms');
+              }}
+              data-testid="go-to-story-button"
+              className="w-full"
+            >
+              VIEW ASSIGNMENTS
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDevUnlock();
+              }}
+              data-testid="dev-unlock-market-button"
+              className="w-full text-[11px] font-bold border-money/50 text-money-text hover:bg-money/10"
+            >
+              [DEV: UNLOCK MARKET]
+            </Button>
+          </div>
         </div>
       </main>
     );

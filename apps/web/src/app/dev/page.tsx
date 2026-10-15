@@ -62,7 +62,10 @@ export default function DevPage() {
               4.1 Live Duel Match →
             </Link>
             <Link href="/market" className="scene-card p-3 bg-panel-light border border-money/40 rounded-md hover:border-money text-xs font-data font-bold block text-money-text">
-              8.0 Black Market →
+              8.0 Black Market (Gated) →
+            </Link>
+            <Link href="/market?dev=true&view=shop" className="scene-card p-3 bg-panel-light border border-accent/70 rounded-md hover:border-accent text-xs font-data font-bold block text-accent-text">
+              [DEV] Open Market Shop →
             </Link>
             <Link href="/rig" className="scene-card p-3 bg-panel-light border border-line rounded-md hover:border-accent text-xs font-data font-bold block">
               3.0 Decker Rig & Bench →
