@@ -48,7 +48,11 @@ export async function POST(request: Request) {
         }
 
         let burnedHardwareName: string | undefined;
-        if (session.node.tier === 5 && !(session as any).effectiveRig?.preventTier5Burnout) {
+        if (
+          session.node.tier === 5 &&
+          !(session as any).effectiveRig?.preventTier5Burnout &&
+          !(session as any).effectiveRig?.burnImmune
+        ) {
           const burned = burnInstalledHardware();
           if (burned) burnedHardwareName = burned.name;
         }
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
 
     let refundedAttempt = false;
     if (
-      (session as any).effectiveRig?.fastTurnRefundActive &&
+      ((session as any).effectiveRig?.fastTurnRefundActive || (session as any).effectiveRig?.hasNeuralReflex) &&
       !(session as any).fastTurnRefundUsed &&
       (session as any).turnCount > 1 &&
       timeSinceLastTurn <= 4
@@ -89,14 +93,25 @@ export async function POST(request: Request) {
     const ice = session.ice || 'None';
     const rawScore = calculateScore(session.secret, guess);
 
+    // Record guess into server session history for tools (e.g. Cleanse Subroutine)
+    if (!(session as any).guesses) {
+      (session as any).guesses = [];
+    }
+    (session as any).guesses.push({
+      guess,
+      pots: rawScore.pots,
+      pans: rawScore.pans,
+    });
+
     // Syndicate Skimmer: $45 per Pan on Turn 1
     let firstTurnBonus = 0;
+    const skimmerBonusRate = (session as any).effectiveRig?.firstTurnPanBonusCredits || ((session as any).effectiveRig?.hasSyndicateSkimmer ? 45 : 0);
     if (
       (session as any).turnCount === 1 &&
-      (session as any).effectiveRig?.firstTurnPanBonusCredits &&
+      skimmerBonusRate > 0 &&
       rawScore.pans > 0
     ) {
-      firstTurnBonus = rawScore.pans * (session as any).effectiveRig.firstTurnPanBonusCredits;
+      firstTurnBonus = rawScore.pans * skimmerBonusRate;
       recordTransaction(`Syndicate Skimmer: ${session.node.name}`, firstTurnBonus, 'credits', 'payout');
     }
 
@@ -179,7 +194,11 @@ export async function POST(request: Request) {
       }
 
       let burnedHardwareName: string | undefined;
-      if (session.node.tier === 5 && !(session as any).effectiveRig?.preventTier5Burnout) {
+      if (
+        session.node.tier === 5 &&
+        !(session as any).effectiveRig?.preventTier5Burnout &&
+        !(session as any).effectiveRig?.burnImmune
+      ) {
         const burned = burnInstalledHardware();
         if (burned) burnedHardwareName = burned.name;
       }

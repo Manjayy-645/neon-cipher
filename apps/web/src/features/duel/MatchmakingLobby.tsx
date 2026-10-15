@@ -95,9 +95,9 @@ export function MatchmakingLobby() {
         <div className="grid grid-cols-3 gap-2">
           {(
             [
-              { id: 'casual', label: 'Casual', badge: 'No Wager' },
-              { id: 'wager', label: 'Wager', badge: 'High Stakes' },
-              { id: 'turf', label: 'Turf War', badge: 'Territory' },
+              { id: 'casual', label: 'Casual', badge: 'No Wager • Cheats On' },
+              { id: 'wager', label: 'Wager', badge: 'High Stakes • Anti-Cheat' },
+              { id: 'turf', label: 'Turf War', badge: 'Territory • Anti-Cheat' },
             ] as const
           ).map((type) => (
             <Button
@@ -105,14 +105,14 @@ export function MatchmakingLobby() {
               variant={selectedMatchType === type.id ? 'secondary' : 'ghost'}
               onClick={() => setMatchType(type.id as DuelMatchType)}
               data-testid={`match-type-${type.id}`}
-              className={`min-h-[48px] p-2 flex flex-col items-center justify-center normal-case tracking-normal ${
+              className={`min-h-[52px] p-2 flex flex-col items-center justify-center normal-case tracking-normal transition-all ${
                 selectedMatchType === type.id
-                  ? 'border-accent ring-1 ring-accent text-ink font-bold shadow-card'
-                  : 'text-ink-muted font-medium'
+                  ? 'border-accent ring-2 ring-accent text-ink font-bold shadow-card bg-panel-light'
+                  : 'text-ink-muted font-medium hover:border-line'
               }`}
             >
-              <span className="font-data text-xs uppercase">{type.label}</span>
-              <span className="font-data text-[9px] text-accent-text">{type.badge}</span>
+              <span className="font-data text-xs uppercase font-bold">{type.label}</span>
+              <span className="font-data text-[8px] sm:text-[9px] text-accent-text font-bold uppercase mt-0.5">{type.badge}</span>
             </Button>
           ))}
         </div>
@@ -125,7 +125,7 @@ export function MatchmakingLobby() {
             PACING MODE
           </label>
           <span className="font-data text-[10px] text-accent-text font-bold uppercase tracking-wider">
-            {selectedPacingMode === 'simultaneous' ? '⚡ Realtime Race' : '⏱️ 20s Tactical Turns'}
+            {selectedPacingMode === 'simultaneous' ? '⚡ Realtime Race' : '⏱️ 35s Tactical Turns'}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -163,7 +163,7 @@ export function MatchmakingLobby() {
               ⏱️ TACTICAL (TURN-BASED)
             </span>
             <span className="font-data text-[9px] text-ink-muted text-center leading-tight">
-              Strict turns. 20s clock per decker.
+              Strict turns. 35s clock per decker.
             </span>
           </Button>
         </div>

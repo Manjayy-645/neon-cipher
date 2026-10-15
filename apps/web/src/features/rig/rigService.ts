@@ -28,10 +28,20 @@ export interface ApplyPresetResult {
   error?: string;
 }
 
+export interface DistrictLeaseInfo {
+  id: string;
+  name: string;
+  district: string;
+  dailyDividend: number;
+  effect: string;
+}
+
 export interface SafehouseStateResponse {
   properties: SafehouseProperty[];
+  ownedLeases?: DistrictLeaseInfo[];
   stats: {
     ownedCount: number;
+    ownedLeasesCount?: number;
     totalUpkeep: number;
     totalDailyDividend: number;
     totalTraceReduction: number;

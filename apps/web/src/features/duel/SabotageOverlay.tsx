@@ -200,29 +200,37 @@ export const NixTacticalCalloutBanner: React.FC<NixTacticalCalloutBannerProps> =
   callout,
   onDismiss,
 }) => {
+  useEffect(() => {
+    if (!callout) return;
+    const timer = setTimeout(() => {
+      onDismiss();
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [callout, onDismiss]);
+
   if (!callout) return null;
 
   const severityClasses = {
-    info: 'bg-panel-light border-accent text-ink',
-    warning: 'bg-amber-500/10 border-amber-500 text-amber-950',
-    alert: 'bg-danger/10 border-danger text-danger-text',
+    info: 'bg-panel-dark/95 border-accent text-panel-light shadow-[0_8px_24px_rgba(0,0,0,0.6)]',
+    warning: 'bg-panel-dark/95 border-amber-500 text-amber-200 shadow-[0_8px_24px_rgba(0,0,0,0.6)]',
+    alert: 'bg-panel-dark/95 border-danger text-danger-text shadow-[0_8px_24px_rgba(0,0,0,0.6)]',
   }[callout.severity];
 
   return (
     <aside
       aria-label="Nix Tactical Callout"
       data-testid="nix-tactical-callout"
-      className={`w-full border-b px-3 py-2 flex items-start justify-between gap-3 font-data transition-all ${severityClasses}`}
+      className={`absolute top-12 left-2 right-2 z-40 rounded-[10px] border p-2.5 flex items-start justify-between gap-3 font-data backdrop-blur-md transition-all select-none shadow-xl ${severityClasses}`}
     >
       <div className="flex items-start gap-2.5 min-w-0">
-        <div className="w-7 h-7 rounded border border-line bg-panel shrink-0 flex items-center justify-center font-bold text-xs text-ink font-mono">
+        <div className="w-7 h-7 rounded border border-line bg-panel shrink-0 flex items-center justify-center font-bold text-xs text-accent font-mono mt-0.5">
           NX
         </div>
         <div className="flex flex-col gap-0.5 min-w-0">
           <div className="text-[10px] font-bold tracking-widest uppercase text-accent-text flex items-center gap-1.5">
             <span>{callout.title}</span>
           </div>
-          <p className="text-xs text-ink font-medium leading-snug">
+          <p className="text-xs text-panel-light font-medium leading-snug">
             &ldquo;{callout.message}&rdquo;
           </p>
           <p className="text-[10px] text-ink-muted leading-tight font-mono">
@@ -235,7 +243,7 @@ export const NixTacticalCalloutBanner: React.FC<NixTacticalCalloutBannerProps> =
         compact
         onClick={onDismiss}
         aria-label="Dismiss Nix Callout"
-        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-ink-muted hover:text-ink shrink-0"
+        className="w-11 h-11 min-w-[44px] min-h-[44px] p-0 flex items-center justify-center text-ink-muted hover:text-panel-light shrink-0"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M18 6 6 18M6 6l12 12" />
@@ -263,17 +271,17 @@ export const NixDuelOnboardingCard: React.FC<NixDuelOnboardingCardProps> = ({
       role="region"
       aria-label={title}
       data-testid={`nix-onboarding-${guideId}`}
-      className="w-full bg-panel border-b border-accent/40 p-3 flex items-start justify-between gap-3 select-none"
+      className="w-full bg-panel-dark/95 border border-accent/60 shadow-[0_8px_24px_rgba(0,0,0,0.6)] rounded-[10px] p-3 flex items-start justify-between gap-3 select-none backdrop-blur-md"
     >
       <div className="flex items-start gap-2.5 min-w-0">
-        <div className="w-8 h-8 rounded border border-accent bg-panel-light shrink-0 flex items-center justify-center font-bold text-xs text-accent-text font-mono">
+        <div className="w-8 h-8 rounded border border-accent bg-panel-dark shrink-0 flex items-center justify-center font-bold text-xs text-accent font-mono">
           NIX
         </div>
         <div className="flex flex-col gap-1 min-w-0">
-          <div className="text-[10px] font-bold tracking-widest uppercase text-accent-text">
+          <div className="text-[10px] font-bold tracking-widest uppercase text-accent">
             {title}
           </div>
-          <p className="text-xs text-ink leading-relaxed font-sans">
+          <p className="text-xs text-panel-light leading-relaxed font-sans">
             {body}
           </p>
         </div>
@@ -282,7 +290,7 @@ export const NixDuelOnboardingCard: React.FC<NixDuelOnboardingCardProps> = ({
         variant="secondary"
         onClick={onDismiss}
         aria-label={`Dismiss ${title}`}
-        className="w-11 h-11 min-w-[44px] min-h-[44px] p-0 flex items-center justify-center shrink-0 text-ink text-xs font-bold"
+        className="w-11 h-11 min-w-[44px] min-h-[44px] p-0 flex items-center justify-center shrink-0 text-panel-light text-xs font-bold bg-panel-dark border-line hover:border-accent"
       >
         GOT IT
       </Button>

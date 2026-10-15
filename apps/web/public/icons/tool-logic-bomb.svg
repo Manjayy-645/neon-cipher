@@ -1,7 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="13" r="8" />
-  <path d="M12 9v4l2 2" />
-  <path d="M5 3L2 6" />
-  <path d="M19 3l3 3" />
-  <line x1="12" y1="2" x2="12" y2="5" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" preserveAspectRatio="xMidYMid meet">
+  <g stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 9v4l2 2" />
+    <path d="M5 3L2 6" />
+    <path d="M19 3l3 3" />
+    <line x1="12" y1="2" x2="12" y2="5" />
+  </g>
 </svg>

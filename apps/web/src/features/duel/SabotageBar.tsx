@@ -36,6 +36,10 @@ const SABOTAGE_ICONS: Record<string, string> = {
   key_latch_virus: '/icons/tool-key-latch-virus.svg',
   logic_bomb: '/icons/tool-logic-bomb.svg',
   mirror_daemon: '/icons/tool-mirror-daemon.svg',
+  cryo_spike: '/icons/icon-cryo-spike.svg',
+  'tool-cryo-spike': '/icons/icon-cryo-spike.svg',
+  'tool-cryo-pulse': '/icons/tool-cryo-pulse.svg',
+  syndicate_skimmer: '/icons/icon-syndicate-skimmer.svg',
   // Legacy aliases
   'tool-static-injector': '/icons/icon-static-injector.svg',
   'tool-firewall-patch': '/icons/icon-firewall-patch.svg',

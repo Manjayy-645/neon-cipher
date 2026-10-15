@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { StepId, STEP_ORDER, STEPS } from './steps';
 import { PLAYER_AVATARS } from '@neon-cipher/game-rules/src/characters';
+import { usePlayerStore } from '@/stores/player-store';
 
 const AVATAR_IDS = ['avatar-nx', 'avatar-gl', 'avatar-zk', 'avatar-ph', 'avatar-cy', 'avatar-op'] as const;
 
@@ -120,10 +121,13 @@ export const useOnboardingStore = create<OnboardingState>()(
       },
 
       crackNode: (id: string, cooldownMs: number) => {
+        const inventory = usePlayerStore.getState().inventory || {};
+        const hasCorridorTransit = (inventory['lease-corridor-transit'] || 0) > 0;
+        const effectiveCooldown = hasCorridorTransit ? Math.round(cooldownMs * 0.5) : cooldownMs;
         set((state) => ({
           crackedNodes: {
             ...state.crackedNodes,
-            [id]: { crackedAt: Date.now(), cooldownMs },
+            [id]: { crackedAt: Date.now(), cooldownMs: effectiveCooldown },
           },
         }));
       },

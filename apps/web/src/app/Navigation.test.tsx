@@ -40,7 +40,7 @@ describe('STYLE S3: Bottom Navigation', () => {
     const nav = screen.getByRole('navigation', { name: /main navigation/i })
     expect(nav).toBeInTheDocument()
     expect(nav).toHaveClass(
-      'h-[calc(var(--nav-height)_+_env(safe-area-inset-bottom))]',
+      'h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))]',
       'min-h-[var(--nav-height)]',
       'border-t',
       'border-line',

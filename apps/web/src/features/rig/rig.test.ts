@@ -299,6 +299,39 @@ describe('Task 9: Rig Workbench, Safehouse & Wallet History', () => {
       expect(data.claimedAmount).toBeGreaterThan(0);
       expect(data.balances.credits).toBe(initialCredits + data.claimedAmount);
     });
+
+    it('GET /api/mock/safehouse includes owned district leases in metrics and lists ownedLeases', async () => {
+      mockWallet.inventory['lease-slums-nodes'] = 1;
+      mockWallet.inventory['lease-docklands-pier'] = 1;
+
+      const res = await safehouseGET();
+      expect(res.status).toBe(200);
+      const data = await res.json();
+
+      expect(data.ownedLeases).toBeDefined();
+      expect(data.ownedLeases.length).toBe(2);
+      expect(data.stats.ownedLeasesCount).toBe(2);
+      // Daily dividends from slums ($250) + docklands ($400) = $650
+      expect(data.stats.totalDailyDividend).toBe(650);
+    });
+
+    it('POST /api/mock/safehouse/claim collects passive dividends from district leases', async () => {
+      mockWallet.inventory['lease-slums-nodes'] = 1;
+      const initialCredits = mockWallet.credits;
+
+      const req = new Request('http://localhost/api/mock/safehouse/claim', {
+        method: 'POST',
+        body: JSON.stringify({ propertyId: 'lease-slums-nodes' }),
+      });
+      const res = await safehouseClaimPOST(req);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.claimedAmount).toBe(250);
+      expect(data.balances.credits).toBe(initialCredits + 250);
+      expect(mockWallet.credits).toBe(initialCredits + 250);
+    });
   });
 
   describe('Wallet Transaction History Ledger', () => {
@@ -450,10 +483,50 @@ describe('Task 9: Rig Workbench, Safehouse & Wallet History', () => {
       const resGuess = await guessPOST(reqGuess);
       const dataGuess = await resGuess.json();
 
-      if (dataGuess.result && dataGuess.result.pans > 0) {
-        expect(dataGuess.firstTurnBonus).toBe(dataGuess.result.pans * 45);
-        expect(mockWallet.credits).toBe(initialCredits + dataGuess.result.pans * 45);
+      const pansScored = dataGuess.pans ?? (dataGuess.result?.pans || 0);
+      if (pansScored > 0) {
+        expect(dataGuess.firstTurnBonus).toBe(pansScored * 45);
+        expect(mockWallet.credits).toBe(initialCredits + pansScored * 45);
       }
+    });
+
+    it('refunds attempt when Neural Reflex Capacitor is equipped and guess is submitted in <= 4s', async () => {
+      mockWallet.inventory['neural_reflex_cap'] = 1;
+      mockWallet.equippedRails!.memory_1 = 'neural_reflex_cap';
+      mockRigHardware['neural_reflex_cap'].installed = true;
+
+      const t1Node = getNodes().find((n) => n.tier === 1)!;
+      const reqSession = new Request('http://localhost/api/mock/session', {
+        method: 'POST',
+        body: JSON.stringify({ nodeId: t1Node.id }),
+      });
+      const resSession = await sessionPOST(reqSession);
+      const dataSession = await resSession.json();
+
+      const session = mockSessions.get(dataSession.sessionId)!;
+      const initialAttempts = session.attemptsLeft;
+
+      // Turn 1 guess
+      const guess1 = '0123456789'.slice(0, t1Node.digits);
+      const req1 = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: dataSession.sessionId, guess: guess1 }),
+      });
+      const res1 = await guessPOST(req1);
+      const data1 = await res1.json();
+      expect(data1.attemptsLeft).toBe(initialAttempts - 1);
+
+      // Turn 2 rapid guess submitted immediately (< 4s)
+      const guess2 = '9876543210'.slice(0, t1Node.digits);
+      const req2 = new Request('http://localhost/api/mock/guess', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: dataSession.sessionId, guess: guess2 }),
+      });
+      const res2 = await guessPOST(req2);
+      const data2 = await res2.json();
+
+      expect(data2.refundedAttempt).toBe(true);
+      expect(data2.attemptsLeft).toBe(data1.attemptsLeft); // Attempt refunded!
     });
 
     it('prevents hardware burnout upon Tier 5 failure when Lead-Shielded Chassis is equipped', async () => {

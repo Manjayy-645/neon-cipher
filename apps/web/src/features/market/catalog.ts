@@ -33,7 +33,7 @@ export const CATALOG: CatalogItem[] = [
     currency: 'credits',
     price: 375,
     effect: 'Freezes active ICE trace countdown clock for 12 seconds during breach.',
-    icon: '/icons/glyph-power.svg',
+    icon: '/icons/icon-cryo-spike.svg',
     glitchPitch: 'Sub-zero liquid nitrogen coolant needle. Overrides internal thermal sensors and buys you 12 cold seconds.',
     nixTip: 'Need time to think? Pop a Cryo-Spike to freeze the countdown clock for 12 seconds while you work out the math.',
     recommendedWhen: 'Best used on Tier 3–5 vaults with tight 30s–45s timers.',
@@ -120,7 +120,7 @@ export const CATALOG: CatalogItem[] = [
     currency: 'credits',
     price: 950,
     effect: 'Injects a cryogenic pulse that freezes the ICE countdown clock for 15 seconds.',
-    icon: '/icons/glyph-power.svg',
+    icon: '/icons/tool-cryo-pulse.svg',
     tierRequired: 3,
   },
   {
@@ -281,7 +281,7 @@ export const CATALOG: CatalogItem[] = [
     alexExplanation: 'Siphons loose credits right off the first handshake. Great for farming quick cash in The Slums.',
     nixTip: 'Lead with diverse high-frequency probe digits on Turn 1 to maximize early Pan payouts.',
     glitchPitch: 'Custom Kovacs firmware tap. Turns initial cryptographic syncs into pure street money.',
-    icon: '/icons/glyph-power.svg',
+    icon: '/icons/icon-syndicate-skimmer.svg',
     maxOwned: 1,
   },
   {
@@ -470,11 +470,11 @@ export function getItemIcon(itemId: string): string {
   if (itemId.includes('time-freeze')) return '/icons/icon-time-freeze.svg';
   if (itemId.includes('contradiction-scan')) return '/icons/icon-contradiction-scan.svg';
   if (itemId.includes('skeleton-key')) return '/icons/icon-skeleton-key.svg';
-  if (itemId.includes('second-chance')) return '/icons/icon-second-chance.svg';
-  if (itemId.includes('cryo_spike') || itemId.includes('cryo-spike')) return '/icons/glyph-power.svg';
+  if (itemId.includes('cryo_spike') || itemId.includes('cryo-spike')) return '/icons/icon-cryo-spike.svg';
+  if (itemId.includes('cryo-pulse') || itemId.includes('cryo_pulse')) return '/icons/tool-cryo-pulse.svg';
   if (itemId.includes('cleanse_subroutine') || itemId.includes('cleanse-subroutine')) return '/icons/glyph-router.svg';
   if (itemId.includes('neural_reflex') || itemId.includes('neural-reflex')) return '/icons/icon-trace-accelerator.svg';
-  if (itemId.includes('syndicate_skimmer') || itemId.includes('syndicate-skimmer')) return '/icons/glyph-power.svg';
+  if (itemId.includes('syndicate_skimmer') || itemId.includes('syndicate-skimmer')) return '/icons/icon-syndicate-skimmer.svg';
   if (itemId.includes('parity_scanner') || itemId.includes('parity-scanner')) return '/icons/glyph-router.svg';
   if (itemId.includes('overclocked_quartz') || itemId.includes('overclocked-quartz')) return '/icons/icon-stopwatch.svg';
   if (itemId.includes('lead_shielded') || itemId.includes('lead-shielded')) return '/icons/icon-firewall-patch.svg';

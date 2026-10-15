@@ -10,6 +10,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing propertyId parameter.' }, { status: 400 });
     }
 
+    // Support claiming District Lease dividends
+    if (propertyId === 'district-leases' || propertyId.startsWith('lease-')) {
+      const leaseDividends: Record<string, { name: string; dividend: number }> = {
+        'lease-slums-nodes': { name: 'Slums Public Node Lease', dividend: 250 },
+        'lease-docklands-pier': { name: 'Docklands Freight Relays', dividend: 400 },
+      };
+
+      let toClaim = 0;
+      let label = 'District Holdings';
+
+      if (propertyId === 'district-leases') {
+        for (const [id, info] of Object.entries(leaseDividends)) {
+          if ((mockWallet.inventory[id] || 0) > 0) toClaim += info.dividend;
+        }
+      } else {
+        const info = leaseDividends[propertyId];
+        const owned = (mockWallet.inventory[propertyId] || 0) > 0;
+        if (!owned) {
+          return NextResponse.json(
+            { error: `Cannot claim: You do not own lease ${propertyId}.` },
+            { status: 400 }
+          );
+        }
+        toClaim = info ? info.dividend : 250;
+        label = info ? info.name : propertyId;
+      }
+
+      if (toClaim <= 0) {
+        return NextResponse.json(
+          { error: 'No active lease dividends available to claim.' },
+          { status: 400 }
+        );
+      }
+
+      recordTransaction(`Dividend: ${label}`, toClaim, 'credits', 'dividend');
+
+      return NextResponse.json({
+        success: true,
+        claimedAmount: toClaim,
+        balances: {
+          credits: mockWallet.credits,
+          coins: mockWallet.coins,
+        },
+        message: `Collected $${toClaim.toLocaleString()} in passive dividends from ${label}.`,
+      });
+    }
+
     const prop = mockSafehouses[propertyId];
     if (!prop) {
       return NextResponse.json({ error: 'Safehouse property not found.' }, { status: 404 });

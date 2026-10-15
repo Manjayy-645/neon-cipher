@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CATALOG } from '@/features/market/catalog';
+import { CATALOG, getItemIcon } from '@/features/market/catalog';
 import { Button } from '@/components/ui/Button';
 
 export interface TerminalToolSlotsProps {
@@ -111,16 +111,19 @@ export function TerminalToolSlots({
               className="h-[44px] min-h-[44px] rounded-[8px] bg-terminal-bg border border-terminal-line px-2 flex items-center justify-between gap-2 shadow-xs"
             >
               <div className="flex items-center gap-2 min-w-0">
-                {item.icon && (
-                  <div className="w-6 h-6 rounded bg-terminal-panel border border-terminal-line/70 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.icon}
-                      alt={item.name}
-                      className="w-full h-full object-contain brightness-90"
-                    />
-                  </div>
-                )}
+                {(() => {
+                  const iconSrc = item.icon || getItemIcon(item.id);
+                  return iconSrc ? (
+                    <div className="w-6 h-6 rounded bg-terminal-panel border border-terminal-line/70 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={iconSrc}
+                        alt={item.name}
+                        className="w-full h-full object-contain brightness-90"
+                      />
+                    </div>
+                  ) : null;
+                })()}
                 <div className="flex flex-col min-w-0 leading-tight">
                   <span className="font-heading text-xs font-bold text-terminal-ink truncate">
                     {item.name}

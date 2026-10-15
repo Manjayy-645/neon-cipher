@@ -149,10 +149,11 @@ export function PendingQuestNotification() {
   // Hide if no quest, or if already on quest route, or on root splash, or dismissed on this page
   if (!quest) return null;
   if (!pathname || pathname === '/' || pathname === quest.route) return null;
+  if (pathname.startsWith('/terminal') && pathname !== quest.route) return null;
   if (dismissedPath === pathname) return null;
 
   const isChromeActive = chromeVisible();
-  const topPos = isChromeActive ? 'top-[64px]' : 'top-[12px]';
+  const bottomPos = isChromeActive ? 'bottom-[62px]' : 'bottom-[12px]';
 
   const handleResume = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -170,54 +171,56 @@ export function PendingQuestNotification() {
         role="status"
         aria-live="polite"
         data-testid="pending-quest-notification"
-        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: 0.98 }}
+        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
-        transition={prefersReducedMotion ? { duration: 0.05 } : { duration: 0.2, ease: 'easeOut' }}
-        className={`absolute ${topPos} left-3 right-3 sm:left-4 sm:right-4 z-40 pointer-events-auto select-none`}
+        exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.98 }}
+        transition={prefersReducedMotion ? { duration: 0.05 } : { duration: 0.15, ease: 'easeOut' }}
+        className={`absolute ${bottomPos} left-0 right-0 mx-auto w-fit max-w-[calc(100%-20px)] sm:max-w-[360px] z-40 pointer-events-auto select-none`}
       >
         <div
           onClick={handleResume}
-          className="bg-panel-light border border-line border-l-4 border-l-accent rounded-[12px] shadow-card p-3 flex items-center justify-between gap-3 cursor-pointer group hover:border-accent/60 transition-colors"
+          className="bg-panel-light/95 backdrop-blur-sm border border-line border-l-2 border-l-accent rounded-[8px] shadow-sm py-1.5 px-2.5 flex items-center gap-2 cursor-pointer group hover:border-accent/60 transition-colors"
         >
-          <div className="flex items-start gap-2.5 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-full border border-line bg-panel flex items-center justify-center shrink-0 mt-0.5">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 10 10"
-                className="text-accent animate-pulse"
-                aria-hidden="true"
-              >
-                <path d="M5 0 10 5 5 10 0 5z" fill="currentColor" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 leading-none mb-1">
-                <span className="font-data text-[10px] font-bold uppercase tracking-[1.5px] text-accent-text">
-                  PENDING QUEST
-                </span>
-              </div>
-              <h4 className="font-heading text-[15px] sm:text-[16px] text-ink leading-tight truncate">
-                {quest.title}
-              </h4>
-              <p className="font-data text-[11px] text-ink-muted leading-tight mt-0.5 truncate">
-                Target: {quest.target}
-              </p>
-            </div>
+          {/* Compact indicator icon */}
+          <div className="w-5 h-5 rounded-full border border-line bg-panel flex items-center justify-center shrink-0">
+            <svg
+              width="8"
+              height="8"
+              viewBox="0 0 10 10"
+              className="text-accent animate-pulse"
+              aria-hidden="true"
+            >
+              <path d="M5 0 10 5 5 10 0 5z" fill="currentColor" />
+            </svg>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Compact quest info */}
+          <div className="min-w-0 max-w-[190px] sm:max-w-[220px]">
+            <div className="flex items-center gap-1 leading-none">
+              <span className="font-data text-[8px] font-bold uppercase tracking-wider text-accent-text shrink-0">
+                PENDING QUEST:
+              </span>
+              <span className="font-heading text-[11px] font-semibold text-ink leading-tight truncate">
+                {quest.title}
+              </span>
+            </div>
+            <p className="font-data text-[9px] text-ink-muted leading-tight mt-0.5 truncate">
+              Target: {quest.target}
+            </p>
+          </div>
+
+          {/* Action and Dismiss buttons */}
+          <div className="flex items-center gap-1 shrink-0 ml-1">
             <button
               type="button"
               data-testid="pending-quest-action"
               onClick={handleResume}
-              className="px-2.5 py-1.5 rounded-[6px] bg-accent text-on-accent font-data text-[11px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+              className="relative px-2 py-1 rounded-[4px] bg-accent text-on-accent font-data text-[9px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer after:absolute after:-inset-1"
             >
               <span>RESUME</span>
               <svg
-                width="10"
-                height="10"
+                width="8"
+                height="8"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -234,11 +237,11 @@ export function PendingQuestNotification() {
               data-testid="pending-quest-dismiss"
               onClick={handleDismiss}
               aria-label="Dismiss pending quest notification"
-              className="w-[30px] h-[30px] rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer"
+              className="relative w-5 h-5 rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer after:absolute after:-inset-1.5"
             >
               <svg
-                width="12"
-                height="12"
+                width="10"
+                height="10"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

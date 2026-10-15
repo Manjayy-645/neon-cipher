@@ -418,4 +418,93 @@ describe('TASK 11: Matchmaking Lobby, 1v1 Split Console & Resolution', () => {
       expect(screen.queryByTestId('double-or-nothing-button')).not.toBeInTheDocument();
     });
   });
+
+  describe('5. Guess History Visibility & Deduction HUD', () => {
+    it('displays persistent last probe banner above keypad with last guess clues', () => {
+      render(<DuelConsole initialSession={mockBaseSession} onExit={vi.fn()} />);
+
+      const banner = screen.getByTestId('last-probe-summary');
+      expect(banner).toBeInTheDocument();
+      expect(banner).toHaveTextContent(/LAST PROBE \(#1\):/);
+      expect(banner).toHaveTextContent('1 2 3 4');
+      expect(banner).toHaveTextContent('1 PAN 1 POT');
+    });
+
+    it('shows rival filter banner and switches back to player probes on button click', () => {
+      render(<DuelConsole initialSession={mockBaseSession} onExit={vi.fn()} />);
+
+      // Switch to rival tab
+      fireEvent.click(screen.getByTestId('tab-rival'));
+
+      const activeBanner = screen.getByTestId('rival-feed-active-banner');
+      expect(activeBanner).toBeInTheDocument();
+      expect(activeBanner).toHaveTextContent(/FILTER: RIVAL TELEMETRY/);
+
+      // Click "SHOW YOUR PROBES" button
+      const switchBtn = screen.getByTestId('switch-to-player-feed-btn');
+      fireEvent.click(switchBtn);
+
+      // Now player stream is visible
+      expect(screen.getByTestId('player-stream')).toBeInTheDocument();
+      expect(screen.getByText('1234')).toBeInTheDocument();
+    });
+
+    it('automatically switches from rival tab back to player tab when submitting a new guess', async () => {
+      const updatedSession: DuelSession = {
+        ...mockBaseSession,
+        player: {
+          ...mockBaseSession.player,
+          guesses: [
+            ...mockBaseSession.player.guesses,
+            { guess: '9087', pots: 0, pans: 2, timestamp: Date.now() },
+          ],
+        },
+      };
+
+      vi.spyOn(duelService, 'submitGuess').mockResolvedValueOnce({
+        session: updatedSession,
+        playerGuess: { guess: '9087', pots: 0, pans: 2, timestamp: Date.now() },
+      });
+
+      render(<DuelConsole initialSession={mockBaseSession} onExit={vi.fn()} />);
+
+      // User was on rival tab
+      fireEvent.click(screen.getByTestId('tab-rival'));
+      expect(screen.getByTestId('rival-stream')).toBeInTheDocument();
+
+      // User enters and submits guess
+      act(() => {
+        fireEvent.click(screen.getByTestId('keypad-9'));
+        fireEvent.click(screen.getByTestId('keypad-0'));
+        fireEvent.click(screen.getByTestId('keypad-8'));
+        fireEvent.click(screen.getByTestId('keypad-7'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('keypad-ent'));
+      });
+
+      // View should have auto-switched to player tab so the new guess and history are visible
+      expect(screen.getByTestId('player-stream')).toBeInTheDocument();
+    });
+
+    it('renders tactical onboarding empty state when no probes exist', () => {
+      const emptySession: DuelSession = {
+        ...mockBaseSession,
+        player: {
+          ...mockBaseSession.player,
+          guesses: [],
+        },
+        rival: {
+          ...mockBaseSession.rival,
+          guesses: [],
+        },
+      };
+
+      render(<DuelConsole initialSession={emptySession} onExit={vi.fn()} />);
+
+      expect(screen.getByText('NO CIPHER PROBES TRANSMITTED YET')).toBeInTheDocument();
+      expect(screen.getByText(/Enter 4 unique digits on the keypad below/)).toBeInTheDocument();
+    });
+  });
 });

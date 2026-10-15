@@ -54,6 +54,8 @@ export async function POST(request: Request) {
       timerSeconds: session.node.timerSeconds,
       attemptsLeft: session.attemptsLeft,
       tier: session.node.tier,
+      history: (session as any).guesses || [],
+      currentIce: session.ice,
       revealedSlots: (session as any).revealedSlots || [],
     });
 

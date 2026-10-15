@@ -9,8 +9,16 @@ import { triggerToast } from '@/stores/toast-store';
 
 interface SafehouseDashboardProps {
   properties: SafehouseProperty[];
+  ownedLeases?: Array<{
+    id: string;
+    name: string;
+    district: string;
+    dailyDividend: number;
+    effect: string;
+  }>;
   stats: {
     ownedCount: number;
+    ownedLeasesCount?: number;
     totalUpkeep: number;
     totalDailyDividend: number;
     totalTraceReduction: number;
@@ -20,6 +28,7 @@ interface SafehouseDashboardProps {
 
 export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
   properties,
+  ownedLeases = [],
   stats,
   onRefresh,
 }) => {
@@ -83,6 +92,31 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
       setFeedback({
         type: 'error',
         message: res.error || 'Failed to acquire safehouse.',
+      });
+    }
+  };
+
+  const handleClaimLeaseDividends = async (leaseId: string) => {
+    setClaimingId(leaseId);
+    setFeedback(null);
+
+    const res = await rigService.claimDividends(leaseId);
+    setClaimingId(null);
+
+    if (res.success && res.balances) {
+      syncWallet({
+        credits: res.balances.credits,
+        coins: res.balances.coins,
+      });
+      setFeedback({
+        type: 'success',
+        message: res.message || `Claimed $${res.claimedAmount?.toLocaleString()} in dividends!`,
+      });
+      onRefresh();
+    } else {
+      setFeedback({
+        type: 'error',
+        message: res.error || 'Failed to claim dividends.',
       });
     }
   };
@@ -289,6 +323,62 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
           );
         })}
       </div>
+
+      {/* District Leases & Syndicate Holdings Section */}
+      {ownedLeases.length > 0 && (
+        <div className="flex flex-col gap-3 mt-2">
+          <div className="flex items-center justify-between">
+            <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
+              DISTRICT HOLDINGS & LEASES ({ownedLeases.length})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ownedLeases.map((lease) => (
+              <div
+                key={lease.id}
+                className="scene-card p-3 rounded-[12px] border border-line bg-panel-light shadow-card flex flex-col justify-between gap-2.5 font-data"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h6 className="font-heading text-base font-bold text-ink leading-tight">
+                      {lease.name}
+                    </h6>
+                    <span className="text-[10px] text-ink-muted uppercase tracking-wider block mt-0.5">
+                      {lease.district} District • Active Holding
+                    </span>
+                  </div>
+                  {lease.dailyDividend > 0 && (
+                    <span className="text-money-text font-semibold text-sm shrink-0">
+                      +${lease.dailyDividend}/day
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  {lease.effect}
+                </p>
+
+                <div className="pt-2 border-t border-line/40 flex items-center justify-between">
+                  <span className="text-[10px] text-accent-text font-bold uppercase tracking-wider">
+                    ONLINE
+                  </span>
+                  {lease.dailyDividend > 0 && (
+                    <Button
+                      variant="compact"
+                      loading={claimingId === lease.id}
+                      onClick={() => handleClaimLeaseDividends(lease.id)}
+                      className="text-money-text text-[11px] py-1 px-2.5"
+                    >
+                      CLAIM YIELD
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

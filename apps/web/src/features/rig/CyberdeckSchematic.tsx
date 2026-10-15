@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { RigHardwareItem } from '@/app/api/mock/db';
-import { CATALOG } from '../market/catalog';
+import { CATALOG, getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
 
 interface CyberdeckSchematicProps {
@@ -89,7 +89,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
             onClick={() => onSelectSlot(mb2?.id || 'rig-memory-buffer-2')}
             tier="T3 / T4"
             subtitle={mb2?.installed ? (mb2.tradeOff ? `${mb2.effect}` : '+1 Extra Probe') : 'Slot Available'}
-            icon={mb2?.id ? (mb2.id.includes('skimmer') ? '/icons/glyph-power.svg' : '/icons/icon-memory-buffer.svg') : '/icons/icon-memory-buffer.svg'}
+            icon={mb2?.id ? (mb2.id.includes('skimmer') ? '/icons/icon-syndicate-skimmer.svg' : '/icons/icon-memory-buffer.svg') : '/icons/icon-memory-buffer.svg'}
           />
 
           {/* Rail 3: Co-Processor Socket */}
@@ -247,10 +247,11 @@ function ToolSlotCard({
   onClick,
 }: {
   slotNumber: number;
-  tool?: { name: string; effect: string; icon?: string };
+  tool?: { id?: string; name: string; effect: string; icon?: string };
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const iconSrc = tool?.icon || (tool?.id ? getItemIcon(tool.id) : undefined);
   return (
     <Button
       variant="ghost"
@@ -280,10 +281,10 @@ function ToolSlotCard({
       </div>
 
       <div className="mt-1 flex items-center gap-2">
-        {tool?.icon && (
+        {iconSrc && (
           <div className="w-7 h-7 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
+            <img src={iconSrc} alt={tool?.name} className="w-full h-full object-contain" />
           </div>
         )}
         <div className="min-w-0 flex-1">

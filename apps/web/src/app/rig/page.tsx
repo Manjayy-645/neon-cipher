@@ -253,6 +253,7 @@ export default function RigPage() {
         {activeTab === 'safehouse' && safehouseData && (
           <SafehouseDashboard
             properties={safehouseData.properties}
+            ownedLeases={safehouseData.ownedLeases}
             stats={safehouseData.stats}
             onRefresh={loadSafehouses}
           />

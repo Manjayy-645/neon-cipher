@@ -159,7 +159,7 @@ export const NixGuide: React.FC = () => {
   const bannerAdjustedTop = isDistrictView ? 132 : 76;
   const topPos = activeChapterId ? bannerAdjustedTop : defaultTop;
 
-  const isSheetRaised = isNodeView && (sheetState === 'half' || sheetState === 'expanded' || sheetHeight > 100);
+  const isSheetRaised = isNodeView && (sheetState === 'expanded' || sheetHeight > 300);
 
   // Auto-collapse speech bubble when bottom sheet rises to Half or Expanded
   useEffect(() => {

@@ -153,8 +153,12 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const best = useMemo(() => bestGuess(history), [history]);
   const deadDigits = useMemo(() => {
     const fromHistory = assistMode === 'rookie' ? Array.from(provenDeadDigits(history)) : [];
-    const fromPreConfig = (session?.config.eliminatedDigits || []).map((d) => parseInt(d, 10));
-    const fromTools = eliminatedByTools.map((d) => parseInt(d, 10));
+    const fromPreConfig = (session?.config.eliminatedDigits || [])
+      .map((d) => parseInt(String(d), 10))
+      .filter((n) => !isNaN(n));
+    const fromTools = eliminatedByTools
+      .map((d) => parseInt(String(d), 10))
+      .filter((n) => !isNaN(n));
     return new Set([...fromHistory, ...fromPreConfig, ...fromTools]);
   }, [history, session, eliminatedByTools, assistMode]);
   const latestRecord = history.length > 0 ? history[history.length - 1] : null;

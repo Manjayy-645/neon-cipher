@@ -61,9 +61,9 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const [isStealthArmed, setIsStealthArmed] = useState<boolean>(false);
 
   // Clocks
-  const [turnClock, setTurnClock] = useState<number>(activeSessionFromStore?.turnClockSeconds || 20);
-  const [playerClockMs, setPlayerClockMs] = useState<number>(activeSessionFromStore?.playerClockMs || 20000);
-  const [rivalClockMs, setRivalClockMs] = useState<number>(activeSessionFromStore?.rivalClockMs || 20000);
+  const [turnClock, setTurnClock] = useState<number>(activeSessionFromStore?.turnClockSeconds || 35);
+  const [playerClockMs, setPlayerClockMs] = useState<number>(activeSessionFromStore?.playerClockMs || 35000);
+  const [rivalClockMs, setRivalClockMs] = useState<number>(activeSessionFromStore?.rivalClockMs || 35000);
 
   // Unread indicator for rival guesses
   const [unreadRivalCount, setUnreadRivalCount] = useState<number>(0);
@@ -84,7 +84,9 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
     }
   }, [storeMobileTab, feedFilter]);
 
-  const handleTabChange = (tab: 'all' | 'player' | 'rival') => {
+  const feedBottomRef = useRef<HTMLDivElement>(null);
+
+  const handleTabChange = useCallback((tab: 'all' | 'player' | 'rival') => {
     setFeedFilter(tab);
     if (tab === 'player' || tab === 'rival') {
       setMobileTab(tab);
@@ -96,7 +98,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         lastSeenRivalGuessesCount.current = session.rival.guesses.length;
       }
     }
-  };
+  }, [session, setStoreMobileTab]);
 
   const onExit = propsOnExit || storeExit;
 
@@ -167,7 +169,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
       setPlayerClockMs((prev) => Math.max(0, prev - 250));
       setRivalClockMs((prev) => Math.max(0, prev - 250));
       setTurnClock((prev) => {
-        if (prev <= 1) return session.guessClockMs ? Math.ceil(session.guessClockMs / 1000) : 20;
+        if (prev <= 1) return session.guessClockMs ? Math.ceil(session.guessClockMs / 1000) : 35;
         return prev - 1;
       });
     }, 250);
@@ -225,21 +227,27 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
 
       setSession(res.session);
       setInput('');
+      setActiveNixCallout(null);
       setTurnClock(res.session.turnClockSeconds);
-      setPlayerClockMs(res.session.playerClockMs || 20000);
-      setRivalClockMs(res.session.rivalClockMs || 20000);
+      setPlayerClockMs(res.session.playerClockMs || 35000);
+      setRivalClockMs(res.session.rivalClockMs || 35000);
 
       // If duel finished and player won, sync net payout to player store
       if (res.session.status === 'player_won') {
         const newCredits = credits + res.session.netPot;
         setBalances(newCredits, usePlayerStore.getState().coins);
       }
+
+      // If user was viewing rival tab, switch to player tab so their new guess is visible!
+      if (feedFilter === 'rival') {
+        handleTabChange('player');
+      }
     } catch (err: unknown) {
       console.error('Failed to submit duel guess:', err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [input, isSubmitting, session, activeCheat, isCasual, isStealthArmed, credits, setBalances]);
+  }, [input, isSubmitting, session, activeCheat, isCasual, isStealthArmed, credits, setBalances, feedFilter, handleTabChange]);
 
   // Handle keypad input
   const handleKeyPress = useCallback((digit: string) => {
@@ -394,6 +402,13 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
     return `${last.pans > 0 ? `${last.pans} PAN ` : ''}${last.pots > 0 ? `${last.pots} POT` : ''}`.trim();
   }, [session]);
 
+  // Auto-scroll feed stream to latest event
+  useEffect(() => {
+    if (typeof feedBottomRef.current?.scrollIntoView === 'function') {
+      feedBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [filteredFeedEvents.length, feedFilter]);
+
   if (!session) {
     return (
       <div data-testid="duel-console-loading" className="h-full flex items-center justify-center font-data text-accent text-xs">
@@ -405,7 +420,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const isInputValid = validateGuess(input, session.digits, false);
   const orderedDigits = isScrambled ? SCRAMBLED_DIGITS : STANDARD_DIGITS;
 
-  const guessClockMax = session.guessClockMs || 20000;
+  const guessClockMax = session.guessClockMs || 35000;
   const playerClockPercent = Math.min(100, Math.max(0, (playerClockMs / guessClockMax) * 100));
   const rivalClockPercent = Math.min(100, Math.max(0, (rivalClockMs / guessClockMax) * 100));
   const playerSecondsLeft = Math.ceil(playerClockMs / 1000);
@@ -515,25 +530,102 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         </div>
       </header>
 
-      {/* Nix Duel Onboarding Briefings */}
-      {!seenFeatureGuides.includes('guide-shared-feed') && (
-        <NixDuelOnboardingCard
-          guideId="guide-shared-feed"
-          title={NIX_DUEL_BRIEFINGS.shared_feed.title}
-          body={NIX_DUEL_BRIEFINGS.shared_feed.body}
-          onDismiss={() => markFeatureGuideSeen('guide-shared-feed')}
-        />
-      )}
-      {!seenFeatureGuides.includes('guide-sabotage-deck') && (
-        <NixDuelOnboardingCard
-          guideId="guide-sabotage-deck"
-          title={NIX_DUEL_BRIEFINGS.sabotage_deck.title}
-          body={NIX_DUEL_BRIEFINGS.sabotage_deck.body}
-          onDismiss={() => markFeatureGuideSeen('guide-sabotage-deck')}
-        />
+      {/* 1.5 GAME MODE & INTEGRITY RIBBON */}
+      <div
+        data-testid="duel-mode-ribbon"
+        className="px-2.5 sm:px-3 py-1 bg-ink/95 border-b border-line flex items-center justify-between text-xs font-data shrink-0 gap-2 select-none"
+      >
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-[10px] text-ink-muted uppercase font-bold tracking-wider shrink-0">
+            MODE:
+          </span>
+          {isCasual ? (
+            <span
+              data-testid="mode-badge-casual"
+              className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded bg-sky-500/20 border border-sky-500/50 text-sky-300 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]"
+            >
+              <span>🎮 CASUAL</span>
+              <span className="text-[9px] text-sky-400/80 hidden sm:inline">• CHEATS PERMITTED</span>
+            </span>
+          ) : session.matchType === 'turf' ? (
+            <span
+              data-testid="mode-badge-turf"
+              className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded bg-accent/25 border border-accent/50 text-accent font-bold uppercase tracking-wider text-[10px] sm:text-[11px]"
+            >
+              <span>🏴 TURF WAR</span>
+              <span className="text-[9px] text-accent/80 hidden sm:inline">• TERRITORY LOCK</span>
+            </span>
+          ) : (
+            <span
+              data-testid="mode-badge-wager"
+              className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 text-amber-300 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]"
+            >
+              <span>💰 RANKED WAGER</span>
+              <span className="text-[9px] text-amber-400/80 hidden sm:inline">({session.totalPot.toLocaleString()} CR POT)</span>
+            </span>
+          )}
+
+          <span
+            data-testid="pacing-badge"
+            className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded bg-panel-dark border border-line text-panel-light font-bold uppercase tracking-wider text-[10px] sm:text-[11px] shrink-0"
+          >
+            {isTurnBased ? '⏱️ 35s TACTICAL TURNS' : '⚡ SPEED RACE'}
+          </span>
+        </div>
+
+        {/* Live Integrity / Cheat status indicator */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isCasual ? (
+            <span
+              data-testid="mode-cheat-status"
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                activeCheat
+                  ? 'bg-danger/25 border border-danger/60 text-danger animate-pulse'
+                  : 'bg-panel-dark border border-line text-ink-muted'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${activeCheat ? 'bg-danger' : 'bg-ink-muted'}`} />
+              <span>{activeCheat ? 'EXPLOIT ARMED' : 'CHEATS ALLOWED'}</span>
+            </span>
+          ) : (
+            <span
+              data-testid="mode-anti-cheat"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-panel-dark border border-line text-ink-muted text-[10px] font-bold uppercase tracking-wider"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>NO EXPLOITS</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Floating Unobtrusive Nix Intel Overlay Container (Zero Layout Shift) */}
+      {(!seenFeatureGuides.includes('guide-shared-feed') ||
+        !seenFeatureGuides.includes('guide-sabotage-deck')) && (
+        <div className="absolute top-20 left-2 right-2 z-40 flex flex-col gap-2 pointer-events-auto">
+          {!seenFeatureGuides.includes('guide-shared-feed') && (
+            <NixDuelOnboardingCard
+              guideId="guide-shared-feed"
+              title={NIX_DUEL_BRIEFINGS.shared_feed.title}
+              body={NIX_DUEL_BRIEFINGS.shared_feed.body}
+              onDismiss={() => markFeatureGuideSeen('guide-shared-feed')}
+            />
+          )}
+          {!seenFeatureGuides.includes('guide-sabotage-deck') && (
+            <NixDuelOnboardingCard
+              guideId="guide-sabotage-deck"
+              title={NIX_DUEL_BRIEFINGS.sabotage_deck.title}
+              body={NIX_DUEL_BRIEFINGS.sabotage_deck.body}
+              onDismiss={() => markFeatureGuideSeen('guide-sabotage-deck')}
+            />
+          )}
+        </div>
       )}
 
-      {/* Contextual Nix Tactical Callout Banner */}
+      {/* Contextual Floating Nix Tactical Callout Banner */}
       <NixTacticalCalloutBanner
         callout={activeNixCallout}
         onDismiss={() => setActiveNixCallout(null)}
@@ -688,9 +780,92 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
             />
           )}
 
+          {/* Feed Context Header */}
+          <div className="shrink-0">
+            {feedFilter === 'rival' ? (
+              <div
+                data-testid="rival-feed-active-banner"
+                className="p-2 rounded bg-terminal-amber/15 border border-terminal-amber/40 flex items-center justify-between text-xs font-data"
+              >
+                <div className="flex items-center gap-1.5 text-terminal-amber">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span className="font-bold">FILTER: RIVAL TELEMETRY</span>
+                  <span className="text-ink-muted text-[10px] hidden sm:inline">({session.player.guesses.length} of your probes hidden)</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  compact
+                  data-testid="switch-to-player-feed-btn"
+                  onClick={() => handleTabChange('player')}
+                  className="text-[11px] font-bold text-terminal-phosphor hover:text-accent underline px-2 py-0.5 h-auto"
+                >
+                  SHOW YOUR PROBES ({session.player.guesses.length})
+                </Button>
+              </div>
+            ) : feedFilter === 'player' ? (
+              <div className="px-2.5 py-1.5 rounded bg-terminal-phosphor/10 border border-terminal-phosphor/25 flex items-center justify-between text-[11px] font-data">
+                <div className="flex items-center gap-1.5 text-terminal-phosphor font-bold">
+                  <span>YOUR CIPHER PROBE HISTORY</span>
+                  <span className="text-ink-muted font-normal text-[10px]">({session.player.guesses.length} attempts recorded)</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-ink-muted">
+                  <span className="flex items-center gap-1"><span className="text-terminal-phosphor font-bold">●</span> PAN (Exact)</span>
+                  <span className="flex items-center gap-1"><span className="text-terminal-amber font-bold">○</span> POT (Wrong Slot)</span>
+                </div>
+              </div>
+            ) : (
+              <div className="px-2.5 py-1.5 rounded bg-panel-dark/90 border border-line flex items-center justify-between text-[11px] font-data text-ink-muted">
+                <div className="flex items-center gap-1.5 text-panel-light font-bold">
+                  <span>SHARED CIPHER FEED</span>
+                  <span className="text-ink-muted font-normal text-[10px]">({session.player.guesses.length} you, {session.rival.guesses.length} rival)</span>
+                </div>
+                <span className="text-[10px] font-mono uppercase">CHRONOLOGICAL DUAL STREAM</span>
+              </div>
+            )}
+          </div>
+
           {filteredFeedEvents.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-ink-muted font-data text-xs uppercase tracking-widest opacity-50">
-              Awaiting initial matrix calculations...
+            <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-4 gap-2 text-ink-muted font-data">
+              <div className="w-8 h-8 rounded-full border border-line bg-panel-dark flex items-center justify-center text-ink-muted/70">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              {feedFilter === 'player' ? (
+                <>
+                  <div className="text-xs font-bold text-terminal-phosphor uppercase tracking-wider">
+                    NO CIPHER PROBES TRANSMITTED YET
+                  </div>
+                  <p className="text-[11px] text-ink-muted max-w-xs leading-relaxed">
+                    Enter {session.digits} unique digits on the keypad below and press <strong className="text-panel-light">[ENT]</strong> to test your first hypothesis.
+                  </p>
+                </>
+              ) : feedFilter === 'rival' ? (
+                <>
+                  <div className="text-xs font-bold text-terminal-amber uppercase tracking-wider">
+                    RIVAL TELEMETRY SILENT
+                  </div>
+                  <p className="text-[11px] text-ink-muted max-w-xs leading-relaxed">
+                    {session.rival.handle} has not made a public probe yet. Strike first!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-bold text-panel-light uppercase tracking-wider">
+                    DUEL CIPHER FEED READY
+                  </div>
+                  <p className="text-[11px] text-ink-muted max-w-xs leading-relaxed">
+                    Both cipher carrier streams active. Transmit your opening probe below.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             filteredFeedEvents.map((ev, idx) => {
@@ -721,6 +896,15 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
 
               // Guess Event Card
               const isEncrypted = !isYou && ev.isStealth && !ev.unmasked;
+
+              // Compute turn count for this actor
+              let turnNumber = 1;
+              for (const e of unifiedFeedEvents) {
+                if (e.id === ev.id) break;
+                if (e.who === ev.who && e.guess !== null) {
+                  turnNumber++;
+                }
+              }
 
               return (
                 <div
@@ -754,7 +938,8 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
                           : 'text-terminal-amber bg-terminal-amber/15 border border-terminal-amber/30'
                       }`}
                     >
-                      {isYou ? 'YOU' : `RIVAL [${session.rival.handle}]`}
+                      <span>{isYou ? 'YOU' : `RIVAL [${session.rival.handle}]`}</span>
+                      <span className="opacity-70 ml-1">#{turnNumber}</span>
                     </span>
                     <span className="font-data text-xs text-ink-muted font-mono">{timeFormatted}</span>
                   </div>
@@ -770,7 +955,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
                         <span>[ENCRYPTED MOVE]</span>
                       </div>
                     ) : (
-                      <span className="font-data font-black text-panel-light tracking-[0.25em]">
+                      <span className="font-data font-black text-panel-light tracking-[0.25em] text-base">
                         {ev.guess}
                       </span>
                     )}
@@ -806,6 +991,8 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
               );
             })
           )}
+          {/* Bottom scroll anchor */}
+          <div ref={feedBottomRef} className="h-0 w-full" />
         </div>
       </div>
 
@@ -817,12 +1004,24 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         label={session.player.guesses[session.player.guesses.length - 1]?.parityLabel}
       />
 
-      {/* 6. MODIFIER TOGGLES & PLAYER 20S GUESS CLOCK BAR */}
+      {/* 6. MODIFIER TOGGLES & PLAYER GUESS CLOCK BAR */}
       <div className="px-3 py-1.5 bg-ink border-t border-line/50 flex flex-col gap-1.5 text-xs font-data">
-        {/* Player 20s Guess Clock bar */}
+        {/* Player Guess Clock bar */}
         <div className="flex items-center justify-between text-[11px]">
-          <span className="font-bold text-accent-text flex items-center gap-1.5">
-            <span>{isTurnBased ? (isPlayerTurn ? 'YOUR TURN' : 'WAITING FOR RIVAL...') : 'GUESS CLOCK'}</span>
+          <span className="font-bold flex items-center gap-1.5">
+            {isTurnBased ? (
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                  isPlayerTurn
+                    ? 'bg-terminal-phosphor/20 text-terminal-phosphor border border-terminal-phosphor/40 animate-pulse'
+                    : 'bg-panel-dark text-ink-muted border border-line'
+                }`}
+              >
+                {isPlayerTurn ? '● YOUR TURN' : 'WAITING FOR RIVAL...'}
+              </span>
+            ) : (
+              <span className="text-accent-text">GUESS CLOCK</span>
+            )}
             {deadDigits.size > 0 && (
               <span className="text-[10px] text-ink-muted">
                 ({deadDigits.size} dead digits eliminated)
@@ -847,45 +1046,110 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
           />
         </div>
 
-        {/* Modifiers row */}
-        <div className="flex items-center justify-between gap-2 pt-1">
-          {isCasual ? (
+        {/* Persistent Last Probe deduction banner */}
+        {session.player.guesses.length > 0 && (
+          <div
+            data-testid="last-probe-summary"
+            className="flex items-center justify-between px-2.5 py-1.5 rounded bg-panel-dark/95 border border-line text-xs font-data shadow-sm"
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[10px] text-ink-muted uppercase font-bold tracking-wider">
+                LAST PROBE (#{session.player.guesses.length}):
+              </span>
+              <span className="font-mono font-black text-terminal-phosphor tracking-[0.2em] text-sm">
+                {session.player.guesses[session.player.guesses.length - 1].guess.split('').join(' ')}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
+              <DuelClueDisplay
+                pans={session.player.guesses[session.player.guesses.length - 1].pans ?? 0}
+                pots={session.player.guesses[session.player.guesses.length - 1].pots ?? 0}
+                digits={session.digits}
+                colorBlindMode={colorBlindMode}
+                parityLabel={session.player.guesses[session.player.guesses.length - 1].parityLabel}
+                parityTestId="last-probe-parity-badge"
+              />
+              {feedFilter !== 'player' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  compact
+                  onClick={() => handleTabChange('player')}
+                  className="text-[10px] text-accent hover:text-accent-text underline px-1 py-0 h-auto"
+                  title="Switch to full probe history"
+                >
+                  VIEW HISTORY
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Active Cheat Alert Banner */}
+        {activeCheat && isCasual && (
+          <div
+            data-testid="cheat-active-banner"
+            className="w-full bg-danger/20 border border-danger/60 rounded px-2.5 py-1.5 flex items-center justify-between text-danger-text text-xs font-data font-bold uppercase tracking-wider animate-pulse select-none"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-danger shrink-0" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span className="truncate">CASUAL CHEAT ARMED // INVALID DIGITS SCRUBBED ON GUESS</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveCheat(false)}
+              className="text-[10px] text-danger hover:text-panel-light underline uppercase shrink-0 font-mono ml-2 cursor-pointer"
+            >
+              [DISARM]
+            </button>
+          </div>
+        )}
+
+        {/* Modifiers row */}
+        <div className="flex items-center justify-between gap-2 pt-1 flex-wrap sm:flex-nowrap">
+          {isCasual ? (
+            <div className="flex items-center gap-1.5">
               <Button
                 type="button"
                 variant={activeCheat ? 'danger' : 'secondary'}
                 compact
                 data-testid="casual-exploit-toggle"
                 onClick={() => setActiveCheat(!activeCheat)}
-                className="text-[11px] flex items-center gap-1.5"
+                className={`text-xs min-h-[40px] px-2.5 flex items-center gap-1.5 font-bold transition-all ${
+                  activeCheat
+                    ? 'border-danger bg-danger/30 text-danger-text ring-1 ring-danger animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.35)]'
+                    : 'border-terminal-amber/60 text-terminal-amber hover:bg-terminal-amber/10'
+                }`}
               >
-                {activeCheat && (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                )}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
                 <span>{activeCheat ? 'CHEAT ARMED' : 'ARM CASUAL CHEAT'}</span>
               </Button>
-              <span className="text-[10px] text-ink-muted hidden sm:inline">
-                (Permitted in casual with &apos;cheat used&apos; flag)
+              <span className="text-[10px] text-ink-muted hidden md:inline">
+                (Scrubs invalid digits)
               </span>
             </div>
           ) : (
             <div
               data-testid="exploits-disabled-badge"
-              className="flex items-center gap-1.5 text-ink-muted text-[10px] uppercase tracking-wider"
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded bg-panel-dark border border-line text-ink-muted text-[10px] sm:text-[11px] uppercase tracking-wider font-bold"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              <span>EXPLOITS STRICTLY DISABLED IN RANKED MATCHES</span>
+              <span className="truncate">EXPLOITS STRICTLY DISABLED IN RANKED MATCHES</span>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               type="button"
               variant={isStealthArmed ? 'primary' : 'secondary'}
@@ -893,10 +1157,14 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
               data-testid="stealth-guess-toggle"
               disabled={session.status !== 'active' || credits < 150}
               onClick={() => setIsStealthArmed(!isStealthArmed)}
-              className="text-[11px] flex items-center gap-1.5"
+              className={`text-xs min-h-[40px] px-2.5 flex items-center gap-1.5 font-bold transition-all ${
+                isStealthArmed
+                  ? 'border-accent bg-accent/30 text-accent-text ring-1 ring-accent animate-pulse shadow-[0_0_12px_rgba(217,70,239,0.3)]'
+                  : ''
+              }`}
               aria-label="Toggle Stealth Guess"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
@@ -911,7 +1179,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
                   <div
                     key={`input-slot-${i}`}
                     data-testid={`input-slot-${i}`}
-                    className={`w-7 h-8 rounded border flex items-center justify-center font-data text-base font-black ${
+                    className={`w-7 sm:w-8 h-8 rounded border flex items-center justify-center font-data text-base font-black transition-colors ${
                       char
                         ? 'border-accent text-accent bg-panel-dark'
                         : 'border-line text-ink-muted/40 bg-panel-dark/50'
@@ -929,7 +1197,11 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
       {/* 7. KEYPAD WITH DEAD DIGIT ELIMINATION */}
       <div
         data-testid="duel-keypad"
-        className="grid grid-cols-4 gap-1.5 p-2 bg-ink border-t border-line shrink-0"
+        className={`grid grid-cols-4 gap-1.5 p-2 bg-ink border-t border-line shrink-0 transition-all duration-300 ${
+          isTurnBased && isPlayerTurn
+            ? 'ring-1 ring-terminal-phosphor/50 shadow-[0_0_12px_rgba(111,191,122,0.15)]'
+            : ''
+        }`}
       >
         {orderedDigits.slice(0, 8).map((digit) => {
           const isEntered = input.includes(digit);
@@ -1058,6 +1330,7 @@ interface DuelClueDisplayProps {
   digits: number;
   colorBlindMode?: boolean;
   parityLabel?: 'EVEN' | 'ODD';
+  parityTestId?: string;
 }
 
 const DuelClueDisplay: React.FC<DuelClueDisplayProps> = ({
@@ -1066,12 +1339,13 @@ const DuelClueDisplay: React.FC<DuelClueDisplayProps> = ({
   digits,
   colorBlindMode = false,
   parityLabel,
+  parityTestId = 'parity-label-badge',
 }) => {
   if (parityLabel) {
     return (
       <div className="flex items-center gap-2 shrink-0">
         <span
-          data-testid="parity-label-badge"
+          data-testid={parityTestId}
           className="font-data text-xs font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-900 border border-amber-500/40"
         >
           [{parityLabel}]

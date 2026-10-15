@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CATALOG, CatalogItem } from '../market/catalog';
+import { CATALOG, CatalogItem, getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
 
 interface LoadoutSelectorProps {
@@ -91,12 +91,15 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
                   {tool ? (
                     <div className="flex items-center justify-between mt-1">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        {tool.icon && (
-                          <div className="w-5 h-5 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
-                          </div>
-                        )}
+                        {(() => {
+                          const iconSrc = tool.icon || getItemIcon(tool.id);
+                          return iconSrc ? (
+                            <div className="w-5 h-5 rounded bg-panel-dark/10 border border-line/60 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={iconSrc} alt={tool.name} className="w-full h-full object-contain" />
+                            </div>
+                          ) : null;
+                        })()}
                         <span className="font-heading text-xs font-bold text-ink truncate">
                           {tool.name}
                         </span>
@@ -146,17 +149,20 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      {tool.icon && (
-                        <div className="w-9 h-9 rounded bg-panel-dark/5 border border-line p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={tool.icon} alt={tool.name} className="w-full h-full object-contain" />
-                          {isEquipped && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full p-0.5 shadow-sm flex items-center justify-center">
-                              <img src="/icons/icon-check.svg" alt="" className="w-3 h-3 object-contain" aria-hidden="true" />
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {(() => {
+                        const iconSrc = tool.icon || getItemIcon(tool.id);
+                        return iconSrc ? (
+                          <div className="w-9 h-9 rounded bg-panel-dark/5 border border-line p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={iconSrc} alt={tool.name} className="w-full h-full object-contain" />
+                            {isEquipped && (
+                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full p-0.5 shadow-sm flex items-center justify-center">
+                                <img src="/icons/icon-check.svg" alt="" className="w-3 h-3 object-contain" aria-hidden="true" />
+                              </div>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-heading text-sm font-bold text-ink truncate">

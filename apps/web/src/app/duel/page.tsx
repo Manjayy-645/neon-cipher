@@ -47,7 +47,7 @@ export default function DuelPage() {
   return (
     <main className="scene-ground scene-arrive flex h-full w-full min-h-0 flex-col text-ink overflow-hidden">
       {/* Top Tab Bar (Segmented Control) */}
-      <div className="bg-panel-light border-b border-line px-4 py-2 shrink-0">
+      <div className="bg-panel-light border-b border-line px-4 py-2 shrink-0 relative z-20">
         <SegmentedControl
           ariaLabel="Duel mode selector"
           value={activeTab}

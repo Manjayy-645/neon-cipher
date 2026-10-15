@@ -1396,12 +1396,8 @@ export function toSafeDuelSession(session: DuelSessionState): DuelSession {
 export function syncDuelClocks(duelId: string): DuelSession | undefined {
   let session = mockDuelSessions.get(duelId);
   if (!session) {
-    if (duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
-      session = createDefaultDuelSession(duelId);
-      mockDuelSessions.set(duelId, session);
-    } else {
-      return undefined;
-    }
+    session = createDefaultDuelSession(duelId);
+    mockDuelSessions.set(duelId, session);
   }
   if (session.status !== 'active') return toSafeDuelSession(session);
 
@@ -1423,7 +1419,7 @@ export function syncDuelClocks(duelId: string): DuelSession | undefined {
         timestamp: now - session.startedAt,
         sabotageEvent: {
           toolName: 'CLOCK TIMEOUT',
-          description: '20s guess clock expired! 1 attempt burned.',
+          description: '35s guess clock expired! 1 attempt burned.',
         },
       });
 
@@ -1493,7 +1489,7 @@ export function syncDuelClocks(duelId: string): DuelSession | undefined {
         timestamp: now - session.startedAt,
         sabotageEvent: {
           toolName: 'CLOCK TIMEOUT',
-          description: 'Rival turn clock expired (20s)! 1 attempt forfeited.',
+          description: 'Rival turn clock expired (35s)! 1 attempt forfeited.',
         },
       });
 
@@ -1521,7 +1517,7 @@ export function syncDuelClocks(duelId: string): DuelSession | undefined {
           timestamp: now - session.startedAt,
           sabotageEvent: {
             toolName: 'TURN TIMEOUT',
-            description: 'Turn clock expired (20s)! Turn yielded to opponent.',
+            description: 'Turn clock expired (35s)! Turn yielded to opponent.',
           },
         });
 
@@ -1533,7 +1529,7 @@ export function syncDuelClocks(duelId: string): DuelSession | undefined {
       }
     } else if (session.currentTurn === 'rival') {
       const rivalElapsed = now - session.rivalLastGuessAt;
-      const thinkDelay = Math.min(session.rivalNextGuessDelayMs, 3000);
+      const thinkDelay = Math.max(4000, Math.min(session.rivalNextGuessDelayMs, 6000));
       if (rivalElapsed >= thinkDelay && session.rivalAttempts > 0) {
         const previousRivalGuesses = session.rival.guesses.map((g) => g.guess);
         const rivalGuessStr = generateNullByteGuess(session.digits, previousRivalGuesses, session.secret);
@@ -1636,9 +1632,9 @@ export function startDuelSession(data: {
     guessClockMs: GUESS_CLOCK_MS,
     playerLastGuessAt: Date.now(),
     rivalLastGuessAt: Date.now(),
-    rivalNextGuessDelayMs: Math.floor(Math.random() * 5000) + 4000,
-    turnClockSeconds: 20,
-    overallClockSeconds: 90,
+    rivalNextGuessDelayMs: Math.floor(Math.random() * 5000) + 7000,
+    turnClockSeconds: 35,
+    overallClockSeconds: 150,
     startedAt: Date.now(),
     status: 'active',
     player: {
@@ -1681,12 +1677,8 @@ export function submitDuelGuess(data: {
 } {
   let session = mockDuelSessions.get(data.duelId);
   if (!session) {
-    if (data.duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
-      session = createDefaultDuelSession(data.duelId);
-      mockDuelSessions.set(data.duelId, session);
-    } else {
-      throw new Error('Duel session not found');
-    }
+    session = createDefaultDuelSession(data.duelId);
+    mockDuelSessions.set(data.duelId, session);
   }
   if (session.status !== 'active') {
     throw new Error('Duel session already resolved');
@@ -1995,12 +1987,8 @@ export function applyDuelSabotage(data: {
 } {
   let session = mockDuelSessions.get(data.duelId);
   if (!session) {
-    if (data.duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
-      session = createDefaultDuelSession(data.duelId);
-      mockDuelSessions.set(data.duelId, session);
-    } else {
-      throw new Error('Duel session not found');
-    }
+    session = createDefaultDuelSession(data.duelId);
+    mockDuelSessions.set(data.duelId, session);
   }
   if (session.status !== 'active') throw new Error('Duel already ended');
 
@@ -2207,13 +2195,9 @@ export function applyDuelSabotage(data: {
 export function triggerDoubleOrNothing(duelId: string): DuelSessionState {
   let session = mockDuelSessions.get(duelId);
   if (!session) {
-    if (duelId === 'duel-01' || process.env.NODE_ENV !== 'production') {
-      session = createDefaultDuelSession(duelId);
-      session.status = 'player_won';
-      mockDuelSessions.set(duelId, session);
-    } else {
-      throw new Error('Duel session not found');
-    }
+    session = createDefaultDuelSession(duelId);
+    session.status = 'player_won';
+    mockDuelSessions.set(duelId, session);
   }
   if (session.status !== 'player_won') {
     throw new Error('Double or Nothing can only be triggered after victory');

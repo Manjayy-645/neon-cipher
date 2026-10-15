@@ -598,6 +598,122 @@ describe('Terminal Tools (game-rules)', () => {
     });
   });
 
+  describe('Cleanse Subroutine', () => {
+    it('purges active ICE and reveals uncorrupted score for prior guess', () => {
+      const secret = '489';
+      const history = [{ guess: '498', pots: 99, pans: 99 }]; // ICE corrupted
+      const result = applyTerminalTool({
+        toolId: 'cleanse_subroutine',
+        secret,
+        history,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.cleanseIce).toBe(true);
+      expect(result.purgedIce).toBe(true);
+      expect(result.cleanseTurns).toBe(2);
+      expect(result.uncorruptedScore).toEqual({ pans: 1, pots: 2 });
+      expect(result.revealedClue?.rawFeedback).toContain('1 PAN');
+      expect(result.revealedClue?.rawFeedback).toContain('2 POT');
+    });
+  });
+
+  describe('Cryo-Spike & Cryo-Pulse Spike', () => {
+    it('Cryo-Spike freezes active timer for 12 seconds', () => {
+      const result = applyTerminalTool({
+        toolId: 'cryo_spike',
+        secret: '123',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.effectType).toBe('freeze_timer');
+      expect(result.timerFrozenSeconds).toBe(12);
+      expect(result.timeAddedSeconds).toBe(12);
+    });
+
+    it('Cryo-Pulse Spike freezes active timer for 15 seconds', () => {
+      const result = applyTerminalTool({
+        toolId: 'tool-cryo-pulse',
+        secret: '123',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.effectType).toBe('freeze_timer');
+      expect(result.timerFrozenSeconds).toBe(15);
+      expect(result.timeAddedSeconds).toBe(15);
+    });
+  });
+
+  describe('Zero-Day Exploit & Slot Peek', () => {
+    it('unmasks the first unrevealed slot digit', () => {
+      const secret = '739';
+      const result = applyTerminalTool({
+        toolId: 'tool-zero-day',
+        secret,
+        revealedSlots: [0], // Slot 0 already known
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.effectType).toBe('slot_peek');
+      expect(result.revealedSlot).toEqual({ slotIndex: 1, digit: '3' });
+    });
+  });
+
+  describe('Skeleton Key', () => {
+    it('auto-cracks a Tier 1 or Tier 2 node', () => {
+      const result = applyTerminalTool({
+        toolId: 'exploit-skeleton-key',
+        secret: '482',
+        tier: 2,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.autoCrack).toBe(true);
+      expect(result.secret).toBe('482');
+    });
+
+    it('rejects cracking on Tier 3+ corporate nodes', () => {
+      const result = applyTerminalTool({
+        toolId: 'exploit-skeleton-key',
+        secret: '4821',
+        tier: 3,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Tier 1 or Tier 2');
+    });
+  });
+
+  describe('Rig Hardware Modifiers in computeEffectiveRigStats', () => {
+    it('enables Neural Reflex Capacitor fast turn refund active', () => {
+      const baseNode = { tier: 2, attempts: 6, timerSeconds: 45, bounty: 500 };
+      const stats = computeEffectiveRigStats(baseNode, { memory_1: 'neural_reflex_cap' });
+
+      expect(stats.hasNeuralReflex).toBe(true);
+      expect(stats.fastTurnRefundActive).toBe(true);
+      expect(stats.appliedModifiers.some((m) => m.includes('Neural Reflex'))).toBe(true);
+    });
+
+    it('enables Syndicate Skimmer Turn 1 bonus', () => {
+      const baseNode = { tier: 2, attempts: 6, timerSeconds: 45, bounty: 500 };
+      const stats = computeEffectiveRigStats(baseNode, { memory_2: 'syndicate_skimmer' });
+
+      expect(stats.hasSyndicateSkimmer).toBe(true);
+      expect(stats.firstTurnPanBonusCredits).toBe(45);
+      expect(stats.appliedModifiers.some((m) => m.includes('Syndicate Skimmer'))).toBe(true);
+    });
+
+    it('enables Lead-Shielded Chassis burn immunity and fine reductions', () => {
+      const baseNode = { tier: 5, attempts: 6, timerSeconds: 45, bounty: 5000 };
+      const stats = computeEffectiveRigStats(baseNode, { bus_interconnect: 'lead_shielded_chassis' });
+
+      expect(stats.burnImmune).toBe(true);
+      expect(stats.preventTier5Burnout).toBe(true);
+      expect(stats.fineReductionPercent).toBe(60);
+      expect(stats.heatMultiplier).toBe(0.5);
+    });
+  });
+
   describe('Unknown Tool', () => {
     it('returns error when toolId is not recognized', () => {
       const result = applyTerminalTool({

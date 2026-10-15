@@ -34,6 +34,7 @@ export interface TerminalToolRule {
   glitchPitch?: string;
   nixExplanation?: string;
   recommendedWhen?: string;
+  icon?: string;
 }
 
 export const TERMINAL_TOOL_RULES: Record<string, TerminalToolRule> = {
@@ -50,6 +51,7 @@ export const TERMINAL_TOOL_RULES: Record<string, TerminalToolRule> = {
     glitchPitch: 'Black-market cryo-fuse. Shuts down ICE timing chips cold before security pinpoints your signal.',
     nixExplanation: 'Need time to think? Pop a Cryo-Spike to freeze the countdown clock for 12 seconds while you work out the math.',
     recommendedWhen: 'Best used on Tier 3–5 vaults with tight 30s–45s timers.',
+    icon: '/icons/icon-cryo-spike.svg',
   },
   'tool-cryo-spike': {
     id: 'tool-cryo-spike',
@@ -63,6 +65,7 @@ export const TERMINAL_TOOL_RULES: Record<string, TerminalToolRule> = {
     glitchPitch: 'Black-market cryo-fuse. Shuts down ICE timing chips cold before security pinpoints your signal.',
     nixExplanation: 'Need time to think? Pop a Cryo-Spike to freeze the countdown clock for 12 seconds while you work out the math.',
     recommendedWhen: 'Best used on Tier 3–5 vaults with tight 30s–45s timers.',
+    icon: '/icons/icon-cryo-spike.svg',
   },
   'cleanse_subroutine': {
     id: 'cleanse_subroutine',
@@ -179,6 +182,7 @@ export const TERMINAL_TOOL_RULES: Record<string, TerminalToolRule> = {
     glitchPitch: 'High-yield cryogenic capacitor. Freezes the lockdown clock solid for 15 seconds.',
     nixExplanation: 'Freezes the active timer countdown completely for 15 seconds.',
     recommendedWhen: 'Essential for high-tier vaults where every second of deduction matters.',
+    icon: '/icons/tool-cryo-pulse.svg',
   },
   'tool-zero-day': {
     id: 'tool-zero-day',
@@ -343,7 +347,7 @@ export const RIG_HARDWARE_MODULES: Record<RigHardwareId, RigHardwareModule> = {
     alexExplanation: 'Siphons loose credits right off the first handshake. Great for farming quick cash in The Slums.',
     nixTip: 'Lead with diverse high-frequency probe digits on Turn 1 to maximize early Pan payouts.',
     glitchPitch: 'Custom Kovacs firmware tap. Turns initial cryptographic syncs into pure street money.',
-    icon: '/icons/glyph-power.svg',
+    icon: '/icons/icon-syndicate-skimmer.svg',
   },
   heuristic_coproc: {
     id: 'heuristic_coproc',
@@ -491,8 +495,11 @@ export interface EffectiveBreachParams {
   autoDeadDigitsCount: number;
   revealParityDistribution: boolean;
   hasNeuralReflex: boolean;
+  fastTurnRefundActive: boolean;
   hasSyndicateSkimmer: boolean;
+  firstTurnPanBonusCredits: number;
   burnImmune: boolean;
+  preventTier5Burnout: boolean;
   appliedModifiers: string[];
 }
 
@@ -575,8 +582,11 @@ export function computeEffectiveRigStats(
     autoDeadDigitsCount,
     revealParityDistribution,
     hasNeuralReflex,
+    fastTurnRefundActive: hasNeuralReflex,
     hasSyndicateSkimmer,
+    firstTurnPanBonusCredits: hasSyndicateSkimmer ? 45 : 0,
     burnImmune,
+    preventTier5Burnout: burnImmune,
     appliedModifiers,
   };
 }
@@ -970,9 +980,11 @@ export function applyTerminalTool(params: ApplyTerminalToolParams): TerminalTool
 
     case 'cleanse_ice': {
       let revealedClue: { pots: number; pans: number; rawFeedback: string } | undefined;
+      let uncorruptedScore: { pots: number; pans: number } | undefined;
       if (history && history.length > 0) {
         const latest = history[history.length - 1];
         const raw = calculateScore(secret, latest.guess);
+        uncorruptedScore = { pots: raw.pots, pans: raw.pans };
         revealedClue = {
           pots: raw.pots,
           pans: raw.pans,
@@ -985,7 +997,9 @@ export function applyTerminalTool(params: ApplyTerminalToolParams): TerminalTool
         toolId,
         effectType: 'cleanse_ice',
         cleanseTurns: 2,
+        cleanseIce: true,
         purgedIce: true,
+        uncorruptedScore,
         revealedClue,
         message: revealedClue
           ? `Cleanse Subroutine executed: Malicious ICE purged for 2 turns. ${revealedClue.rawFeedback}.`
