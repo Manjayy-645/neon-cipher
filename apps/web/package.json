@@ -15,7 +15,7 @@
         "@tailwindcss/postcss": "^4.3.3",
         "@vercel/analytics": "^2.0.1",
         "framer-motion": "latest",
-        "maplibre-gl": "^6.13.0",
+        "maplibre-gl": "^6.14.0",
         "next": "latest",
         "react": "latest",
         "react-dom": "latest",
@@ -32,12 +32,12 @@
         "@types/react-dom": "latest",
         "@vitejs/plugin-react": "^6.1.2",
         "autoprefixer": "latest",
-        "eslint": "^10.12.0",
-        "eslint-config-next": "^16.4.0",
-        "jsdom": "^30.1.2",
+        "eslint": "^10.13.0",
+        "eslint-config-next": "^16.4.2",
+        "jsdom": "^30.1.3",
         "postcss": "latest",
         "tailwindcss": "latest",
         "typescript": "latest",
-        "vitest": "^5.0.3"
+        "vitest": "^5.0.5"
     }
 }
