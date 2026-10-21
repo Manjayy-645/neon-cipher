@@ -36,7 +36,7 @@ export function ProgressStrip({
     <div
       role="region"
       aria-label="Progress summary"
-      className="h-[32px] min-h-[32px] px-4 flex items-center justify-between border-y border-terminal-line/40 bg-terminal-panel/30 text-terminal-muted font-data text-xs tracking-wider"
+      className="h-[28px] min-h-[28px] px-3 sm:px-4 flex items-center justify-between border-y border-terminal-line/40 bg-terminal-panel/30 text-terminal-muted font-data text-[11px] sm:text-xs tracking-wider"
     >
       <div>
         <span className="text-terminal-muted">ATTEMPT </span>

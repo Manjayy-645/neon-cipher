@@ -91,17 +91,41 @@ export const AmbientLife: React.FC<AmbientLifeProps> = ({ map }) => {
         const p2 = map.project([lng2, lat2]);
         newPos[e.id] = { startPx: { x: p1.x, y: p1.y }, endPx: { x: p2.x, y: p2.y } };
       });
-      setPositions(newPos);
+      setPositions((prev) => {
+        const prevKeys = Object.keys(prev);
+        const newKeys = Object.keys(newPos);
+        if (prevKeys.length !== newKeys.length) return newPos;
+        for (const key of newKeys) {
+          const p = prev[key];
+          const n = newPos[key];
+          if (
+            !p ||
+            Math.abs(p.startPx.x - n.startPx.x) > 0.01 ||
+            Math.abs(p.startPx.y - n.startPx.y) > 0.01 ||
+            Math.abs(p.endPx.x - n.endPx.x) > 0.01 ||
+            Math.abs(p.endPx.y - n.endPx.y) > 0.01
+          ) {
+            return newPos;
+          }
+        }
+        return prev;
+      });
 
       const [signLng, signLat] = percentToLngLat(SHOP_SIGN_LOC.x, SHOP_SIGN_LOC.y);
       const signP = map.project([signLng, signLat]);
-      setShopSignPx({ x: signP.x, y: signP.y });
+      setShopSignPx((prev) =>
+        prev && Math.abs(prev.x - signP.x) <= 0.01 && Math.abs(prev.y - signP.y) <= 0.01
+          ? prev
+          : { x: signP.x, y: signP.y }
+      );
     };
 
     updatePositions();
+    map.on('move', updatePositions);
     map.on('render', updatePositions);
 
     return () => {
+      map.off('move', updatePositions);
       map.off('render', updatePositions);
     };
   }, [map]);

@@ -79,7 +79,7 @@ export function GlitchIntroScene() {
   return (
     <div
       onClick={handleNextLine}
-      className="flex-1 w-full bg-panel text-ink flex flex-col justify-between p-6 select-none relative overflow-hidden cursor-pointer"
+      className="flex-1 min-h-0 w-full bg-panel text-ink flex flex-col justify-between p-6 select-none relative overflow-y-auto cursor-pointer pb-safe-bottom"
       data-surface="panel"
     >
       {/* Header bar with SKIP button */}

@@ -51,6 +51,16 @@ export function Codemaker() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
+  // Sync selected node from search param if provided
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const paramNodeId = new URLSearchParams(window.location.search).get('nodeId');
+      if (paramNodeId && allNodes.some((n) => n.id === paramNodeId)) {
+        setSelectedNodeId(paramNodeId);
+      }
+    }
+  }, [allNodes]);
+
   // Current node
   const currentNode = useMemo(() => {
     return allNodes.find((n) => n.id === selectedNodeId) || allNodes[0];
@@ -196,7 +206,7 @@ export function Codemaker() {
   };
 
   return (
-    <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
+    <div className="scene-ground w-full flex-1 min-h-0 flex flex-col text-ink overflow-y-auto pb-24 pb-safe-bottom select-none">
       {/* Account & Mode Header Bar */}
       <div className="bg-panel-light border-b border-line px-4 py-3 flex items-center justify-between shrink-0">
         <div>
@@ -208,9 +218,19 @@ export function Codemaker() {
           </h1>
         </div>
 
-        {/* Account Switcher */}
+        {/* Navigation & Account Switcher */}
         <div className="flex items-center gap-2">
-          <span className="font-data text-xs text-ink-muted">
+          <Button
+            type="button"
+            variant="secondary"
+            compact
+            arrow
+            onClick={() => router.push('/duel')}
+            aria-label="Return to Turf War"
+          >
+            TURF WAR
+          </Button>
+          <span className="font-data text-xs text-ink-muted hidden sm:inline">
             DECKER: <strong className="text-ink">{activeAccount}</strong>
           </span>
           <Button

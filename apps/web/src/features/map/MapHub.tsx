@@ -20,7 +20,7 @@ export function MapHub({ onJackIn }: MapHubProps = {}) {
 
   return (
     <div
-      className="scene-ground w-full h-full relative overflow-hidden flex flex-col"
+      className="scene-ground w-full h-full relative overflow-hidden flex flex-col min-h-0"
       data-testid="map-hub"
     >
       <MapEngine>

@@ -89,6 +89,7 @@ describe('LoginScreen Component (0.2)', () => {
     vi.mocked(authService.login).mockResolvedValueOnce({
       profile: { id: 'acc-1', handle: 'GIBSON', avatarUrl: '/icons/glyph-camera.svg', createdAt: Date.now() },
       settings: {
+        masterMute: false,
         rookieAssist: true,
         reducedMotion: 'system',
         colorBlindMode: false,

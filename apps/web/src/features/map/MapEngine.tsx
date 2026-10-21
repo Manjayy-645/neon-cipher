@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { mapStyle } from './style';
 import { MAP_BOUNDS, percentToLngLat } from './coordinates';
 import { isFeatureEnabled } from '../../lib/flags';
-import { getNodes } from './nodeService';
+import { getNodes, getNodeById } from './nodeService';
 import { MapOverlay } from './MapOverlay';
 import { FogLayer } from './FogLayer';
 import { AmbientLife } from './AmbientLife';
@@ -17,6 +17,7 @@ import {
   easeOutCubic,
 } from './camera';
 import { useMapStore } from '../../stores/map-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
@@ -89,22 +90,27 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
       resizeObserver.observe(mapContainer.current);
     }
 
+    const handleMapMovement = () => {
+      if (!mapInstance.current) return;
+      const nextZoom = Number(mapInstance.current.getZoom().toFixed(2));
+      setZoom((prev) => (prev === nextZoom ? prev : nextZoom));
+
+      if (showDevOverlay) {
+        const c = mapInstance.current.getCenter();
+        const nextLng = Number(c.lng.toFixed(2));
+        const nextLat = Number(c.lat.toFixed(2));
+        setCenter((prev) => (prev[0] === nextLng && prev[1] === nextLat ? prev : [nextLng, nextLat]));
+      }
+    };
+
     mapInstance.current.on('load', () => {
       if (mapInstance.current) {
         setIsMapLoaded(true);
-        setZoom(Number(mapInstance.current.getZoom().toFixed(2)));
-        const c = mapInstance.current.getCenter();
-        setCenter([Number(c.lng.toFixed(2)), Number(c.lat.toFixed(2))]);
+        handleMapMovement();
       }
     });
 
-    mapInstance.current.on('move', () => {
-      if (mapInstance.current) {
-        setZoom(Number(mapInstance.current.getZoom().toFixed(2)));
-        const c = mapInstance.current.getCenter();
-        setCenter([Number(c.lng.toFixed(2)), Number(c.lat.toFixed(2))]);
-      }
-    });
+    mapInstance.current.on('move', handleMapMovement);
 
     globalGetZoom = () => mapInstance.current?.getZoom() ?? 0;
     
@@ -159,18 +165,24 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
     return () => cancelAnimationFrame(rAF);
   }, [showDevOverlay]);
 
-  const nodes = getNodes();
+  const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
+  const nodes = useMemo(() => getNodes(), [crackedNodes]);
   const view = useMapStore((s) => s.view);
   const selectedDistrict = useMapStore((s) => s.selectedDistrict);
   const bridgeUnlocked = useMapStore((s) => s.unlocks.bridge);
   const selectedNodeId = useMapStore((s) => s.selectedNodeId);
-  const sheetHeight = useMapStore((s) => s.sheetHeight);
   const timeOfDay = useMapStore((s) => s.timeOfDay);
   const stepBackView = useMapStore((s) => s.stepBackView);
+
+  const lastCameraTarget = useRef<string>('');
 
   // Programmatic camera moves based on state machine
   useEffect(() => {
     if (!mapInstance.current || !isMapLoaded) return;
+
+    const targetKey = `${view}:${selectedDistrict || ''}:${view === 'node' ? selectedNodeId || '' : ''}`;
+    if (lastCameraTarget.current === targetKey) return;
+    lastCameraTarget.current = targetKey;
 
     if (view === 'overview') {
       const preset = CAMERA_PRESETS.overview;
@@ -192,7 +204,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
         easing: easeOutCubic,
       });
     } else if (view === 'node' && selectedNodeId) {
-      const node = nodes.find((n) => n.id === selectedNodeId);
+      const node = getNodeById(selectedNodeId);
       if (node) {
         const [lng, lat] = percentToLngLat(node.x, node.y);
         const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -206,7 +218,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
         });
       }
     }
-  }, [view, selectedDistrict, selectedNodeId, isMapLoaded, prefersReducedMotion, sheetHeight, nodes]);
+  }, [view, selectedDistrict, selectedNodeId, isMapLoaded, prefersReducedMotion]);
 
   // Pinch-out / zoom listener: step back state if zooming out past threshold
   useEffect(() => {

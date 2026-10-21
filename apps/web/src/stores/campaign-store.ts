@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { CampaignState, ChapterProgress } from '@/app/api/mock/db';
 import { defaultCampaignState } from '@/app/api/mock/db';
 import { campaignService } from '@/features/story/campaignService';
@@ -37,15 +38,17 @@ interface CampaignStoreState {
   resetCampaign: (targetChapterId?: string) => Promise<void>;
 }
 
-export const useCampaignStore = create<CampaignStoreState>((set, get) => ({
-  debt: { ...defaultCampaignState.debt },
-  chapters: { ...defaultCampaignState.chapters },
-  activeChapterId: defaultCampaignState.activeChapterId,
-  unlocks: { ...defaultCampaignState.unlocks },
-  tutorials: { ...defaultCampaignState.tutorials },
-  isLoading: false,
-  tutorialActive: false,
-  tutorialStepIndex: 0,
+export const useCampaignStore = create<CampaignStoreState>()(
+  persist(
+    (set, get) => ({
+      debt: { ...defaultCampaignState.debt },
+      chapters: { ...defaultCampaignState.chapters },
+      activeChapterId: defaultCampaignState.activeChapterId,
+      unlocks: { ...defaultCampaignState.unlocks },
+      tutorials: { ...defaultCampaignState.tutorials },
+      isLoading: false,
+      tutorialActive: false,
+      tutorialStepIndex: 0,
 
   syncCampaign: (state) =>
     set({
@@ -120,4 +123,16 @@ export const useCampaignStore = create<CampaignStoreState>((set, get) => ({
       console.error('Failed to reset campaign on server:', e);
     }
   },
-}));
+    }),
+    {
+      name: 'nc_campaign_store',
+      partialize: (state) => ({
+        debt: state.debt,
+        chapters: state.chapters,
+        activeChapterId: state.activeChapterId,
+        unlocks: state.unlocks,
+        tutorials: state.tutorials,
+      }),
+    }
+  )
+);

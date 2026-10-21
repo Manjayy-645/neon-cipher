@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSystemStore } from '@/stores/system-store';
 import { soundFx } from '@/lib/audio';
 import { Button } from '@/components/ui/Button';
@@ -48,37 +48,53 @@ export function ConnectionBanner() {
     return () => clearInterval(timer);
   }, [midDuelDesync, decrementDuelTimer]);
 
-  // Offline retry ticker
-  useEffect(() => {
-    if (!isActuallyOffline || isReconnecting) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          handleManualRetry();
-          return 5;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isActuallyOffline, isReconnecting]);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleManualRetry = () => {
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleManualRetry = useCallback(() => {
     setReconnecting(true);
     soundFx.playKeystroke();
-    setTimeout(() => {
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    retryTimeoutRef.current = setTimeout(() => {
       setReconnecting(false);
       // If simulated offline was on, turn it off on explicit reconnect
       useSystemStore.getState().setSimulatedOffline(false);
       useSystemStore.getState().setOnline(true);
       soundFx.playSuccess();
     }, 1200);
-  };
+  }, [setReconnecting]);
 
-  const handleForfeit = () => {
+  const handleForfeit = useCallback(() => {
     setMidDuelDesync(false);
     soundFx.playWarning();
-  };
+  }, [setMidDuelDesync]);
+
+  // Offline retry ticker
+  useEffect(() => {
+    if (!isActuallyOffline || isReconnecting) {
+      setCountdown(5);
+      return;
+    }
+
+    if (countdown <= 1) {
+      handleManualRetry();
+      setCountdown(5);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [isActuallyOffline, isReconnecting, countdown, handleManualRetry]);
 
   // 1. Mid-Duel Desync banner (Highest priority)
   if (midDuelDesync) {

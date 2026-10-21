@@ -65,7 +65,7 @@ export function ProfileScreen() {
       throw new Error(`Selected avatar "${selectedAvatarId}" is not available.`);
     }
     setProfile(trimmed, selectedAvatarId);
-    usePlayerStore.setState({ handle: trimmed, avatarUrl: avatar.url });
+    usePlayerStore.getState().resetProfile(trimmed, avatar.url);
     track('profile_created', { callsign: trimmed, avatarId: selectedAvatarId });
     advance('map.overview');
     router.push('/map');
@@ -73,7 +73,7 @@ export function ProfileScreen() {
 
   return (
     <div
-      className="flex-1 w-full bg-panel text-ink flex flex-col justify-between p-6 select-none relative overflow-y-auto"
+      className="flex-1 min-h-0 w-full bg-panel text-ink flex flex-col justify-between p-6 select-none relative overflow-y-auto pb-safe-bottom"
       data-surface="panel"
     >
       {/* Header */}

@@ -31,9 +31,22 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
 
   const isDimmed = step === 'map.district' && node.id !== CH2_NODE_ID;
-  const crackedRecord = crackedNodes[node.id];
+  const aliasMap: Record<string, string> = {
+    n1: 's1', s1: 'n1',
+    n2: 's8', s8: 'n2',
+    n3: 'c4', c4: 'n3',
+    n4: 's5', s5: 'n4',
+    n5: 's2', s2: 'n5',
+    n6: 's3', s3: 'n6',
+    n7: 's6', s6: 'n7',
+    n8: 's4', s4: 'n8',
+  };
+  const crackedRecord = crackedNodes[node.id] || (aliasMap[node.id] ? crackedNodes[aliasMap[node.id]] : undefined);
   const isCooldownFromCracked = Boolean(
-    crackedRecord && Date.now() - crackedRecord.crackedAt < crackedRecord.cooldownMs
+    crackedRecord && crackedRecord.cooldownMs > 0 && Date.now() - crackedRecord.crackedAt < crackedRecord.cooldownMs
+  );
+  const isOwnedFromCracked = Boolean(
+    crackedRecord && (crackedRecord.cooldownMs === 0 || Date.now() - crackedRecord.crackedAt >= crackedRecord.cooldownMs)
   );
   const cooldownSecs = isCooldownFromCracked
     ? Math.max(0, Math.ceil((crackedRecord.cooldownMs - (Date.now() - crackedRecord.crackedAt)) / 1000))
@@ -41,6 +54,8 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
 
   const effectiveNode = isCooldownFromCracked
     ? { ...node, status: 'cooldown' as const, timerSeconds: cooldownSecs }
+    : isOwnedFromCracked || node.status === 'owned'
+    ? { ...node, status: 'owned' as const }
     : node;
 
   const isSelected = (activeNodeId ?? selectedNodeId) === node.id;
@@ -55,6 +70,9 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   } else if (effectiveNode.status === 'cooldown') {
     tagText = formatCountdown(cooldownSecs);
     tagBg = 'bg-status-cooldown text-panel-light';
+  } else if (effectiveNode.status === 'owned') {
+    tagText = 'OWNED';
+    tagBg = 'bg-accent text-white';
   }
 
   if (isSelected) {
@@ -122,7 +140,7 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
 
         {/* Tier badge: height 14px, overlapping plate bottom by 8px, radius 7px, padding 0 6px */}
         <div
-          className={`-mt-[8px] z-20 h-[14px] px-[6px] rounded-[7px] text-[10px] font-data font-semibold flex items-center justify-center leading-none shadow-marker ${tagBg}`}
+          className={`-mt-[8px] z-20 h-[14px] px-[6px] rounded-[7px] text-[10px] font-data font-semibold tracking-[0.5px] flex items-center justify-center leading-none shadow-marker ${tagBg}`}
           style={{ height: '14px' }}
         >
           {tagText}

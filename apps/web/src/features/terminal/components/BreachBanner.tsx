@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 interface BreachBannerProps {
@@ -9,6 +8,9 @@ interface BreachBannerProps {
   secret?: string;
   payout?: number;
   fine?: number;
+  attemptsUsed?: number;
+  maxAttempts?: number | null;
+  failureReason?: 'TRACE TIMEOUT' | 'ATTEMPTS EXHAUSTED' | string;
   onReturnToMap: () => void;
   isRecoveryRun?: boolean;
   onStartRecovery?: () => void;
@@ -21,6 +23,9 @@ export function BreachBanner({
   secret,
   payout,
   fine,
+  attemptsUsed,
+  maxAttempts,
+  failureReason,
   onReturnToMap,
   isRecoveryRun = false,
   onStartRecovery,
@@ -28,15 +33,9 @@ export function BreachBanner({
   returnActionLabel = 'RETURN TO MAP',
 }: BreachBannerProps) {
   const shouldReduceMotion = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const isWon = status === 'won';
 
-  const content = (
+  return (
     <div
       role="alert"
       data-testid="breach-banner"
@@ -91,9 +90,41 @@ export function BreachBanner({
               ? 'Your assignment is waiting. Head back when you are ready.'
               : isWon
                 ? 'Node defense bypassed. Cipher cracked successfully.'
-                : 'Maximum trace threshold reached. Trace lock engaged.'}
+                : failureReason === 'TRACE TIMEOUT'
+                  ? 'ICE trace timer expired before cipher breach.'
+                  : 'Maximum trace threshold reached. Trace lock engaged.'}
           </p>
         </div>
+
+        {/* Failure reason and attempts used breakdown */}
+        {!isWon && (
+          <div className="w-full flex flex-col gap-2 font-data text-xs">
+            {failureReason && (
+              <div
+                data-testid="failure-reason"
+                className="terminal-result-subpanel w-full p-2.5 rounded-[6px] border flex justify-between items-center"
+              >
+                <span className="terminal-result-muted uppercase">FAILURE REASON:</span>
+                <span className="text-terminal-danger font-bold uppercase tracking-wider">
+                  {failureReason}
+                </span>
+              </div>
+            )}
+            {attemptsUsed !== undefined && (
+              <div
+                data-testid="failure-attempts"
+                className="terminal-result-subpanel w-full p-2.5 rounded-[6px] border flex justify-between items-center"
+              >
+                <span className="terminal-result-muted uppercase">ATTEMPTS:</span>
+                <span className="terminal-result-ink font-bold">
+                  {maxAttempts != null
+                    ? `${attemptsUsed} of ${maxAttempts} used`
+                    : `${attemptsUsed} used`}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Revealed secret if lost */}
         {!isWon && secret && (
@@ -154,10 +185,4 @@ export function BreachBanner({
       </motion.div>
     </div>
   );
-
-  if (!mounted || typeof document === 'undefined') {
-    return content;
-  }
-
-  return createPortal(content, document.body);
 }

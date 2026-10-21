@@ -7,6 +7,7 @@ export interface AudioSettings {
 }
 
 export interface AccountSettings {
+  masterMute: boolean; // Master mute for all audio channels
   rookieAssist: boolean; // true = rookie assist, false = pro mode
   reducedMotion: ReducedMotionMode;
   colorBlindMode: boolean; // true = shape-only clues

@@ -151,12 +151,12 @@ export const CampaignObjectiveBanner: React.FC = () => {
           <path d="M5 0 10 5 5 10 0 5z" fill="currentColor" />
         </svg>
         <div className="min-w-0 flex-1">
-          <div className="font-data text-[10px] uppercase tracking-[1px] text-accent-text leading-tight">
+          <div className="font-data text-[11px] uppercase tracking-[1.2px] font-bold text-accent-text leading-tight">
             Active contract · Chapter 0{chapter.number}
           </div>
-          <div className="font-heading text-[16px] text-ink leading-tight truncate">
+          <div className="font-heading text-[16px] font-bold text-ink leading-tight truncate">
             {chapter.title}
-            <span className="text-ink-muted"> → {chapter.target}</span>
+            <span className="text-ink font-semibold"> → {chapter.target}</span>
           </div>
         </div>
         <svg

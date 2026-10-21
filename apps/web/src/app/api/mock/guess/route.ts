@@ -9,8 +9,10 @@ import {
   creditDefenseFine,
   transferNodeOwnership,
   activeAccountId,
+  getActiveAccount,
 } from '../db';
-import { validateGuess, calculateScore, calculateScoreWithIce, driftSecret, getChapterById } from '@neon-cipher/game-rules/src/index';
+import { validateGuess, calculateScore, calculateScoreWithIce, driftSecret, getChapterById, calculateWinRate } from '@neon-cipher/game-rules/src/index';
+import { isSameNode } from '@/features/map/nodeService';
 
 // MOCK: replace with Supabase edge function.
 export async function POST(request: Request) {
@@ -30,6 +32,19 @@ export async function POST(request: Request) {
       const elapsed = (Date.now() - session.startedAt) / 1000;
       if (elapsed > session.node.timerSeconds || guess === 'timeout') {
         session.status = 'lost';
+        const activeAcc = getActiveAccount();
+        if (activeAcc && activeAcc.profile) {
+          activeAcc.profile.stats.totalHacks += 1;
+          activeAcc.profile.stats.failedBreaches += 1;
+          activeAcc.profile.stats.currentStreak = 0;
+          activeAcc.profile.stats.winRatePercent = calculateWinRate(activeAcc.profile.stats.successfulBreaches, activeAcc.profile.stats.totalHacks);
+          activeAcc.profile.rank.currentXp += 25;
+          while (activeAcc.profile.rank.currentXp >= activeAcc.profile.rank.nextLevelXp) {
+            activeAcc.profile.rank.currentXp -= activeAcc.profile.rank.nextLevelXp;
+            activeAcc.profile.rank.level += 1;
+            activeAcc.profile.rank.nextLevelXp = activeAcc.profile.rank.level * 1000;
+          }
+        }
         const isCourtesy = Boolean((session as any).courtesy && !(session as any).courtesyUsed);
         if (isCourtesy) {
           (session as any).courtesyUsed = true;
@@ -119,6 +134,21 @@ export async function POST(request: Request) {
 
     if (isWin) {
       session.status = 'won';
+      const activeAcc = getActiveAccount();
+      if (activeAcc && activeAcc.profile) {
+        activeAcc.profile.stats.totalHacks += 1;
+        activeAcc.profile.stats.successfulBreaches += 1;
+        activeAcc.profile.stats.totalCreditsEarned += session.node.bounty || 0;
+        activeAcc.profile.stats.currentStreak += 1;
+        activeAcc.profile.stats.bestStreak = Math.max(activeAcc.profile.stats.bestStreak, activeAcc.profile.stats.currentStreak);
+        activeAcc.profile.stats.winRatePercent = calculateWinRate(activeAcc.profile.stats.successfulBreaches, activeAcc.profile.stats.totalHacks);
+        activeAcc.profile.rank.currentXp += 150;
+        while (activeAcc.profile.rank.currentXp >= activeAcc.profile.rank.nextLevelXp) {
+          activeAcc.profile.rank.currentXp -= activeAcc.profile.rank.nextLevelXp;
+          activeAcc.profile.rank.level += 1;
+          activeAcc.profile.rank.nextLevelXp = activeAcc.profile.rank.level * 1000;
+        }
+      }
       if (!session.recovery) {
         recordTransaction(`Breach: ${session.node.name}`, session.node.bounty, 'credits', 'payout');
       }
@@ -131,7 +161,7 @@ export async function POST(request: Request) {
       let campaignResult = null;
       if (mockCampaign.activeChapterId) {
         const chapter = getChapterById(mockCampaign.activeChapterId);
-        if (chapter && chapter.mapNodeId === session.nodeId) {
+        if (chapter && (chapter.mapNodeId === session.nodeId || isSameNode(chapter.mapNodeId, session.nodeId))) {
           campaignResult = completeChapterAssignment(chapter.id);
         }
       }
@@ -176,6 +206,19 @@ export async function POST(request: Request) {
 
     if (session.attemptsLeft <= 0) {
       session.status = 'lost';
+      const activeAcc = getActiveAccount();
+      if (activeAcc && activeAcc.profile) {
+        activeAcc.profile.stats.totalHacks += 1;
+        activeAcc.profile.stats.failedBreaches += 1;
+        activeAcc.profile.stats.currentStreak = 0;
+        activeAcc.profile.stats.winRatePercent = calculateWinRate(activeAcc.profile.stats.successfulBreaches, activeAcc.profile.stats.totalHacks);
+        activeAcc.profile.rank.currentXp += 25;
+        while (activeAcc.profile.rank.currentXp >= activeAcc.profile.rank.nextLevelXp) {
+          activeAcc.profile.rank.currentXp -= activeAcc.profile.rank.nextLevelXp;
+          activeAcc.profile.rank.level += 1;
+          activeAcc.profile.rank.nextLevelXp = activeAcc.profile.rank.level * 1000;
+        }
+      }
       const isCourtesy = Boolean((session as any).courtesy && !(session as any).courtesyUsed);
       if (isCourtesy) {
         (session as any).courtesyUsed = true;

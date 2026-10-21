@@ -35,6 +35,7 @@ export function TourSpotlight({
   const shouldReduceMotion = useReducedMotion();
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [navBottomOffset, setNavBottomOffset] = useState(32);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
   const updateRect = useCallback(() => {
@@ -61,20 +62,36 @@ export function TourSpotlight({
     }
   }, [targetSelector]);
 
+  const updateNavBottomOffset = useCallback(() => {
+    const nav = document.querySelector<HTMLElement>('[aria-label="Main Navigation"]');
+    const navRect = nav?.getBoundingClientRect();
+    const nextOffset =
+      navRect && navRect.height > 0 && navRect.top < window.innerHeight
+        ? Math.ceil(window.innerHeight - navRect.top + 12)
+        : 32;
+
+    setNavBottomOffset((current) => (current === nextOffset ? current : nextOffset));
+  }, []);
+
   // Query DOM with retry for up to 1s if target element is not mounted yet
   useEffect(() => {
     updateRect();
+    updateNavBottomOffset();
 
     let retries = 0;
     const interval = setInterval(() => {
       updateRect();
+      updateNavBottomOffset();
       retries++;
       if (retries >= 10) {
         clearInterval(interval);
       }
     }, 100);
 
-    const handleResizeOrScroll = () => updateRect();
+    const handleResizeOrScroll = () => {
+      updateRect();
+      updateNavBottomOffset();
+    };
     window.addEventListener('resize', handleResizeOrScroll);
     window.addEventListener('scroll', handleResizeOrScroll, true);
 
@@ -88,7 +105,7 @@ export function TourSpotlight({
       window.removeEventListener('scroll', handleResizeOrScroll, true);
       observer.disconnect();
     };
-  }, [updateRect]);
+  }, [updateRect, updateNavBottomOffset]);
 
   // Escape key pauses the tour
   useEffect(() => {
@@ -137,7 +154,6 @@ export function TourSpotlight({
     transform: 'translateX(-50%)',
     width: 'calc(100% - 32px)',
     maxWidth: '440px',
-    zIndex: 50,
   };
 
   if (cutout) {
@@ -156,40 +172,40 @@ export function TourSpotlight({
       };
     }
   } else {
-    // Default center bottom if no target
+    // Keep the guide clear of the bottom navigation when it is visible.
     bubbleStyle = {
       ...bubbleStyle,
-      bottom: '32px',
+      bottom: `${navBottomOffset}px`,
     };
   }
 
   return (
-    <div className="fixed inset-0 z-40 pointer-events-none select-none">
+    <div className="fixed inset-0 pointer-events-none select-none">
       {/* 4-panel Backdrop: dims everything outside cutout and BLOCKS pointer input */}
       {cutout ? (
         <>
           {/* Top panel */}
           <div
             style={{ top: 0, left: 0, right: 0, height: cutout.top }}
-            className="fixed bg-[#37332E]/60 pointer-events-auto"
+            className="fixed bg-[#37332E]/60 pointer-events-auto z-40"
             aria-hidden="true"
           />
           {/* Bottom panel */}
           <div
             style={{ top: cutout.bottom, left: 0, right: 0, bottom: 0 }}
-            className="fixed bg-[#37332E]/60 pointer-events-auto"
+            className="fixed bg-[#37332E]/60 pointer-events-auto z-40"
             aria-hidden="true"
           />
           {/* Left panel */}
           <div
             style={{ top: cutout.top, left: 0, width: cutout.left, height: cutout.height }}
-            className="fixed bg-[#37332E]/60 pointer-events-auto"
+            className="fixed bg-[#37332E]/60 pointer-events-auto z-40"
             aria-hidden="true"
           />
           {/* Right panel */}
           <div
             style={{ top: cutout.top, left: cutout.right, right: 0, height: cutout.height }}
-            className="fixed bg-[#37332E]/60 pointer-events-auto"
+            className="fixed bg-[#37332E]/60 pointer-events-auto z-40"
             aria-hidden="true"
           />
 
@@ -221,22 +237,38 @@ export function TourSpotlight({
         </>
       ) : (
         <div
-          className="fixed inset-0 bg-[#37332E]/60 pointer-events-auto"
+          data-testid="tour-spotlight-missing-target-backdrop"
+          className="fixed inset-0 bg-[#37332E]/60 pointer-events-none z-40"
           aria-hidden="true"
         />
       )}
 
       {/* Skip Tour Button in corner */}
       {showSkip && onSkip && (
-        <div className="fixed top-3 right-3 z-50 pointer-events-auto">
+        <div className="fixed top-3 right-3 z-40 pointer-events-auto">
           <Button
             variant="ghost"
             compact
             onClick={onSkip}
-            aria-label="Skip tour"
-            className="bg-panel/85 border border-line text-ink-muted hover:text-ink text-xs h-[44px] min-h-[44px] px-3 shadow-xs"
+            data-testid="skip-tutorial-btn"
+            aria-label="Skip tutorial"
+            className="bg-panel-light border border-line text-ink font-semibold hover:text-danger hover:border-danger text-xs h-[44px] min-h-[44px] px-3.5 shadow-card flex items-center gap-1.5 transition-colors"
           >
-            SKIP TOUR
+            <span>SKIP TUTORIAL</span>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-danger shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </Button>
         </div>
       )}
@@ -246,7 +278,7 @@ export function TourSpotlight({
         ref={bubbleRef}
         style={bubbleStyle}
         onClick={isTapToAdvance && onTap ? onTap : undefined}
-        className={`pointer-events-auto bg-panel-light border border-line rounded-[14px] p-3 sm:p-3.5 shadow-card ${
+        className={`pointer-events-auto z-terminal-modal bg-panel-light border border-line rounded-[14px] p-3 sm:p-3.5 shadow-card ${
           isTapToAdvance ? 'cursor-pointer active:brightness-95' : ''
         }`}
         role="region"
@@ -278,15 +310,39 @@ export function TourSpotlight({
             >
               {line}
             </p>
-
-            {/* Tap to continue indicator */}
-            {isTapToAdvance && (
-              <div className="flex justify-end pt-2">
-                <span className="font-data text-[10px] font-bold tracking-wider uppercase text-accent-text">
-                  TAP TO CONTINUE ▶
-                </span>
-              </div>
+            {targetSelector && !hasCutout && (
+              <p className="font-data text-[11px] text-ink-muted leading-relaxed mt-2">
+                I can’t see that control on this screen. You can use the page normally or skip the guide.
+              </p>
             )}
+
+            {/* Guide Bubble Actions: Exit / Skip Tutorial and Tap to continue */}
+            <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center justify-between gap-2">
+              {showSkip && onSkip ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSkip();
+                  }}
+                  data-testid="spotlight-skip-bubble-btn"
+                  aria-label="Skip tutorial from bubble"
+                  className="font-data text-[11px] font-bold tracking-wider uppercase text-ink-muted hover:text-danger active:text-danger transition-colors h-[44px] min-h-[44px] flex items-center gap-1"
+                >
+                  <span>SKIP TUTORIAL ✕</span>
+                </button>
+              ) : (
+                <span />
+              )}
+
+              {isTapToAdvance && (
+                <div className="flex items-center">
+                  <span className="font-data text-[10px] font-bold tracking-wider uppercase text-accent-text">
+                    TAP TO CONTINUE ▶
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

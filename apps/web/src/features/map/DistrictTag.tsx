@@ -101,19 +101,19 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
       >
         <div className="flex items-start justify-between gap-3 w-full">
           <div className="flex flex-col">
-            <span className="font-heading text-[17px] leading-[20px] font-bold tracking-[0.5px] uppercase text-ink">
+            <span className="font-heading text-[18px] leading-[21px] font-bold tracking-[0.8px] uppercase text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
               {district.name}
             </span>
-            <span className="font-data text-[12px] leading-[16px] text-ink-muted mt-0.5">
+            <span className="font-data text-[12px] leading-[16px] font-semibold text-ink mt-0.5">
               {countText}
             </span>
             {showCallToAction && (
-              <span className="font-data text-[10px] font-semibold tracking-[1px] text-accent-text uppercase mt-1">
+              <span className="font-data text-[11px] font-bold tracking-[1.2px] text-accent-text uppercase mt-1 drop-shadow-[0_0.5px_0_rgba(255,255,255,0.5)]">
                 TAP TO ENTER
               </span>
             )}
             {isLocked && district.unlockHint && (
-              <span className="font-data text-[10px] text-ink-muted/80 mt-1 max-w-[140px] truncate">
+              <span className="font-data text-[11px] font-semibold text-danger-text mt-1 max-w-[150px] truncate">
                 {district.unlockHint}
               </span>
             )}
@@ -123,7 +123,7 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
             {isLocked ? (
               <span
                 data-testid={`status-chip-${district.id}-locked`}
-                className="bg-ink-muted text-panel-light font-data text-[11px] font-semibold tracking-[1px] uppercase rounded-sm px-[8px] py-[3px] flex items-center gap-1 shadow-sm"
+                className="bg-ink text-panel-light font-data text-[11px] font-bold tracking-[1px] uppercase rounded-sm px-[8px] py-[3px] flex items-center gap-1 shadow-sm"
               >
                 <svg
                   className="w-3 h-3"
@@ -143,7 +143,7 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
             ) : (
               <span
                 data-testid={`status-chip-${district.id}-open`}
-                className="bg-accent text-accent-on font-data text-[11px] font-semibold tracking-[1px] uppercase rounded-sm px-[8px] py-[3px] shadow-sm"
+                className="bg-accent text-on-accent font-data text-[11px] font-bold tracking-[1px] uppercase rounded-sm px-[8px] py-[3px] shadow-sm"
               >
                 OPEN
               </span>

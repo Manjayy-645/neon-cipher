@@ -8,6 +8,7 @@ export interface TerminalToolSlotsProps {
   equippedTools: string[];
   inventory: Record<string, number>;
   onActivateTool: (toolId: string) => void;
+  onInspectTool?: (toolId: string) => void;
   isActivating?: boolean;
   disabled?: boolean;
   toolFeedback?: string | null;
@@ -21,6 +22,7 @@ export function TerminalToolSlots({
   equippedTools,
   inventory,
   onActivateTool,
+  onInspectTool,
   isActivating = false,
   disabled = false,
   toolFeedback,
@@ -32,7 +34,7 @@ export function TerminalToolSlots({
   return (
     <section
       aria-label="Equipped Intrusion Tools"
-      className="px-4 py-2 bg-terminal-panel/80 border-t border-terminal-line flex flex-col gap-2 shrink-0 select-none z-10"
+      className="px-3 py-1 bg-terminal-panel/80 border-t border-terminal-line flex flex-col gap-1 shrink-0 select-none z-10"
     >
       {/* Header line: Equipped status & Ice shield indicator */}
       <div className="flex items-center justify-between text-[11px] font-data">
@@ -86,7 +88,7 @@ export function TerminalToolSlots({
       )}
 
       {/* Two Equip Slots Grid */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         {[0, 1].map((slotIdx) => {
           const toolId = equippedTools[slotIdx];
           const item = toolId ? CATALOG.find((it) => it.id === toolId) : null;
@@ -98,7 +100,7 @@ export function TerminalToolSlots({
             return (
               <div
                 key={slotIdx}
-                className="h-[44px] min-h-[44px] rounded-[8px] bg-terminal-bg/50 border border-dashed border-terminal-line/60 px-3 flex items-center justify-center text-[10px] font-data text-terminal-muted/60 uppercase tracking-wider"
+                className="h-[36px] min-h-[36px] rounded-[6px] bg-terminal-bg/50 border border-dashed border-terminal-line/60 px-2.5 flex items-center justify-center text-[10px] font-data text-terminal-muted/60 uppercase tracking-wider"
               >
                 [EMPTY RIG SLOT]
               </div>
@@ -108,13 +110,26 @@ export function TerminalToolSlots({
           return (
             <div
               key={item.id}
-              className="h-[44px] min-h-[44px] rounded-[8px] bg-terminal-bg border border-terminal-line px-2 flex items-center justify-between gap-2 shadow-xs"
+              className="h-[36px] min-h-[36px] rounded-[6px] bg-terminal-bg border border-terminal-line px-2 flex items-center justify-between gap-1.5 shadow-xs"
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer hover:opacity-90 outline-none focus-visible:ring-1 focus-visible:ring-terminal-phosphor rounded py-0.5"
+                onClick={() => onInspectTool?.(item.id)}
+                title={`Inspect ${item.name}`}
+                role="button"
+                tabIndex={0}
+                data-testid={`inspect-tool-${item.id}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onInspectTool?.(item.id);
+                  }
+                }}
+              >
                 {(() => {
                   const iconSrc = item.icon || getItemIcon(item.id);
                   return iconSrc ? (
-                    <div className="w-6 h-6 rounded bg-terminal-panel border border-terminal-line/70 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                    <div className="w-5 h-5 rounded bg-terminal-panel border border-terminal-line/70 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={iconSrc}
@@ -128,7 +143,7 @@ export function TerminalToolSlots({
                   <span className="font-heading text-xs font-bold text-terminal-ink truncate">
                     {item.name}
                   </span>
-                  <span className="font-data text-[10px] text-terminal-muted">
+                  <span className="font-data text-[9px] text-terminal-muted leading-none">
                     {isActivated ? 'Deployed' : count > 0 ? `x${count} in deck` : 'Depleted'}
                   </span>
                 </div>
@@ -141,7 +156,7 @@ export function TerminalToolSlots({
                 onClick={() => onActivateTool(item.id)}
                 aria-label={`Activate ${item.name}`}
                 data-testid={`activate-tool-${item.id}`}
-                className="h-[32px] min-h-[32px] px-2.5 text-[10px] font-data font-bold tracking-wider uppercase shrink-0"
+                className="h-[28px] min-h-[28px] px-2 text-[10px] font-data font-bold tracking-wider uppercase shrink-0"
               >
                 {isActivated ? 'USED' : count > 0 ? 'USE' : 'EMPTY'}
               </Button>

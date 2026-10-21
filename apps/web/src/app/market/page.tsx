@@ -5,14 +5,25 @@ import { useRouter } from 'next/navigation';
 import { ShopkeeperScene } from '@/features/market/ShopkeeperScene';
 import { BlackMarket } from '@/features/market/BlackMarket';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { campaignService } from '@/features/story/campaignService';
 import { triggerToast } from '@/stores/toast-store';
 import { Button } from '@/components/ui/Button';
+import { isFeatureEnabled } from '@/lib/flags';
 
 export default function MarketPage() {
   const router = useRouter();
   const { unlocks, loadCampaign } = useCampaignStore();
   const [view, setView] = useState<'dialogue' | 'shop'>('dialogue');
   const [devUnlocked, setDevUnlocked] = useState(false);
+
+  const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
+  const chapters = useCampaignStore((s) => s.chapters);
+  const isCh2Completed =
+    chapters['chapter-2']?.status === 'completed' ||
+    Boolean(crackedNodes['n4']) ||
+    Boolean(crackedNodes['s5']) ||
+    Object.keys(crackedNodes).length >= 2;
 
   useEffect(() => {
     loadCampaign();
@@ -27,6 +38,16 @@ export default function MarketPage() {
       }
     }
   }, [loadCampaign]);
+
+  // Automatically unlock Black Market if player completed Market Register or 2 street breaches
+  useEffect(() => {
+    if (isCh2Completed && !unlocks.blackMarket) {
+      useCampaignStore.setState((state) => ({
+        unlocks: { ...state.unlocks, blackMarket: true },
+      }));
+      campaignService.completeChapter(2).catch(() => {});
+    }
+  }, [isCh2Completed, unlocks.blackMarket]);
 
   const handleDevUnlock = async () => {
     if (typeof window !== 'undefined') {
@@ -47,15 +68,15 @@ export default function MarketPage() {
     setView('shop');
   };
 
-  const isUnlocked = unlocks.blackMarket || devUnlocked;
+  const isUnlocked = unlocks.blackMarket || devUnlocked || isCh2Completed;
 
   if (!isUnlocked) {
     const handleLockedCardClick = () => {
-      triggerToast('Finish Chapter 2 to open this', { type: 'locked' });
+      triggerToast("Breach the Market Register node on the City Map to unlock Glitch's Market", { type: 'locked' });
     };
 
     return (
-      <main className="scene-ground scene-arrive w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 text-ink text-center">
+      <main className="scene-ground scene-arrive w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 text-ink text-center overflow-y-auto min-h-0">
         <div
           role="button"
           tabIndex={0}
@@ -66,7 +87,7 @@ export default function MarketPage() {
               handleLockedCardClick();
             }
           }}
-          aria-label="Black market locked: Finish Chapter 2 to open this"
+          aria-label="Black market locked: Breach the Market Register node on the City Map to unlock Glitch's Market"
           className="max-w-md w-full p-6 bg-panel-light rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none text-center"
         >
           {/* Shuttered Storefront Preview */}
@@ -107,7 +128,7 @@ export default function MarketPage() {
             </h2>
             <p className="font-data text-xs sm:text-sm text-ink-muted leading-relaxed max-w-sm">
               Glitch requires field proof before opening underground frequencies.
-              Finish <strong className="text-ink font-semibold">Chapter 2: The Corner Store Job</strong> in Comms to open this.
+              Breach the <strong className="text-ink font-semibold">Market Register</strong> node on the City Map to unlock Glitch&apos;s Market.
             </p>
           </div>
 
@@ -117,24 +138,26 @@ export default function MarketPage() {
               arrow
               onClick={(e) => {
                 e.stopPropagation();
-                router.push('/comms');
+                router.push('/map');
               }}
               data-testid="go-to-story-button"
               className="w-full"
             >
-              VIEW ASSIGNMENTS
+              VIEW CITY MAP
             </Button>
-            <Button
-              variant="secondary"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDevUnlock();
-              }}
-              data-testid="dev-unlock-market-button"
-              className="w-full text-[11px] font-bold border-money/50 text-money-text hover:bg-money/10"
-            >
-              [DEV: UNLOCK MARKET]
-            </Button>
+            {process.env.NODE_ENV === 'development' && isFeatureEnabled('devOverlay') && (
+              <Button
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDevUnlock();
+                }}
+                data-testid="dev-unlock-market-button"
+                className="w-full text-[11px] font-bold border-money/50 text-money-text hover:bg-money/10"
+              >
+                [DEV: UNLOCK MARKET]
+              </Button>
+            )}
           </div>
         </div>
       </main>
@@ -143,7 +166,7 @@ export default function MarketPage() {
 
   if (view === 'dialogue') {
     return (
-      <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden">
+      <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden min-h-0">
         <ShopkeeperScene
           vendorName="GLITCH"
           vendorTitle="BLACK MARKET BROKER"
@@ -155,8 +178,9 @@ export default function MarketPage() {
   }
 
   return (
-    <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden">
+    <main className="scene-ground scene-arrive w-full h-full relative overflow-hidden min-h-0">
       <BlackMarket onBackToDialogue={() => setView('dialogue')} />
     </main>
   );
 }
+

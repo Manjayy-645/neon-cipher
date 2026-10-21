@@ -241,10 +241,10 @@ export const NixGuide: React.FC = () => {
               className="relative max-w-[min(92vw,340px)] bg-panel-light border border-line border-l-4 border-l-accent rounded-[14px] shadow-card p-3.5 pr-10 cursor-pointer select-none text-ink text-left"
               onClick={handleBubbleClick}
             >
-              <div className="font-heading text-[11px] font-bold tracking-[1px] uppercase text-accent-text mb-1">
+              <div className="font-heading text-[12px] font-bold tracking-[1.2px] uppercase text-accent-text mb-1">
                 NIX
               </div>
-              <p className="font-data text-[13px] leading-[18px] text-ink font-normal whitespace-pre-wrap max-h-[120px] overflow-y-auto pr-1">
+              <p className="font-data text-[13px] leading-[18px] text-ink font-medium whitespace-pre-wrap max-h-[120px] overflow-y-auto pr-1">
                 {displayedText}
               </p>
 

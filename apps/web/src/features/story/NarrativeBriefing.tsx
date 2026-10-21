@@ -79,7 +79,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
   return (
     <div
       data-testid="narrative-briefing-screen"
-      className="scene-ground w-full h-full flex flex-col justify-between p-4 sm:p-6 text-ink overflow-y-auto"
+      className="scene-ground w-full h-full flex flex-col justify-between p-4 sm:p-6 text-ink overflow-y-auto min-h-0 pb-24 pb-safe-bottom"
     >
       {/* Top Bar: Chapter number & Back button */}
       <div className="flex items-center justify-between border-b border-line pb-3 shrink-0">

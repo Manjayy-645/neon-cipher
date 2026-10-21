@@ -1,6 +1,11 @@
+'use client';
+
 import { Button } from '@/components/ui/Button';
+import { usePlayerStore } from '@/stores/player-store';
 
 export default function ShopHero() {
+  const credits = usePlayerStore((s) => s.credits);
+
   return (
     <main className="scene-ground scene-arrive flex h-full w-full min-h-0 flex-col text-ink">
       {/* Vendor Visual Area with Storefront Scene */}
@@ -30,7 +35,7 @@ export default function ShopHero() {
       <div className="flex-1 bg-panel-light p-6 overflow-y-auto">
         <div className="flex justify-between items-end mb-6 border-b border-line pb-2">
           <h2 className="font-heading text-2xl text-ink">Exploits</h2>
-          <div className="font-data text-money-text font-bold">Wallet: $12,450</div>
+          <div className="font-data text-money-text font-bold">Wallet: ${credits.toLocaleString()}</div>
         </div>
 
         <div className="grid gap-4">

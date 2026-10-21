@@ -98,7 +98,7 @@ export function TurfWarBoard() {
   };
 
   return (
-    <div className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none">
+    <div className="scene-ground w-full flex-1 min-h-0 flex flex-col text-ink overflow-y-auto pb-24 pb-safe-bottom select-none">
       {/* Header */}
       <div className="bg-panel/90 border-b border-line px-4 py-4 sm:py-5 flex items-center justify-between shrink-0">
         <div>
@@ -137,7 +137,7 @@ export function TurfWarBoard() {
 
       <div className="p-4 sm:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full">
         {/* District Territory Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {districts.map((dist) => (
             <div
               key={dist.id}

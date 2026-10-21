@@ -12,6 +12,7 @@ import { LoadoutSelector } from '../rig/LoadoutSelector';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
 import { emit } from '@/features/onboarding/events';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 export const DEFAULT_SNAP_POINTS: [number, number, number] = [76, 250, 500];
 
@@ -301,8 +302,25 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
 
   if (!effectiveNodeId) return null;
 
-  const node = getNodeById(effectiveNodeId) || getNodes().find(n => n.id === effectiveNodeId);
-  if (!node) return null;
+  const rawNode = getNodeById(effectiveNodeId) || getNodes().find(n => n.id === effectiveNodeId);
+  if (!rawNode) return null;
+
+  const crackedNodes = useOnboardingStore.getState().crackedNodes;
+  const aliasMap: Record<string, string> = {
+    n1: 's1', s1: 'n1',
+    n2: 's8', s8: 'n2',
+    n3: 'c4', c4: 'n3',
+    n4: 's5', s5: 'n4',
+    n5: 's2', s2: 'n5',
+    n6: 's3', s3: 'n6',
+    n7: 's6', s6: 'n7',
+    n8: 's4', s4: 'n8',
+  };
+  const isCracked = Boolean(
+    crackedNodes[rawNode.id] ||
+    (aliasMap[rawNode.id] && crackedNodes[aliasMap[rawNode.id]])
+  );
+  const node = isCracked ? { ...rawNode, status: 'owned' as const } : rawNode;
 
   const isLocked = node.requiresUnlock && !bridgeUnlocked;
   const isActionDisabled = isLocked || node.status === 'cooldown' || node.status === 'owned';
@@ -461,7 +479,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             ) : (
               /* Half (about 250px) & Expanded */
               <div
-                className="px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex-1 flex flex-col gap-2.5 overflow-y-auto overscroll-contain"
+                className="px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex-1 min-h-0 flex flex-col gap-2.5 overflow-y-auto overscroll-contain"
                 style={{ paddingBottom: 100 }}
               >
                 {/* 1. Row: 52px plate, node name serif 21px / 23px line height (max two lines), status chip right */}

@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { StepId, STEP_ORDER, STEPS, STALL_HINTS, STALL_MS, CH2_NODE_ID } from '../steps';
-import { useOnboardingStore } from '../onboardingStore';
+import { StepId, STEP_ORDER, STEPS, STALL_HINTS, STALL_MS, CH2_NODE_ID, TUTORIAL } from '../steps';
+import { useOnboardingStore, ONBOARDING_AVATARS } from '../onboardingStore';
+import { usePlayerStore } from '@/stores/player-store';
 import { subscribe, OnboardingEvent } from '../events';
 import { track } from '../analytics';
 import { TourSpotlight } from './TourSpotlight';
 import { SavePromptDrawer } from './SavePromptDrawer';
 import { triggerToast } from '@/stores/toast-store';
 import { campaignService } from '@/features/story/campaignService';
+import { useCampaignStore } from '@/stores/campaign-store';
 import { Button } from '@/components/ui/Button';
 
 export function getNextStepOnEvent(
@@ -186,7 +188,23 @@ export function TourDirector() {
   const handleSkipTour = useCallback(() => {
     skip();
     track('tour_skipped');
-  }, [skip]);
+    // Ensure player has a profile if skipping before profile was created
+    const { callsign, setProfile, guestId } = useOnboardingStore.getState();
+    if (!callsign) {
+      const fallbackCallsign = 'DECKER_' + guestId.slice(0, 4).toUpperCase();
+      setProfile(fallbackCallsign, 'avatar-nx');
+      usePlayerStore.setState({
+        handle: fallbackCallsign,
+        avatarUrl: ONBOARDING_AVATARS[0].url,
+      });
+    }
+    // Also complete chapter 1 in campaign and mark tutorial node cracked so user is never stuck
+    campaignService.completeChapter(1).catch(() => {});
+    useCampaignStore.getState().completeChapter('chapter-1').catch(() => {});
+    useOnboardingStore.getState().crackNode(TUTORIAL.mapNodeId, TUTORIAL.cooldownMs);
+    triggerToast('Nix tutorial skipped. Transceiver locked to City Map.');
+    router.push('/map');
+  }, [skip, router]);
 
   if (!mounted || skipped || step === 'done') {
     return null;

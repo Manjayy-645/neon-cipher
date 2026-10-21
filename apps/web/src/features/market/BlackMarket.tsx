@@ -126,7 +126,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
   };
 
   return (
-    <div className="scene-ground w-full h-full flex flex-col text-ink overflow-hidden">
+    <div className="scene-ground w-full h-full flex flex-col text-ink overflow-hidden min-h-0">
       {/* Market Header */}
       <header className="px-4 py-4 sm:py-5 border-b border-line bg-panel-light/90 shrink-0">
         <div className="flex items-start justify-between gap-3">
@@ -221,7 +221,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
       </div>
 
       {/* Item Catalog List */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-max">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-24 grid grid-cols-1 gap-3 auto-rows-max">
         {itemsInTab.map((item) => {
           const owned = inventory[item.id] || 0;
           const isMaxed = item.maxOwned !== undefined && owned >= item.maxOwned;

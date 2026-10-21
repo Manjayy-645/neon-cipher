@@ -32,12 +32,12 @@ export function GuessEntry({
   };
 
   return (
-    <div className="w-full flex flex-col items-center gap-2 py-2 px-4 shrink-0">
+    <div className="w-full flex flex-col items-center gap-1 py-1 px-3 shrink-0">
       <motion.div
         key={shakeKey}
         variants={shakeVariants}
         animate={shakeKey > 0 && !shouldReduceMotion ? 'shake' : 'still'}
-        className="flex items-center justify-center gap-2"
+        className="flex items-center justify-center gap-1.5"
         role="group"
         aria-label={`Digit entry, ${entry.length} of ${digits} digits filled`}
       >
@@ -51,7 +51,7 @@ export function GuessEntry({
             <div
               key={i}
               data-testid={`digit-slot-${i}`}
-              className={`w-[48px] h-[56px] rounded-[6px] border flex flex-col items-center justify-center relative bg-terminal-panel transition-colors ${
+              className={`w-[34px] h-[38px] sm:w-[40px] sm:h-[44px] rounded-[6px] border flex flex-col items-center justify-center relative bg-terminal-panel transition-colors ${
                 isActive
                   ? 'border-terminal-phosphor shadow-[0_0_8px_rgba(111,191,122,0.2)]'
                   : revealed
@@ -62,18 +62,18 @@ export function GuessEntry({
               }`}
             >
               {digit !== null ? (
-                <span className="font-data text-2xl font-bold text-terminal-ink select-none">
+                <span className="font-data text-xl sm:text-2xl font-bold text-terminal-ink select-none">
                   {digit}
                 </span>
               ) : revealed ? (
                 <span
                   data-testid={`revealed-slot-${i}`}
-                  className="font-data text-2xl font-bold text-terminal-phosphor/75 select-none animate-pulse"
+                  className="font-data text-xl sm:text-2xl font-bold text-terminal-phosphor/75 select-none animate-pulse"
                 >
                   {revealed.digit}
                 </span>
               ) : (
-                <span className="font-data text-2xl font-bold text-terminal-ink select-none" />
+                <span className="font-data text-xl sm:text-2xl font-bold text-terminal-ink select-none" />
               )}
 
               {/* Cursor underline for active slot */}

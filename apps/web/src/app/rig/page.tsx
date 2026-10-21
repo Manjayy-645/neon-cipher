@@ -34,8 +34,6 @@ export default function RigPage() {
       .then((data) => {
         setRigData(data);
         syncWallet({
-          credits,
-          coins,
           inventory: data.inventory,
           equippedTools: data.equippedTools,
         });
@@ -119,8 +117,6 @@ export default function RigPage() {
     const res = await walletService.equipTools(nextEquipped);
     if (res.success && res.equippedTools) {
       syncWallet({
-        credits,
-        coins,
         equippedTools: res.equippedTools,
       });
       loadRigState();
@@ -128,7 +124,7 @@ export default function RigPage() {
   };
 
   return (
-    <main className="scene-ground scene-arrive w-full h-full flex flex-col text-ink overflow-hidden">
+    <main className="scene-ground scene-arrive w-full h-full flex flex-col text-ink overflow-hidden min-h-0">
       {/* Top Header */}
       <header className="px-4 py-4 sm:py-5 bg-panel/90 border-b border-line shrink-0 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -172,7 +168,7 @@ export default function RigPage() {
       </div>
 
       {/* Main Tab Content */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 flex flex-col gap-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-24 flex flex-col gap-4">
         {activeTab === 'cyberdeck' && rigData && (
           <div className="flex flex-col gap-4 items-center w-full max-w-md mx-auto">
             {/* Alex's Recommended Loadout Presets Header Card */}
@@ -198,7 +194,7 @@ export default function RigPage() {
               </div>
 
               {/* Preset Buttons Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 {RIG_PRESETS.map((preset) => {
                   const isActive = activePresetId === preset.id;
                   return (

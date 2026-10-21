@@ -69,7 +69,7 @@ export function FeedList({
       )}
 
       <div
-        className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 scroll-smooth"
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-3 flex flex-col gap-2 scroll-smooth"
         role="list"
         aria-label={`${filterMode} duel feed`}
       >

@@ -43,7 +43,7 @@ export function HistoryList({ history, length }: HistoryListProps) {
 
   return (
     <div
-      className="relative flex-1 min-h-0 w-full flex flex-col justify-end overflow-hidden"
+      className="relative flex-1 min-h-0 min-h-[160px] sm:min-h-[220px] w-full flex flex-col justify-end overflow-hidden"
       data-tutorial="history"
     >
       {/* Screen reader polite live region for new results */}
@@ -52,28 +52,46 @@ export function HistoryList({ history, length }: HistoryListProps) {
       </div>
 
       {history.length > 0 && (
-        <div className="px-5 pt-1.5 pb-1 flex items-center justify-between text-[10px] font-data text-terminal-muted/60 uppercase tracking-widest shrink-0 border-b border-terminal-line/30 bg-terminal-panel/20 select-none">
-          <span className="w-20">Attempt</span>
-          <span className="text-center flex-1">Clues (Unordered)</span>
-          <span className="w-20 text-right">Result</span>
+        <div className="px-3 py-1 flex items-center justify-between text-[10px] font-data font-semibold text-terminal-muted/80 uppercase tracking-widest shrink-0 border-b border-terminal-line/40 bg-terminal-panel/30 select-none">
+          <span className="w-24 flex items-center gap-1.5 text-terminal-phosphor">
+            <span className="w-1.5 h-1.5 rounded-full bg-terminal-phosphor" />
+            PROBE #{history.length}
+          </span>
+          <span className="text-center flex-1 text-terminal-muted">CLUES (PANS / POTS)</span>
+          <span className="w-20 text-right text-terminal-muted">RESULT</span>
         </div>
       )}
 
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 scroll-smooth"
+        className="flex-1 min-h-0 overflow-y-auto px-2.5 py-1.5 sm:px-3.5 sm:py-2 flex flex-col gap-1.5 scroll-smooth"
         role="list"
         aria-label="Guess history"
       >
         {history.length === 0 ? (
-          <div className="m-auto text-center py-8">
-            <span className="font-data text-xs text-terminal-muted/60 uppercase tracking-widest block">
-              Awaiting Initial Breach Attempt
-            </span>
-            <span className="font-data text-[11px] text-terminal-muted/40 mt-1 block">
-              Enter {length} digits below to probe system response
-            </span>
+          <div className="m-auto w-full max-w-[340px] px-3.5 py-3 sm:py-4 rounded-[8px] border border-dashed border-terminal-line/60 bg-terminal-panel/20 text-center flex flex-col items-center gap-1.5 select-none">
+            <div className="flex items-center gap-2 text-terminal-phosphor font-data text-xs font-bold tracking-wider uppercase">
+              <span className="w-2 h-2 rounded-full bg-terminal-phosphor animate-pulse" />
+              CIPHER TRACE ACTIVE
+            </div>
+            <p className="font-data text-xs text-terminal-ink leading-relaxed">
+              Enter <span className="font-bold text-terminal-phosphor">{length} digits</span> below to probe the target cipher.
+            </p>
+            <div className="flex items-center gap-3 pt-2 text-[10px] font-data text-terminal-muted border-t border-terminal-line/30 w-full justify-center">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-terminal-phosphor inline-block" />
+                <span className="text-terminal-ink font-semibold">PAN</span>: Exact
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full border-2 border-terminal-amber inline-block" />
+                <span className="text-terminal-ink font-semibold">POT</span>: Wrong spot
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-[2px] bg-terminal-muted rounded-full inline-block" />
+                <span className="text-terminal-ink font-semibold">MISS</span>
+              </span>
+            </div>
           </div>
         ) : (
           history.map((record, i) => (
@@ -93,11 +111,11 @@ export function HistoryList({ history, length }: HistoryListProps) {
       {showJumpToLatest && (
         <button
           onClick={() => scrollToBottom(true)}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-terminal-panel border border-terminal-phosphor/80 text-terminal-phosphor font-data text-xs font-semibold shadow-card flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-terminal-panel border border-terminal-phosphor text-terminal-phosphor font-data text-[11px] font-bold shadow-card flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95"
           aria-label="Jump to latest guess"
         >
           <span>↓</span>
-          <span>JUMP TO LATEST</span>
+          <span>LATEST GUESS</span>
         </button>
       )}
     </div>

@@ -45,11 +45,11 @@ export const ClusterChip: React.FC<ClusterChipProps> = ({ onClick, className = '
         </svg>
 
         <span className="flex flex-col items-start leading-tight">
-          <span className="font-heading text-[16px] text-ink">City grid</span>
+          <span className="font-heading text-[16px] font-bold text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">City grid</span>
           <span className="font-data text-[12px] leading-tight mt-0.5">
-            <span className="font-medium text-ink">{totalNodes} nodes</span>
+            <span className="font-semibold text-ink">{totalNodes} nodes</span>
             {contestedNodes > 0 && (
-              <span className="font-semibold text-danger-text">, {contestedNodes} contested</span>
+              <span className="font-bold text-danger-text">, {contestedNodes} contested</span>
             )}
           </span>
         </span>

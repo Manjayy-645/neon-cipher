@@ -29,7 +29,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
   return (
     <div
       data-testid="chapter-select-screen"
-      className="scene-ground w-full h-full flex flex-col px-4 py-4 sm:py-6 text-ink overflow-y-auto overflow-x-hidden"
+      className="scene-ground w-full h-full flex flex-col px-4 py-4 sm:py-6 text-ink overflow-y-auto overflow-x-hidden min-h-0 pb-24 pb-safe-bottom"
     >
       <div className="max-w-2xl mx-auto w-full flex flex-col gap-4">
         {/* Header */}

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { BottomDrawer } from '@/components/ui/BottomDrawer';
 import { Button } from '@/components/ui/Button';
 import { useOnboardingStore } from '../onboardingStore';
@@ -12,6 +13,7 @@ export interface SavePromptDrawerProps {
 }
 
 export function SavePromptDrawer({ open }: SavePromptDrawerProps) {
+  const router = useRouter();
   const { advance, saveAccount } = useOnboardingStore();
 
   const handleSave = () => {
@@ -20,12 +22,16 @@ export function SavePromptDrawer({ open }: SavePromptDrawerProps) {
     track('save_prompt_choice', { choice: 'save' });
     advance('done');
     track('onboarding_done');
+    triggerToast('Onboarding complete. City Map unlocked.', { type: 'success' });
+    router.push('/map');
   };
 
   const handleNotNow = () => {
     track('save_prompt_choice', { choice: 'not_now' });
     advance('done');
     track('onboarding_done');
+    triggerToast('Onboarding complete. City Map unlocked.', { type: 'success' });
+    router.push('/map');
   };
 
   return (

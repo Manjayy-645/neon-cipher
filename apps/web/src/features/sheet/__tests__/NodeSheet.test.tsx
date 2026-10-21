@@ -92,7 +92,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     await renderSheet();
     // Row 1: Node name in serif 21px / 23px line-height, 52px plate, tier chip
     const title = screen.getByRole('heading', { level: 2 });
-    expect(title).toHaveTextContent('Rusty Vending');
+    expect(title).toHaveTextContent('Rusty Soda Machine');
     expect(title).toHaveClass('font-heading', 'text-[21px]', 'leading-[23px]');
 
     const tierChip = screen.getByTestId('status-chip-tier');
@@ -264,7 +264,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
 
     const peek = screen.getByTestId('node-sheet-peek');
     expect(peek).toBeInTheDocument();
-    expect(peek).toHaveTextContent('Rusty Vending');
+    expect(peek).toHaveTextContent('Rusty Soda Machine');
     expect(peek).toHaveTextContent('TIER 1');
     expect(peek).toHaveTextContent('$50');
 

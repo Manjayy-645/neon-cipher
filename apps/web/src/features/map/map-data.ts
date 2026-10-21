@@ -36,6 +36,8 @@ export const TIERS: Record<number, TierConfig> = {
   1: { d: 3, dup: 0, tries: 8, secs: 90, b: 120 },
   2: { d: 4, dup: 0, tries: 7, secs: 60, b: 650 },
   3: { d: 4, dup: 1, tries: 6, secs: 45, b: 2800 },
+  4: { d: 5, dup: 0, tries: 6, secs: 40, b: 9500 },
+  5: { d: 5, dup: 1, tries: 5, secs: 30, b: 35000 },
 };
 
 export const NODES: MapNode[] = [
@@ -60,6 +62,8 @@ export const SAY: Record<number, string> = {
   1: 'Easy money. Three digits, no repeats.',
   2: 'Signal stable. Lock is local.',
   3: 'Corporate lock. Digits can repeat here.',
+  4: 'High security vault. Encrypted subroutines.',
+  5: 'Military grade relay. Zero margin for error.',
 };
 
 export const DISTRICTS = [

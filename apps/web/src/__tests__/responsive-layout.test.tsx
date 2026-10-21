@@ -11,6 +11,12 @@ import { useMapStore } from '../stores/map-store';
 import { usePlayerStore } from '../stores/player-store';
 import { useSettingsStore } from '../stores/settings-store';
 import { useCampaignStore } from '../stores/campaign-store';
+import { BlackMarket } from '../features/market/BlackMarket';
+import { ChapterSelect } from '../features/story/ChapterSelect';
+import { TurfWarBoard } from '../features/duel/TurfWarBoard';
+import { SettingsDrawer } from '../features/settings/SettingsDrawer';
+import { walletService } from '../features/market/walletService';
+import { campaignService } from '../features/story/campaignService';
 
 const { mockPush } = vi.hoisted(() => ({ mockPush: vi.fn() }));
 
@@ -24,6 +30,19 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mockPush.mockClear();
+    vi.spyOn(walletService, 'getWallet').mockResolvedValue({
+      credits: 1000,
+      coins: 10,
+      inventory: {},
+      equippedTools: [],
+    });
+    vi.spyOn(campaignService, 'getCampaign').mockResolvedValue({
+      debt: { initial: 10000, paid: 0, current: 10000 },
+      chapters: {},
+      unlocks: { blackMarket: false, onlinePlay: false, bridge: false },
+      activeChapterId: null,
+      tutorials: {},
+    });
     useSettingsStore.setState({ rookieAssist: true });
     useCampaignStore.setState({
       activeChapterId: null,
@@ -147,7 +166,7 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
       render(<TerminalScreen nodeId="n1" />);
 
       // Wait for terminal load
-      expect(await screen.findByText(/Rusty Vending/i)).toBeInTheDocument();
+      expect(await screen.findByText(/Rusty Soda Machine/i)).toBeInTheDocument();
 
       // Check header compact strip class
       const header = document.querySelector('header');
@@ -179,5 +198,49 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
       expect(key1).toHaveClass('min-h-[44px]');
       expect(key1).toHaveClass('min-w-[44px]');
     }, 45000);
+  });
+
+  describe('Part 4: System-wide Screen Containment & Overflow Boundaries', () => {
+    it('Black Market enforces min-h-0 and scroll boundaries inside mobile chassis', async () => {
+      render(<BlackMarket onBackToDialogue={vi.fn()} />);
+
+      const heading = await screen.findByRole('heading', { name: /black market/i });
+      expect(heading).toBeInTheDocument();
+
+      const scrollContainer = document.querySelector('.overflow-y-auto');
+      expect(scrollContainer).toBeInTheDocument();
+      expect(scrollContainer).toHaveClass('flex-1', 'min-h-0');
+      expect(scrollContainer).toHaveClass('pb-24');
+    });
+
+    it('Chapter Select enforces min-h-0 and safe bottom padding', async () => {
+      render(<ChapterSelect onSelectChapter={vi.fn()} />);
+
+      const screenContainer = screen.getByTestId('chapter-select-screen');
+      expect(screenContainer).toBeInTheDocument();
+      expect(screenContainer).toHaveClass('min-h-0', 'overflow-y-auto', 'pb-24', 'pb-safe-bottom');
+    });
+
+    it('Turf War Board enforces flex containment and clearance for bottom bar', async () => {
+      render(<TurfWarBoard />);
+
+      const header = await screen.findByRole('heading', { name: /syndicate territory map/i });
+      expect(header).toBeInTheDocument();
+
+      const mainContainer = header.closest('.scene-ground');
+      expect(mainContainer).toBeInTheDocument();
+      expect(mainContainer).toHaveClass('flex-1', 'min-h-0', 'overflow-y-auto', 'pb-24', 'pb-safe-bottom');
+    });
+
+    it('Settings Drawer enforces modal containment and internal scrolling', () => {
+      render(<SettingsDrawer isOpen={true} onClose={vi.fn()} />);
+
+      const dialog = screen.getByRole('dialog', { name: /settings configuration/i });
+      expect(dialog).toBeInTheDocument();
+
+      const scrollArea = dialog.querySelector('.overflow-y-auto');
+      expect(scrollArea).toBeInTheDocument();
+      expect(scrollArea).toHaveClass('flex-1', 'min-h-0', 'pb-12', 'pb-safe-bottom');
+    });
   });
 });

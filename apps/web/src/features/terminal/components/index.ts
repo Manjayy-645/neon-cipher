@@ -10,4 +10,5 @@ export * from './Keypad';
 export * from './ClueLegendDrawer';
 export * from './BreachBanner';
 export * from './TerminalToolSlots';
+export * from './ToolInspectorModal';
 export { IceIndicator } from '../IceIndicator';

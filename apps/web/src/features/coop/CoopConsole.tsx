@@ -430,7 +430,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
     return (
       <div
         data-surface="terminal"
-        className="w-full flex-1 flex flex-col items-center justify-center p-4 bg-ground text-ink"
+        className="w-full flex-1 min-h-0 flex flex-col items-center justify-center p-4 bg-ground text-ink overflow-y-auto"
       >
         <div className="w-full max-w-xl bg-panel border border-line rounded-md p-6 shadow-card flex flex-col gap-6">
           {/* Header */}
@@ -447,7 +447,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           </div>
 
           {/* Role Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Alpha Card */}
             <div
               onClick={() => setPlayerRole('ALPHA')}
@@ -536,7 +536,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   return (
     <div
       data-surface="terminal"
-      className="scene-ground w-full flex-1 flex flex-col text-ink overflow-y-auto pb-[env(safe-area-inset-bottom)] select-none"
+      className="scene-ground w-full flex-1 min-h-0 flex flex-col text-ink overflow-y-auto pb-24 pb-safe-bottom select-none"
     >
       {/* ============================================================ */}
       {/* TOP HEADER & LIVE PARTNER TELEMETRY RAIL (HUD) */}

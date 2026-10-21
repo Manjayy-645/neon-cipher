@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { usePlayerStore } from './player-store';
+import { useCampaignStore } from './campaign-store';
 
 export type SheetState = 'peek' | 'half' | 'expanded';
 export type NavTab = 'map' | 'rig' | 'market' | 'comms' | 'duel';
@@ -74,7 +75,7 @@ export const useMapStore = create<MapState>((set) => ({
   sheetState: 'peek',
   sheetHeight: SNAP_HEIGHTS.peek,
   playerStats: {
-    credits: typeof usePlayerStore !== 'undefined' ? usePlayerStore.getState()?.credits ?? 12500 : 12500,
+    credits: typeof usePlayerStore !== 'undefined' ? usePlayerStore.getState()?.credits ?? 10000 : 10000,
     heat: typeof usePlayerStore !== 'undefined' ? usePlayerStore.getState()?.sectorHeat ?? 62 : 62,
   },
   seenNixSituations: [],
@@ -83,7 +84,7 @@ export const useMapStore = create<MapState>((set) => ({
   activeTab: 'map',
   activeView: 'map',
   unlocks: {
-    bridge: false,
+    bridge: typeof useCampaignStore !== 'undefined' ? Boolean(useCampaignStore.getState()?.unlocks?.bridge) : false,
   },
   timeOfDay: 'day',
   ambientOverride: 'auto',
@@ -213,7 +214,10 @@ export const useMapStore = create<MapState>((set) => ({
       sheetHeight: SNAP_HEIGHTS.peek,
       activeTab: 'map',
       activeView: 'map',
-      playerStats: { credits: 12500, heat: 62 },
+      playerStats: {
+        credits: typeof usePlayerStore !== 'undefined' ? usePlayerStore.getState()?.credits ?? 10000 : 10000,
+        heat: typeof usePlayerStore !== 'undefined' ? usePlayerStore.getState()?.sectorHeat ?? 62 : 62,
+      },
       seenNixSituations: [],
       activeNixSituation: null,
       isNixBubbleOpen: false,
@@ -222,6 +226,19 @@ export const useMapStore = create<MapState>((set) => ({
       ambientOverride: 'auto',
     }),
 }));
+
+// Sync changes from campaign store unlocks back into mapStore bridge unlock
+if (typeof useCampaignStore !== 'undefined' && useCampaignStore.subscribe) {
+  useCampaignStore.subscribe((campaignState) => {
+    const isBridgeUnlocked = Boolean(campaignState.unlocks?.bridge);
+    const currentBridge = useMapStore.getState()?.unlocks?.bridge;
+    if (currentBridge !== isBridgeUnlocked) {
+      useMapStore.setState((s) => ({
+        unlocks: { ...s.unlocks, bridge: isBridgeUnlocked },
+      }));
+    }
+  });
+}
 
 // Sync changes from player store back into mapStore playerStats
 if (typeof usePlayerStore !== 'undefined' && usePlayerStore.subscribe) {

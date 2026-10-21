@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  envDir: resolve(__dirname, '../..'),
   test: {
     environment: 'jsdom',
     globals: true,

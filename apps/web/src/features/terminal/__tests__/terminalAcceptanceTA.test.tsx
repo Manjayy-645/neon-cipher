@@ -65,9 +65,9 @@ describe('TASK T-A Acceptance: Solo cracking terminal & correctness display', ()
     expect(screen.getByText(/TIER 1 • UNIQUE/i)).toBeInTheDocument();
     expect(screen.getByText('1/8')).toBeInTheDocument();
 
-    // Keypad has 56px keys
+    // Keypad has compact accessible 44px keys
     const btnKey = screen.getByRole('button', { name: '1' });
-    expect(btnKey).toHaveClass('h-[56px]');
+    expect(btnKey).toHaveClass('h-[44px]');
     expect(screen.getByLabelText('Terminal Keypad')).toHaveAttribute(
       'data-tutorial',
       'keypad'

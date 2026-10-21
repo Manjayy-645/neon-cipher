@@ -34,9 +34,7 @@ export const SuccessScreen: React.FC<ResultScreenProps> = ({
   const prefersReducedMotion = usePrefersReducedMotion();
   const attemptsUsed = guesses.length;
   const attemptsRemaining = Math.max(0, maxAttempts - attemptsUsed);
-  const efficiencyBonus = attemptsRemaining * 20; // $20 bonus per unused try
-  const exploitDeductions = 0; // Stub
-  const totalPayout = payout + efficiencyBonus - exploitDeductions;
+  const totalPayout = payout;
 
   // Accuracy calculation based on hits per guess
   const totalPots = guesses.reduce((acc, g) => acc + g.pots, 0);
@@ -123,13 +121,13 @@ export const SuccessScreen: React.FC<ResultScreenProps> = ({
         {/* Breakdown Table */}
         <div className="bg-surface-dark p-3.5 rounded-md border border-ink-muted/30 flex flex-col gap-2 font-data text-xs">
           <div className="flex justify-between items-center text-ink-muted">
-            <span>Base Bounty</span>
+            <span>Bounty Awarded</span>
             <span className="text-panel-light font-bold">${payout}</span>
           </div>
 
           <div className="flex justify-between items-center text-ink-muted">
-            <span>Efficiency Bonus ({attemptsRemaining} remaining)</span>
-            <span className="text-accent">+${efficiencyBonus}</span>
+            <span>Attempts Remaining</span>
+            <span className="text-accent">{attemptsRemaining}</span>
           </div>
 
           <div className="flex justify-between items-center text-ink-muted">
@@ -140,11 +138,6 @@ export const SuccessScreen: React.FC<ResultScreenProps> = ({
           <div className="flex justify-between items-center text-ink-muted">
             <span>Cracking Accuracy</span>
             <span className="text-accent">{accuracy}%</span>
-          </div>
-
-          <div className="flex justify-between items-center text-ink-muted/50 border-t border-ink-muted/20 pt-1.5">
-            <span>Exploit Deductions</span>
-            <span className="text-ink-muted">-$0 (None)</span>
           </div>
         </div>
 
@@ -188,6 +181,7 @@ export const FailureScreen: React.FC<
   guesses,
   errorReason,
   lockoutSeconds = 60,
+  maxAttempts,
   onReturnToMap,
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -201,8 +195,11 @@ export const FailureScreen: React.FC<
     return () => clearInterval(interval);
   }, [lockout]);
 
+  const resolvedErrorReason =
+    errorReason || (guesses.length >= maxAttempts ? 'ATTEMPTS EXHAUSTED' : 'TRACE TIMEOUT');
+
   // Nix post-mortem analysis in character
-  const nixComment = generateNixPostMortem(guesses, errorReason);
+  const nixComment = generateNixPostMortem(guesses, resolvedErrorReason);
 
   return (
     <motion.div
@@ -226,7 +223,7 @@ export const FailureScreen: React.FC<
             CONNECTION SEVERED
           </h2>
           <p className="font-data text-xs text-ink-muted">
-            {errorReason || 'NODE ICE TRIPPED // UPLINK PURGED'}
+            {resolvedErrorReason}
           </p>
         </div>
 
@@ -251,6 +248,13 @@ export const FailureScreen: React.FC<
           <div className="border-t border-danger/20 pt-2.5 flex justify-between items-center text-xs">
             <span className="text-ink-muted">Trace Penalty Fine</span>
             <span className="text-danger font-bold text-sm">-${fine}</span>
+          </div>
+
+          <div className="border-t border-danger/20 pt-2 flex justify-between items-center text-xs">
+            <span className="text-ink-muted">Attempts Used</span>
+            <span className="font-data text-sm text-panel-light font-bold">
+              {maxAttempts != null ? `${guesses.length} of ${maxAttempts} used` : `${guesses.length} used`}
+            </span>
           </div>
 
           {secret && (

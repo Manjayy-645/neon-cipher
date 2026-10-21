@@ -1,5 +1,6 @@
 import mockNodes from './nodes.mock.json';
 import { NODES as MAP_NODES, TIERS } from './map-data';
+import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 export const NODE_STATUSES = ['available', 'owned', 'contested', 'cooldown'] as const;
 export type NodeStatus = (typeof NODE_STATUSES)[number];
@@ -107,39 +108,80 @@ const allRegisteredNodes: GameNode[] = [
   nixRecoveryNode,
 ];
 
+export const NODE_ALIAS_MAP: Record<string, string> = {
+  s1: 'n1', n1: 's1',
+  s2: 'n5', n5: 's2',
+  s3: 'n6', n6: 's3',
+  s4: 'n8', n8: 's4',
+  s5: 'n4', n4: 's5',
+  s6: 'n7', n7: 's6',
+  s7: 'n15', n15: 's7',
+  s8: 'n2', n2: 's8',
+  c1: 'n9', n9: 'c1',
+  c2: 'n12', n12: 'c2',
+  c3: 'n11', n11: 'c3',
+  c4: 'n3', n3: 'c4',
+  c5: 'n14', n14: 'c5',
+  c6: 'n10', n10: 'c6',
+  c7: 'n13', n13: 'c7',
+};
+
+export function isSameNode(idA: string | null | undefined, idB: string | null | undefined): boolean {
+  if (!idA || !idB) return false;
+  const a = idA.toLowerCase();
+  const b = idB.toLowerCase();
+  if (a === b) return true;
+  return NODE_ALIAS_MAP[a] === b || NODE_ALIAS_MAP[b] === a;
+}
+
+export function getCanonicalNodeId(id: string): string {
+  if (!id) return id;
+  const lower = id.toLowerCase();
+  if (lower.startsWith('n')) return lower;
+  return NODE_ALIAS_MAP[lower] || lower;
+}
+
 export function getNodes(): GameNode[] {
-  return mockNodes as GameNode[];
+  let cracked: Record<string, any> = {};
+  try {
+    cracked = typeof window !== 'undefined' ? useOnboardingStore.getState()?.crackedNodes || {} : {};
+  } catch {}
+
+  return (mockNodes as GameNode[]).map((node) => {
+    const aliasId = NODE_ALIAS_MAP[node.id];
+    const isCracked = Boolean(cracked[node.id] || (aliasId && cracked[aliasId]));
+    if (isCracked) {
+      return { ...node, status: 'owned' };
+    }
+    return node;
+  });
 }
 
 export function getNodeById(id: string): GameNode | undefined {
   if (!id) return undefined;
   const directMatch = allRegisteredNodes.find((n) => n.id.toLowerCase() === id.toLowerCase());
-  if (directMatch) return directMatch;
+  let target = directMatch;
 
-  // Fallback alias mappings between s/c codes and n codes
-  const aliasMap: Record<string, string> = {
-    s1: 'n1',
-    s2: 'n5',
-    s3: 'n6',
-    s4: 'n8',
-    s5: 'n4',
-    s6: 'n7',
-    s7: 'n15',
-    s8: 'n2',
-    c1: 'n9',
-    c2: 'n12',
-    c3: 'n11',
-    c4: 'n3',
-    c5: 'n14',
-    c6: 'n10',
-    c7: 'n13',
-    n1: 's1',
-    n4: 's5',
-  };
-  const aliasId = aliasMap[id.toLowerCase()];
-  if (aliasId) {
+  const aliasId = NODE_ALIAS_MAP[id.toLowerCase()];
+  if (!target && aliasId) {
     const aliasNode = allRegisteredNodes.find((n) => n.id.toLowerCase() === aliasId.toLowerCase());
-    if (aliasNode) return { ...aliasNode, id };
+    if (aliasNode) target = { ...aliasNode, id };
+  }
+
+  if (target) {
+    let cracked: Record<string, any> = {};
+    try {
+      cracked = typeof window !== 'undefined' ? useOnboardingStore.getState()?.crackedNodes || {} : {};
+    } catch {}
+    const isCracked = Boolean(
+      cracked[target.id] ||
+      cracked[id.toLowerCase()] ||
+      (aliasId && cracked[aliasId])
+    );
+    if (isCracked) {
+      return { ...target, status: 'owned' };
+    }
+    return target;
   }
 
   return undefined;

@@ -30,7 +30,7 @@ export const DistrictLabel: React.FC<DistrictLabelProps> = ({
   return (
     <div
       data-testid="district-label"
-      className={`font-heading uppercase text-[16px] text-ink tracking-[1px] bg-panel-light/75 rounded-pill py-[4px] px-[12px] max-w-[200px] truncate inline-flex items-center justify-center select-none pointer-events-none ${className}`}
+      className={`font-heading uppercase text-[16px] text-ink tracking-[1px] bg-panel-light/75 rounded-pill py-[4px] px-[12px] max-w-[200px] truncate inline-flex items-center justify-center select-none pointer-events-none font-bold border border-line/80 shadow-card backdrop-blur-sm ${className}`}
       style={{
         backgroundColor: 'rgba(239, 231, 218, 0.75)',
         ...positioningStyle,
@@ -38,8 +38,7 @@ export const DistrictLabel: React.FC<DistrictLabelProps> = ({
       }}
       title={name}
     >
-      <span className="truncate">{name}</span>
+      <span className="truncate font-bold tracking-[1.5px] drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)]">{name}</span>
     </div>
   );
 };
-

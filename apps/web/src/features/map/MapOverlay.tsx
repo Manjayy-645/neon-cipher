@@ -12,6 +12,7 @@ import { DISTRICT_ZOOM_THRESHOLD } from './camera';
 import * as maplibregl from 'maplibre-gl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMapStore } from '../../stores/map-store';
+import { useCampaignStore } from '../../stores/campaign-store';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 export interface MapOverlayProps {
@@ -24,7 +25,9 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
   const prefersReducedMotion = usePrefersReducedMotion();
   const view = useMapStore((state) => state.view);
   const selectedDistrict = useMapStore((state) => state.selectedDistrict);
-  const bridgeUnlocked = useMapStore((state) => state.unlocks.bridge);
+  const mapBridge = useMapStore((state) => state.unlocks.bridge);
+  const campaignBridge = useCampaignStore((state) => state.unlocks.bridge);
+  const bridgeUnlocked = mapBridge || campaignBridge;
   const [displayBridgeUnlocked, setDisplayBridgeUnlocked] = useState(bridgeUnlocked);
 
   useEffect(() => {
@@ -54,7 +57,19 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
         const { x, y } = map.project([lng, lat]);
         newNodePos[node.id] = { x, y };
       });
-      setNodePositions(newNodePos);
+      setNodePositions((prev) => {
+        const prevKeys = Object.keys(prev);
+        const newKeys = Object.keys(newNodePos);
+        if (prevKeys.length !== newKeys.length) return newNodePos;
+        for (const key of newKeys) {
+          const p = prev[key];
+          const n = newNodePos[key];
+          if (!p || Math.abs(p.x - n.x) > 0.01 || Math.abs(p.y - n.y) > 0.01) {
+            return newNodePos;
+          }
+        }
+        return prev;
+      });
 
       const newDistrictPos: Record<string, { x: number; y: number }> = {};
       DISTRICTS.forEach((district) => {
@@ -62,13 +77,27 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
         const { x, y } = map.project([lng, lat]);
         newDistrictPos[district.zone] = { x, y };
       });
-      setDistrictPositions(newDistrictPos);
+      setDistrictPositions((prev) => {
+        const prevKeys = Object.keys(prev);
+        const newKeys = Object.keys(newDistrictPos);
+        if (prevKeys.length !== newKeys.length) return newDistrictPos;
+        for (const key of newKeys) {
+          const p = prev[key];
+          const n = newDistrictPos[key];
+          if (!p || Math.abs(p.x - n.x) > 0.01 || Math.abs(p.y - n.y) > 0.01) {
+            return newDistrictPos;
+          }
+        }
+        return prev;
+      });
     };
 
     updatePositions();
+    map.on('move', updatePositions);
     map.on('render', updatePositions);
 
     return () => {
+      map.off('move', updatePositions);
       map.off('render', updatePositions);
     };
   }, [map, nodes]);

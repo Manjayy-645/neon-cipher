@@ -57,10 +57,10 @@ export const DistrictHeaderChip: React.FC<DistrictHeaderChipProps> = ({
       </button>
 
       <div className="flex flex-col ml-1 select-none">
-        <span className="font-heading text-[15px] leading-[18px] font-bold uppercase tracking-[0.5px] text-ink">
+        <span className="font-heading text-[16px] leading-[19px] font-bold uppercase tracking-[0.5px] text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
           {districtDef.name}
         </span>
-        <span className="font-data text-[11px] leading-[14px] text-ink-muted uppercase flex items-center gap-1">
+        <span className="font-data text-[11px] leading-[14px] font-bold text-accent-text uppercase flex items-center gap-1">
           <img src="/icons/icon-pin.svg" alt="" className="w-2.5 h-2.5 object-contain" aria-hidden="true" />
           {totalCount} NODES
         </span>

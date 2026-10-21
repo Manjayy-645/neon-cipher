@@ -215,8 +215,8 @@ const defaultNodeDefenses: Record<string, NodeDefense> = {
 };
 
 const defaultWallet: WalletData = {
-  credits: 12500,
-  coins: 45,
+  credits: 10000,
+  coins: 25,
   inventory: {
     'tool-static-injector': 2,
     'tool-firewall-patch': 1,
@@ -414,9 +414,9 @@ const defaultSafehouses: Record<string, SafehouseProperty> = {
     upkeep: 120,
     dailyDividend: 450,
     traceReductionPercent: 15,
-    owned: true,
-    accumulatedDividends: 350,
-    lastClaimedAt: Date.now() - 3600000 * 18,
+    owned: false,
+    accumulatedDividends: 0,
+    lastClaimedAt: Date.now(),
     description: 'Reinforced concrete basement tucked below the highway overpass. Good for laying low and siphoning street power.',
   },
   'safehouse-industrial': {
@@ -451,58 +451,13 @@ const defaultSafehouses: Record<string, SafehouseProperty> = {
 
 const defaultTransactions: Transaction[] = [
   {
-    id: 'tx-1',
+    id: 'tx-init-1',
     timestamp: Date.now() - 3600000 * 24,
-    source: 'Starting Syndicate Bankroll',
+    source: 'Kovacs Syndicate Loan Principal',
     amount: 10000,
     currency: 'credits',
     runningBalance: 10000,
     category: 'initial',
-  },
-  {
-    id: 'tx-2',
-    timestamp: Date.now() - 3600000 * 24,
-    source: 'Initial Testnet Seed',
-    amount: 50,
-    currency: 'coins',
-    runningBalance: 50,
-    category: 'initial',
-  },
-  {
-    id: 'tx-3',
-    timestamp: Date.now() - 3600000 * 12,
-    source: 'Breach: Rusty Vending',
-    amount: 50,
-    currency: 'credits',
-    runningBalance: 10050,
-    category: 'payout',
-  },
-  {
-    id: 'tx-4',
-    timestamp: Date.now() - 3600000 * 8,
-    source: 'Breach: Alley Relay',
-    amount: 150,
-    currency: 'credits',
-    runningBalance: 10200,
-    category: 'payout',
-  },
-  {
-    id: 'tx-5',
-    timestamp: Date.now() - 3600000 * 5,
-    source: 'Market: Digit Scrub',
-    amount: -5,
-    currency: 'coins',
-    runningBalance: 45,
-    category: 'purchase',
-  },
-  {
-    id: 'tx-6',
-    timestamp: Date.now() - 3600000 * 2,
-    source: 'Daily Dividend: Slums Nodes',
-    amount: 2300,
-    currency: 'credits',
-    runningBalance: 12500,
-    category: 'dividend',
   },
 ];
 
@@ -520,9 +475,11 @@ export interface MockAccount {
     chapter: number;
     completedNodes: string[];
   };
+  profile?: DeckerProfile;
 }
 
 export const defaultSettings: AccountSettings = {
+  masterMute: false,
   rookieAssist: true,
   reducedMotion: 'system',
   colorBlindMode: false,
@@ -570,7 +527,17 @@ const initialAccounts: Record<string, MockAccount> = {
     },
     rigHardware: { ...defaultRigHardware },
     safehouses: { ...defaultSafehouses },
-    transactions: [],
+    transactions: [
+      {
+        id: 'tx-phreak-init',
+        timestamp: Date.now() - 3600000 * 24,
+        source: 'Starting Rig Float',
+        amount: 3200,
+        currency: 'credits',
+        runningBalance: 3200,
+        category: 'initial',
+      },
+    ],
     campaignProgress: {
       chapter: 1,
       completedNodes: [],
@@ -701,7 +668,7 @@ export function createAccount(handle: string, avatarUrl: string): MockAccount {
       {
         id: `tx-init-${Date.now()}`,
         timestamp: Date.now(),
-        source: 'Syndicate Starter Bankroll',
+        source: 'Kovacs Syndicate Loan Principal',
         amount: 10000,
         currency: 'credits',
         runningBalance: 10000,
@@ -711,6 +678,35 @@ export function createAccount(handle: string, avatarUrl: string): MockAccount {
     campaignProgress: {
       chapter: 1,
       completedNodes: [],
+    },
+    profile: {
+      handle: cleanHandle,
+      avatarUrl: avatarUrl || '/Character portraits/Player avatars.png',
+      rank: {
+        title: 'Street Decker',
+        level: 1,
+        currentXp: 0,
+        nextLevelXp: 1000,
+      },
+      stats: {
+        totalHacks: 0,
+        successfulBreaches: 0,
+        failedBreaches: 0,
+        winRatePercent: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+        totalCreditsEarned: 0,
+        fastestBreachSeconds: 0,
+        fewestGuesses: 0,
+      },
+      cosmetics: {
+        activeBadge: 'badge-cyber-phoenix',
+        activeTerminalTheme: 'amber-crt',
+        activeDeckFrame: 'frame-carbon-hex',
+        unlockedBadges: ['badge-cyber-phoenix', 'badge-ghost-protocol', 'badge-daily-master'],
+        unlockedThemes: ['amber-crt', 'phosphor-green', 'cyan-cold'],
+        unlockedFrames: ['frame-carbon-hex', 'frame-matte-black', 'frame-brass-industrial'],
+      },
     },
   };
 
@@ -741,6 +737,35 @@ export function resetAccountCampaign(handleOrId?: string): MockAccount {
     chapter: 1,
     completedNodes: [],
   };
+  account.profile = {
+    handle: account.handle,
+    avatarUrl: account.avatarUrl || '/Character portraits/Player avatars.png',
+    rank: {
+      title: 'Street Decker',
+      level: 1,
+      currentXp: 0,
+      nextLevelXp: 1000,
+    },
+    stats: {
+      totalHacks: 0,
+      successfulBreaches: 0,
+      failedBreaches: 0,
+      winRatePercent: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      totalCreditsEarned: 0,
+      fastestBreachSeconds: 0,
+      fewestGuesses: 0,
+    },
+    cosmetics: {
+      activeBadge: 'badge-cyber-phoenix',
+      activeTerminalTheme: 'amber-crt',
+      activeDeckFrame: 'frame-carbon-hex',
+      unlockedBadges: ['badge-cyber-phoenix', 'badge-ghost-protocol', 'badge-daily-master'],
+      unlockedThemes: ['amber-crt', 'phosphor-green', 'cyan-cold'],
+      unlockedFrames: ['frame-carbon-hex', 'frame-matte-black', 'frame-brass-industrial'],
+    },
+  };
   account.wallet.credits = 10000;
   account.wallet.coins = 25;
   account.wallet.inventory = {
@@ -751,7 +776,7 @@ export function resetAccountCampaign(handleOrId?: string): MockAccount {
     {
       id: `tx-reset-${Date.now()}`,
       timestamp: Date.now(),
-      source: 'Deck Memory Purge & Syndicate Reset',
+      source: 'Kovacs Syndicate Loan Principal',
       amount: 10000,
       currency: 'credits',
       runningBalance: 10000,
@@ -810,6 +835,17 @@ export function recordTransaction(
   };
 
   mockTransactions.unshift(tx);
+
+  const account = mockAccounts[activeAccountId];
+  if (account) {
+    if (account.wallet !== mockWallet) {
+      account.wallet[currency] = mockWallet[currency];
+    }
+    if (account.transactions !== mockTransactions && !account.transactions.some((t) => t.id === tx.id)) {
+      account.transactions.unshift(tx);
+    }
+  }
+
   return tx;
 }
 
@@ -2811,23 +2847,23 @@ export interface MockTask13Data {
 const defaultTask13Data: MockTask13Data = {
   profile: {
     handle: 'ZERO_COOL',
-    avatarUrl: '/icons/glyph-camera.svg',
+    avatarUrl: '/Character portraits/Player avatars.png',
     rank: {
-      title: 'Netrunner Prime',
-      level: 7,
-      currentXp: 3450,
-      nextLevelXp: 5000,
+      title: 'Street Decker',
+      level: 1,
+      currentXp: 0,
+      nextLevelXp: 1000,
     },
     stats: {
-      totalHacks: 42,
-      successfulBreaches: 36,
-      failedBreaches: 6,
-      winRatePercent: calculateWinRate(36, 42),
-      currentStreak: 5,
-      bestStreak: 12,
-      totalCreditsEarned: 38400,
-      fastestBreachSeconds: 24,
-      fewestGuesses: 3,
+      totalHacks: 0,
+      successfulBreaches: 0,
+      failedBreaches: 0,
+      winRatePercent: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      totalCreditsEarned: 0,
+      fastestBreachSeconds: 0,
+      fewestGuesses: 0,
     },
     cosmetics: {
       activeBadge: 'badge-cyber-phoenix',
@@ -3047,16 +3083,58 @@ const defaultTask13Data: MockTask13Data = {
 
 export let mockTask13 = JSON.parse(JSON.stringify(defaultTask13Data)) as MockTask13Data;
 
-export function getProfile(): DeckerProfile {
+export function getProfile(handle?: string): DeckerProfile {
+  const account = handle
+    ? (mockAccounts[handle.toUpperCase()] || mockAccounts[handle] || getActiveAccount())
+    : getActiveAccount();
+
+  if (account) {
+    if (!account.profile) {
+      account.profile = {
+        handle: account.handle,
+        avatarUrl: account.avatarUrl || '/Character portraits/Player avatars.png',
+        rank: {
+          title: 'Street Decker',
+          level: 1,
+          currentXp: 0,
+          nextLevelXp: 1000,
+        },
+        stats: {
+          totalHacks: 0,
+          successfulBreaches: 0,
+          failedBreaches: 0,
+          winRatePercent: 0,
+          currentStreak: 0,
+          bestStreak: 0,
+          totalCreditsEarned: 0,
+          fastestBreachSeconds: 0,
+          fewestGuesses: 0,
+        },
+        cosmetics: {
+          activeBadge: 'badge-cyber-phoenix',
+          activeTerminalTheme: 'amber-crt',
+          activeDeckFrame: 'frame-carbon-hex',
+          unlockedBadges: ['badge-cyber-phoenix', 'badge-ghost-protocol', 'badge-daily-master'],
+          unlockedThemes: ['amber-crt', 'phosphor-green', 'cyan-cold'],
+          unlockedFrames: ['frame-carbon-hex', 'frame-matte-black', 'frame-brass-industrial'],
+        },
+      };
+    }
+    return account.profile;
+  }
   return mockTask13.profile;
 }
 
-export function updateCosmetics(cosmetics: Partial<DeckerProfile['cosmetics']>): DeckerProfile {
-  mockTask13.profile.cosmetics = {
-    ...mockTask13.profile.cosmetics,
+export function updateCosmetics(cosmetics: Partial<DeckerProfile['cosmetics']>, handle?: string): DeckerProfile {
+  const account = handle
+    ? (mockAccounts[handle.toUpperCase()] || mockAccounts[handle] || getActiveAccount())
+    : getActiveAccount();
+  const prof = account?.profile || mockTask13.profile;
+  prof.cosmetics = {
+    ...prof.cosmetics,
     ...cosmetics,
   };
-  return mockTask13.profile;
+  return prof;
 }
 
 export function getSkillTree(): { skills: SkillNode[]; availablePoints: number } {

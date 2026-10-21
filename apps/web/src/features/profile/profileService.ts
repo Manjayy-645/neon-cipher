@@ -9,6 +9,7 @@ import {
   FriendProfile,
   AppNotification,
 } from '@neon-cipher/game-rules';
+import { usePlayerStore } from '@/stores/player-store';
 
 export interface ProfileAllData {
   profile: DeckerProfile;
@@ -23,16 +24,67 @@ export interface ProfileAllData {
 
 export const profileService = {
   getAll: async (): Promise<ProfileAllData> => {
-    const res = await fetch('/api/mock/profile');
+    const player = usePlayerStore.getState();
+    const handle = player.callsign || player.handle;
+    const url = handle ? `/api/mock/profile?handle=${encodeURIComponent(handle)}` : '/api/mock/profile';
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch profile and progression data');
-    return res.json();
+    const data: ProfileAllData = await res.json();
+
+    // Synchronize with active player state from player-store.ts
+    if (data?.profile) {
+      const p = usePlayerStore.getState();
+      const activeCallsign = p.callsign || p.handle;
+      const isHardcodedMock = data.profile.handle === 'ZERO_COOL' && data.profile.rank?.level === 7 && data.profile.stats?.totalCreditsEarned === 38400;
+      if (activeCallsign && (activeCallsign !== 'ZERO_COOL' || isHardcodedMock || p.breachesTotal > 0)) {
+        data.profile.handle = activeCallsign;
+        data.profile.avatarUrl = p.avatarUrl || data.profile.avatarUrl;
+        data.profile.rank.level = p.level;
+        data.profile.rank.currentXp = p.xp;
+        data.profile.rank.nextLevelXp = p.nextLevelXp;
+        data.profile.stats.successfulBreaches = p.breachesWon;
+        data.profile.stats.totalHacks = p.breachesTotal;
+        data.profile.stats.failedBreaches = Math.max(0, p.breachesTotal - p.breachesWon);
+        data.profile.stats.winRatePercent = p.breachesTotal > 0
+          ? Math.round((p.breachesWon / p.breachesTotal) * 100)
+          : 0;
+        data.profile.stats.totalCreditsEarned = p.careerEarnings;
+      }
+    }
+    return data;
   },
 
   getProfile: async (): Promise<DeckerProfile> => {
-    const res = await fetch('/api/mock/profile?section=profile');
+    const player = usePlayerStore.getState();
+    const handle = player.callsign || player.handle;
+    const url = handle
+      ? `/api/mock/profile?section=profile&handle=${encodeURIComponent(handle)}`
+      : '/api/mock/profile?section=profile';
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch profile');
     const data = await res.json();
-    return data.profile;
+    const prof: DeckerProfile = data.profile;
+
+    if (prof) {
+      const p = usePlayerStore.getState();
+      const activeCallsign = p.callsign || p.handle;
+      const isHardcodedMock = prof.handle === 'ZERO_COOL' && prof.rank?.level === 7 && prof.stats?.totalCreditsEarned === 38400;
+      if (activeCallsign && (activeCallsign !== 'ZERO_COOL' || isHardcodedMock || p.breachesTotal > 0)) {
+        prof.handle = activeCallsign;
+        prof.avatarUrl = p.avatarUrl || prof.avatarUrl;
+        prof.rank.level = p.level;
+        prof.rank.currentXp = p.xp;
+        prof.rank.nextLevelXp = p.nextLevelXp;
+        prof.stats.successfulBreaches = p.breachesWon;
+        prof.stats.totalHacks = p.breachesTotal;
+        prof.stats.failedBreaches = Math.max(0, p.breachesTotal - p.breachesWon);
+        prof.stats.winRatePercent = p.breachesTotal > 0
+          ? Math.round((p.breachesWon / p.breachesTotal) * 100)
+          : 0;
+        prof.stats.totalCreditsEarned = p.careerEarnings;
+      }
+    }
+    return prof;
   },
 
   updateCosmetics: async (cosmetics: Partial<DeckerProfile['cosmetics']>): Promise<DeckerProfile> => {

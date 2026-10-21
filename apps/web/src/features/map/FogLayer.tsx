@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { useMapStore } from '../../stores/map-store';
+import { useCampaignStore } from '../../stores/campaign-store';
 import { triggerToast } from '../../stores/toast-store';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 export const FogLayer: React.FC = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const bridgeUnlocked = useMapStore((s) => s.unlocks.bridge);
+  const mapBridge = useMapStore((s) => s.unlocks.bridge);
+  const campaignBridge = useCampaignStore((s) => s.unlocks.bridge);
+  const bridgeUnlocked = mapBridge || campaignBridge;
   const triggerNixSituation = useMapStore((s) => s.triggerNixSituation);
   const [isTabVisible, setIsTabVisible] = useState(true);
 

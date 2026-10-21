@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { BottomDrawer } from '@/components/ui/BottomDrawer';
-import { useOnboardingStore } from '../onboardingStore';
-import { STEPS } from '../steps';
+import { useOnboardingStore, ONBOARDING_AVATARS } from '../onboardingStore';
+import { STEPS, TUTORIAL } from '../steps';
 import { track } from '../analytics';
+import { campaignService } from '@/features/story/campaignService';
+import { useCampaignStore } from '@/stores/campaign-store';
+import { usePlayerStore } from '@/stores/player-store';
 
 const BOOT_LINE = 'DECK INITIALIZATION: SECURE PROTOCOL ACTIVE';
 
@@ -22,7 +25,11 @@ export function SplashScreen() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (typeof router.prefetch === 'function') {
+      router.prefetch('/terminal/tutorial-soda');
+      router.prefetch('/map');
+    }
+  }, [router]);
 
   // Typewriter effect (max 1.2s, instant under reduced motion)
   useEffect(() => {
@@ -44,7 +51,11 @@ export function SplashScreen() {
     return () => clearInterval(timer);
   }, [shouldReduceMotion]);
 
-  const handleStart = () => {
+  const handleStart = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     track('splash_start');
     advance('cold.intro');
     router.push('/terminal/tutorial-soda');
@@ -55,6 +66,24 @@ export function SplashScreen() {
     track('skip_explanations');
     advance('cold.intro');
     router.push('/terminal/tutorial-soda');
+  };
+
+  const handleSkipTutorialDirectly = () => {
+    track('splash_skip_tutorial');
+    const { callsign, setProfile, guestId } = useOnboardingStore.getState();
+    if (!callsign) {
+      const fallbackCallsign = 'DECKER_' + guestId.slice(0, 4).toUpperCase();
+      setProfile(fallbackCallsign, 'avatar-nx');
+      usePlayerStore.setState({
+        handle: fallbackCallsign,
+        avatarUrl: ONBOARDING_AVATARS[0].url,
+      });
+    }
+    useOnboardingStore.getState().skip();
+    campaignService.completeChapter(1).catch(() => {});
+    useCampaignStore.getState().completeChapter('chapter-1').catch(() => {});
+    useOnboardingStore.getState().crackNode(TUTORIAL.mapNodeId, TUTORIAL.cooldownMs);
+    router.push('/map');
   };
 
   const handleContinue = () => {
@@ -139,6 +168,7 @@ export function SplashScreen() {
               size="full"
               onClick={handleStart}
               data-testid="splash-start-btn"
+              autoFocus
             >
               START
             </Button>
@@ -149,6 +179,14 @@ export function SplashScreen() {
               data-testid="splash-know-game-btn"
             >
               I KNOW THIS GAME
+            </Button>
+            <Button
+              variant="ghost"
+              size="full"
+              onClick={handleSkipTutorialDirectly}
+              data-testid="splash-skip-tutorial-btn"
+            >
+              SKIP TUTORIAL
             </Button>
           </>
         )}

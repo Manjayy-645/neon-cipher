@@ -10,7 +10,7 @@ import {
   HardwareRailSlot,
   RigHardwareId,
 } from '@neon-cipher/game-rules';
-import { getNodes, getNodeById } from '@/features/map/nodeService';
+import { getNodes, getNodeById, isSameNode } from '@/features/map/nodeService';
 import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
 
 // MOCK: replace with Supabase edge function.
@@ -138,8 +138,8 @@ export async function POST(request: Request) {
     const activeChapter = mockCampaign.activeChapterId
       ? getChapterById(mockCampaign.activeChapterId)
       : null;
-    const isCampaignTarget = activeChapter && activeChapter.mapNodeId === node.id;
-    const iceTypeFromCampaign = isCampaignTarget ? activeChapter.rules.ice : undefined;
+    const isCampaignTarget = Boolean(activeChapter && (activeChapter.mapNodeId === node.id || isSameNode(activeChapter.mapNodeId, node.id)));
+    const iceTypeFromCampaign = isCampaignTarget && activeChapter ? activeChapter.rules.ice : undefined;
 
     // Use chapter challenge parameters if attacking active campaign target, else node parameters
     const digits = isCampaignTarget && activeChapter ? activeChapter.rules.digits : node.digits;

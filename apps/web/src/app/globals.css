@@ -242,12 +242,41 @@
   .pt-safe-top { padding-top: max(env(safe-area-inset-top), 0.5rem); }
   .pb-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }
 
-  /* Responsive Terminal Keypad Key */
+  /* Horizontal chip strip scroll without ugly scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Responsive Terminal Keypad Key - Compact tactical sizing */
   .keypad-btn-height {
-    height: clamp(44px, 6.2dvh, 56px);
+    height: 44px;
     min-height: 44px;
     min-width: 44px;
   }
+}
+
+/* Custom styled scrollbars conforming to design tokens */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-muted);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
 @media (max-height: 700px) {

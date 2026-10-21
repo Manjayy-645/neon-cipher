@@ -18,6 +18,7 @@ class SoundSynthesizer {
   }
 
   playKeystroke(): void {
+    if (useSettingsStore.getState().masterMute) return;
     const volume = useSettingsStore.getState().audio.keystrokes / 100;
     if (volume <= 0) return;
     const ctx = this.getContext();
@@ -45,6 +46,7 @@ class SoundSynthesizer {
   }
 
   playUiBeep(freq = 600, duration = 0.06): void {
+    if (useSettingsStore.getState().masterMute) return;
     const volume = useSettingsStore.getState().audio.ui / 100;
     if (volume <= 0) return;
     const ctx = this.getContext();
@@ -71,6 +73,7 @@ class SoundSynthesizer {
   }
 
   playWarning(): void {
+    if (useSettingsStore.getState().masterMute) return;
     const volume = useSettingsStore.getState().audio.ui / 100;
     if (volume <= 0) return;
     const ctx = this.getContext();
@@ -98,6 +101,7 @@ class SoundSynthesizer {
   }
 
   playSuccess(): void {
+    if (useSettingsStore.getState().masterMute) return;
     const volume = useSettingsStore.getState().audio.ui / 100;
     if (volume <= 0) return;
     const ctx = this.getContext();

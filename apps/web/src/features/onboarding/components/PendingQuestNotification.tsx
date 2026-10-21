@@ -152,8 +152,21 @@ export function PendingQuestNotification() {
   if (pathname.startsWith('/terminal') && pathname !== quest.route) return null;
   if (dismissedPath === pathname) return null;
 
-  const isChromeActive = chromeVisible();
-  const bottomPos = isChromeActive ? 'bottom-[62px]' : 'bottom-[12px]';
+  const isNavVisible =
+    chromeVisible() ||
+    (pathname
+      ? pathname === '/map' ||
+        pathname.startsWith('/market') ||
+        pathname.startsWith('/comms') ||
+        pathname.startsWith('/profile') ||
+        pathname.startsWith('/rig') ||
+        pathname.startsWith('/duel') ||
+        pathname.startsWith('/settings')
+      : true);
+
+  const bottomPosition = isNavVisible
+    ? 'calc(var(--nav-bottom-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px)'
+    : 'calc(env(safe-area-inset-bottom, 0px) + 12px)';
 
   const handleResume = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -175,11 +188,12 @@ export function PendingQuestNotification() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.98 }}
         transition={prefersReducedMotion ? { duration: 0.05 } : { duration: 0.15, ease: 'easeOut' }}
-        className={`absolute ${bottomPos} left-0 right-0 mx-auto w-fit max-w-[calc(100%-20px)] sm:max-w-[360px] z-40 pointer-events-auto select-none`}
+        style={{ bottom: bottomPosition }}
+        className="absolute bottom-[calc(var(--nav-bottom-height,64px)+env(safe-area-inset-bottom,0px)+8px)] left-0 right-0 mx-auto w-fit max-w-[calc(100%-20px)] sm:max-w-[360px] z-hud-bars pointer-events-auto select-none"
       >
         <div
           onClick={handleResume}
-          className="bg-panel-light/95 backdrop-blur-sm border border-line border-l-2 border-l-accent rounded-[8px] shadow-sm py-1.5 px-2.5 flex items-center gap-2 cursor-pointer group hover:border-accent/60 transition-colors"
+          className="bg-panel-light/95 backdrop-blur-sm border border-line border-l-2 border-l-accent rounded-[8px] shadow-sm py-1.5 px-2.5 flex items-center gap-2 cursor-pointer group hover:border-accent/60 transition-colors pointer-events-auto"
         >
           {/* Compact indicator icon */}
           <div className="w-5 h-5 rounded-full border border-line bg-panel flex items-center justify-center shrink-0">
@@ -204,7 +218,7 @@ export function PendingQuestNotification() {
                 {quest.title}
               </span>
             </div>
-            <p className="font-data text-[9px] text-ink-muted leading-tight mt-0.5 truncate">
+            <p className="font-data text-[9px] text-ink font-medium leading-tight mt-0.5 truncate">
               Target: {quest.target}
             </p>
           </div>
@@ -215,7 +229,7 @@ export function PendingQuestNotification() {
               type="button"
               data-testid="pending-quest-action"
               onClick={handleResume}
-              className="relative px-2 py-1 rounded-[4px] bg-accent text-on-accent font-data text-[9px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer after:absolute after:-inset-1"
+              className="relative px-2 py-1 rounded-[4px] bg-accent text-on-accent font-data text-[9px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer after:absolute after:-inset-1 pointer-events-auto"
             >
               <span>RESUME</span>
               <svg
@@ -237,7 +251,7 @@ export function PendingQuestNotification() {
               data-testid="pending-quest-dismiss"
               onClick={handleDismiss}
               aria-label="Dismiss pending quest notification"
-              className="relative w-5 h-5 rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer after:absolute after:-inset-1.5"
+              className="relative w-5 h-5 rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer after:absolute after:-inset-1.5 pointer-events-auto"
             >
               <svg
                 width="10"

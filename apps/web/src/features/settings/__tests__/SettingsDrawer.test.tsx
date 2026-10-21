@@ -134,6 +134,26 @@ describe('SettingsDrawer Component (6.0)', () => {
     expect(useSettingsStore.getState().audio.keystrokes).toBe(45);
   });
 
+  it('toggles master mute switch', async () => {
+    render(<SettingsDrawer isOpen={true} />);
+    const muteToggle = screen.getByTestId('master-mute-toggle');
+    expect(muteToggle.textContent).toContain('UNMUTED');
+    expect(useSettingsStore.getState().masterMute).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(muteToggle);
+    });
+
+    expect(useSettingsStore.getState().masterMute).toBe(true);
+    expect(screen.getByTestId('master-mute-toggle').textContent).toContain('MUTED');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('master-mute-toggle'));
+    });
+
+    expect(useSettingsStore.getState().masterMute).toBe(false);
+  });
+
   it('configures daily spend limit', async () => {
     render(<SettingsDrawer isOpen={true} />);
     const limitBtn = screen.getByRole('button', { name: '$1K' });

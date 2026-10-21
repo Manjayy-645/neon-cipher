@@ -127,4 +127,27 @@ describe('PendingQuestNotification Component', () => {
     expect(screen.getByText('Chapter 02: The Corner Store Job')).toBeInTheDocument();
     expect(screen.getByText(/Target: Market Register/i)).toBeInTheDocument();
   });
+
+  it('positions notification above bottom nav bar with pointer-events-auto on RESUME button', () => {
+    useOnboardingStore.setState({
+      step: 'ch2.hack',
+      skipped: false,
+    });
+    currentPathname = '/map';
+
+    render(<PendingQuestNotification />);
+
+    const notification = screen.getByTestId('pending-quest-notification');
+    expect(notification).toBeInTheDocument();
+    expect(notification).toHaveStyle({
+      bottom: 'calc(var(--nav-bottom-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px)',
+    });
+    expect(notification.className).toContain('z-hud-bars');
+
+    const resumeBtn = screen.getByTestId('pending-quest-action');
+    expect(resumeBtn.className).toContain('pointer-events-auto');
+
+    fireEvent.click(resumeBtn);
+    expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
+  });
 });

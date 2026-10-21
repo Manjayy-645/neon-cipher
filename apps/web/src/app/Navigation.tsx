@@ -7,6 +7,8 @@ import { isFeatureEnabled } from '../lib/flags';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useMapStore, NavTab } from '../stores/map-store';
+import { useCampaignStore } from '../stores/campaign-store';
+import { useOnboardingStore } from '../features/onboarding/onboardingStore';
 import { triggerToast } from '../stores/toast-store';
 import { Button } from '../components/ui/Button';
 
@@ -97,7 +99,16 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
       </AnimatePresence>
 
       {navItems.map((item) => {
-        const enabled = isFeatureEnabled(item.flag);
+        const campaignUnlocks = useCampaignStore.getState()?.unlocks;
+        const onboardingStep = useOnboardingStore.getState()?.step;
+        const isOnboardingComms =
+          item.flag === 'comms' &&
+          (onboardingStep === 'comms.nav' || onboardingStep === 'comms.debt');
+        const isProgressionUnlocked =
+          (item.flag === 'duel' && Boolean(campaignUnlocks?.onlinePlay)) ||
+          (item.flag === 'market' && Boolean(campaignUnlocks?.blackMarket)) ||
+          isOnboardingComms;
+        const enabled = isFeatureEnabled(item.flag) || isProgressionUnlocked;
         const isActive = currentTab === item.flag;
 
         const commonClasses =

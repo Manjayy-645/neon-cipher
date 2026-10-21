@@ -58,7 +58,7 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
   };
 
   return (
-    <div className="scene-ground w-full h-full flex flex-col justify-between p-4 text-ink overflow-y-auto">
+    <div className="scene-ground w-full h-full flex flex-col justify-between p-4 text-ink overflow-y-auto min-h-0">
       {/* Top Banner / Vendor Ambience */}
       <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2 shrink-0">
         <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
       </div>
 
       {/* Main Vendor Stage: Shop Interior Environment */}
-      <div className="flex-1 relative flex flex-col items-center justify-center my-3 rounded-[12px] overflow-hidden border border-line bg-panel shadow-card">
+      <div className="flex-1 min-h-[140px] relative flex flex-col items-center justify-center my-3 rounded-[12px] overflow-hidden border border-line bg-panel shadow-card">
         {/* Atmospheric Shop Interior Background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}

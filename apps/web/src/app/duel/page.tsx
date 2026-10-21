@@ -62,7 +62,7 @@ export default function DuelPage() {
       {activeTab === 'turf' ? (
         <TurfWarBoard />
       ) : !isUnlocked ? (
-        <div className="scene-ground w-full h-full flex flex-col items-center justify-center p-6 text-ink text-center">
+        <div className="scene-ground w-full h-full flex flex-col items-center justify-center p-6 text-ink text-center overflow-y-auto min-h-0">
           <div className="max-w-md w-full p-6 bg-panel rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-panel-light border border-line flex items-center justify-center text-ink-muted">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

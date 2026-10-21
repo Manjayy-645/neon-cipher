@@ -3,6 +3,7 @@ import { AccountSettings, ReducedMotionMode } from '../features/settings/types';
 import { settingsService } from '../features/settings/settingsService';
 
 export const defaultAccountSettings: AccountSettings = {
+  masterMute: false,
   rookieAssist: true,
   reducedMotion: 'system',
   colorBlindMode: false,

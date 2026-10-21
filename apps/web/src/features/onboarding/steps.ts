@@ -54,7 +54,7 @@ export const STEPS: Record<StepId, StepDef> = {
   'map.district':  { route: '/map', chrome: true, speaker: 'nix', target: `node-${CH2_NODE_ID}`,
                      lines: ['Rings are open jobs. Start with the corner store.'], advance: 'event', event: 'map:nodeSelected' },
   'map.node':      { route: '/map', chrome: true, speaker: 'nix', target: 'jack-in',
-                     lines: ['Four digits, seven tries, sixty seconds. A tighter lock pays more.'], advance: 'event', event: 'map:jackIn' },
+                     lines: ['4 digits, 8 tries, 120 seconds, $75 bounty. A tighter lock pays more.'], advance: 'event', event: 'map:jackIn' },
   'ch2.hack':      { route: `/terminal/${CH2_NODE_ID}`, chrome: false, speaker: 'nix', lines: [], advance: 'event', event: 'terminal:won' },
   'ch2.result':    { route: `/terminal/${CH2_NODE_ID}`, chrome: false, speaker: 'nix', target: 'breach-banner',
                      lines: ['Clean job. The Black Market is open. Go see Alex.'], advance: 'tap' },

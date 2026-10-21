@@ -13,7 +13,7 @@ import { PLAYER_AVATARS } from '@neon-cipher/game-rules';
 const AVAILABLE_AVATARS = PLAYER_AVATARS;
 
 const PRESET_ACCOUNTS = [
-  { handle: 'ZERO_COOL', avatarUrl: '/Character portraits/Player avatars.png', desc: 'Standard Decker ($12,500)' },
+  { handle: 'ZERO_COOL', avatarUrl: '/Character portraits/Player avatars.png', desc: 'Standard Decker ($10,000)' },
   { handle: 'PHREAK', avatarUrl: '/Character portraits/Player avatars (2).png', desc: 'Pro Hacker ($3,200)' },
 ];
 
@@ -53,8 +53,9 @@ export function LoginScreen() {
       player.setBalances(res.wallet.credits, res.wallet.coins);
       player.setInventory(res.wallet.inventory);
       player.setEquippedTools(res.wallet.equippedTools);
-      usePlayerStore.setState({
+      usePlayerStore.getState().setProfileStats({
         handle: res.profile.handle,
+        callsign: res.profile.handle,
         avatarUrl: res.profile.avatarUrl,
       });
 
@@ -78,7 +79,7 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="scene-ground scene-arrive h-full w-full flex flex-col justify-between p-5 font-data text-ink overflow-y-auto">
+    <div className="scene-ground scene-arrive h-full w-full flex flex-col justify-between p-5 font-data text-ink overflow-y-auto min-h-0 pb-safe-bottom">
       {/* Top Banner / Nix Mentor microcopy */}
       <div className="bg-panel-light border border-line p-3.5 rounded-md shadow-card flex items-start gap-3 shrink-0">
         <div className="w-8 h-8 rounded-full border border-accent overflow-hidden shrink-0">

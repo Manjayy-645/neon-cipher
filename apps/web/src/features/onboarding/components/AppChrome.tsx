@@ -9,16 +9,26 @@ import { usePlayerStore } from '@/stores/player-store';
 
 function isChromeAppRoute(pathname: string | null): boolean {
   if (!pathname) return false;
-  if (pathname === '/' || pathname.startsWith('/terminal') || pathname.startsWith('/onboarding')) {
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/terminal') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/splash') ||
+    pathname.startsWith('/login')
+  ) {
     return false;
   }
   return (
     pathname === '/map' ||
     pathname.startsWith('/market') ||
+    pathname.startsWith('/shop') ||
     pathname.startsWith('/comms') ||
+    pathname.startsWith('/coop') ||
+    pathname.startsWith('/story') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/rig') ||
     pathname.startsWith('/duel') ||
+    pathname.startsWith('/codemaker') ||
     pathname.startsWith('/settings')
   );
 }

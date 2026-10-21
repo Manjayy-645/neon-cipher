@@ -150,7 +150,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
         )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-12 pb-safe-bottom space-y-6">
           
           {/* 1. Rookie Assist vs Pro Mode */}
           <section className="space-y-2 border-b border-line pb-4">
@@ -266,6 +266,31 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 className="text-xs text-accent-text border-none h-auto min-h-[32px] px-2"
               >
                 Test Sound
+              </Button>
+            </div>
+
+            {/* Top-Level Master Mute Switch */}
+            <div className="flex items-center justify-between p-2.5 rounded-[6px] bg-panel border border-line">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink">MASTER MUTE</span>
+                <span className="text-[10px] text-ink-muted">Mute all audio outputs</span>
+              </div>
+              <Button
+                variant={store.masterMute ? 'danger' : 'secondary'}
+                compact
+                role="switch"
+                aria-checked={store.masterMute}
+                onClick={() => {
+                  const nextMute = !store.masterMute;
+                  store.saveSettings({ masterMute: nextMute });
+                  if (!nextMute) {
+                    soundFx.playUiBeep();
+                  }
+                }}
+                data-testid="master-mute-toggle"
+                className="text-xs px-3 min-h-[36px]"
+              >
+                {store.masterMute ? 'MUTED' : 'UNMUTED'}
               </Button>
             </div>
 

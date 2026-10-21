@@ -19,9 +19,10 @@ import {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || 'all';
+  const handle = searchParams.get('handle') || undefined;
 
   if (section === 'profile') {
-    return NextResponse.json({ profile: getProfile() });
+    return NextResponse.json({ profile: getProfile(handle) });
   }
 
   if (section === 'skills') {
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    profile: getProfile(),
+    profile: getProfile(handle),
     skillTree: getSkillTree(),
     factions: getFactions(),
     dailyBreach: getDailyBreach(),
@@ -66,11 +67,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const handle = searchParams.get('handle') || undefined;
     const body = await request.json();
     const { action } = body;
 
     if (action === 'update-cosmetics') {
-      const updated = updateCosmetics(body.cosmetics);
+      const updated = updateCosmetics(body.cosmetics, handle || body.handle);
       return NextResponse.json({ success: true, profile: updated });
     }
 

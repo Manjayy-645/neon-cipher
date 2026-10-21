@@ -13,6 +13,7 @@ interface KeypadProps {
   allowDuplicates: boolean;
   assistMode: 'rookie' | 'pro';
   onIllegalAttempt?: (reason: string) => void;
+  className?: string;
 }
 
 export function Keypad({
@@ -26,6 +27,7 @@ export function Keypad({
   allowDuplicates,
   assistMode,
   onIllegalAttempt,
+  className = '',
 }: KeypadProps) {
   const [hasSeenNixElimination, setHasSeenNixElimination] = useState(false);
   const [showNixBubble, setShowNixBubble] = useState(false);
@@ -41,52 +43,6 @@ export function Keypad({
       return () => clearTimeout(timer);
     }
   }, [assistMode, deadDigits.size, hasSeenNixElimination]);
-
-  // Global keyboard shortcuts (digits, Backspace, Enter, Escape)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is inside an input field
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-        return;
-      }
-
-      if (e.key >= '0' && e.key <= '9') {
-        const digit = parseInt(e.key, 10);
-        if (deadDigits.has(digit)) {
-          onIllegalAttempt?.('Digit eliminated — not in code');
-          return;
-        }
-        if (!allowDuplicates && usedDigitsInEntry.includes(digit)) {
-          onIllegalAttempt?.('No repeats on this tier');
-          return;
-        }
-        onDigit(digit);
-      } else if (e.key === 'Backspace') {
-        onBackspace();
-      } else if (e.key === 'Enter') {
-        if (!isSubmitDisabled) {
-          onSubmit();
-        } else {
-          onIllegalAttempt?.('Incomplete guess');
-        }
-      } else if (e.key === 'Escape') {
-        onClear();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    onDigit,
-    onBackspace,
-    onSubmit,
-    onClear,
-    isSubmitDisabled,
-    allowDuplicates,
-    usedDigitsInEntry,
-    deadDigits,
-    onIllegalAttempt,
-  ]);
 
   const keys = [
     { label: '1', value: 1, type: 'digit' },
@@ -104,16 +60,18 @@ export function Keypad({
   ];
 
   return (
-    <div className="w-full flex flex-col items-center gap-2 pb-4 px-4 shrink-0">
+    <div
+      className={`w-full flex flex-col items-center gap-1 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] px-3 shrink-0 ${className}`}
+    >
       {/* Rookie assist one-time Nix advice */}
       {showNixBubble && (
         <div
           role="status"
           aria-live="polite"
-          className="w-full max-w-[360px] p-2.5 rounded-[8px] bg-terminal-panel border border-terminal-amber/50 text-terminal-amber font-data text-xs flex items-center justify-between gap-2 shadow-card"
+          className="w-full max-w-[360px] p-2 rounded-[8px] bg-terminal-panel border border-terminal-amber/50 text-terminal-amber font-data text-xs flex items-center justify-between gap-2 shadow-card"
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full overflow-hidden border border-terminal-amber/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-terminal-amber/60 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/Character portraits/Nix.png" alt="Nix" className="w-full h-full object-cover" />
             </div>
@@ -134,7 +92,7 @@ export function Keypad({
 
       {/* 3x4 Keypad Grid */}
       <div
-        className="grid grid-cols-3 gap-2 w-full max-w-[360px]"
+        className="grid grid-cols-3 gap-1 sm:gap-1.5 w-full max-w-[300px]"
         role="group"
         aria-label="Terminal Keypad"
         data-tutorial="keypad"
@@ -171,7 +129,7 @@ export function Keypad({
                   }
                   onDigit(digit);
                 }}
-                className={`relative h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border font-data text-xl font-bold transition-transform duration-120 flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
+                className={`relative h-[44px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[6px] border font-data text-lg font-bold transition-transform duration-120 flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
                   isDisabled
                     ? isDead
                       ? 'border-terminal-line bg-terminal-bg text-terminal-muted line-through cursor-not-allowed opacity-30 shadow-none'
@@ -200,9 +158,10 @@ export function Keypad({
               <button
                 key={k.label}
                 type="button"
+                data-testid="keypad-backspace"
                 aria-label="Backspace"
                 onClick={onBackspace}
-                className="h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border border-terminal-line bg-terminal-panel text-terminal-muted hover:text-terminal-ink font-data text-lg font-bold transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg"
+                className="h-[44px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[6px] border border-terminal-line bg-terminal-panel text-terminal-muted hover:text-terminal-ink font-data text-base font-bold transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg"
               >
                 ⌫
               </button>
@@ -215,11 +174,12 @@ export function Keypad({
                 key={k.label}
                 type="button"
                 id="submit-guess-button"
+                data-testid="keypad-submit"
                 aria-label="Submit Guess"
                 data-tutorial="submit"
                 disabled={isSubmitDisabled}
                 onClick={onSubmit}
-                className={`h-[56px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[8px] border font-data text-sm font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
+                className={`h-[44px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[6px] border font-data text-xs font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
                   isSubmitDisabled
                     ? 'border-terminal-line/30 bg-terminal-panel/30 text-terminal-muted/40 cursor-not-allowed'
                     : 'border-terminal-phosphor bg-terminal-phosphor text-terminal-bg shadow-[0_0_12px_rgba(111,191,122,0.3)] hover:brightness-105'

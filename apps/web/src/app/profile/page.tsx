@@ -9,6 +9,7 @@ import { DailyBreachView } from '@/features/profile/DailyBreachView';
 import { ExtrasHub } from '@/features/profile/ExtrasHub';
 import { profileService, ProfileAllData } from '@/features/profile/profileService';
 import { Button } from '@/components/ui/Button';
+import { usePlayerStore } from '@/stores/player-store';
 
 export default function ProfilePage() {
   const [data, setData] = useState<ProfileAllData | null>(null);
@@ -17,6 +18,45 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRespeccing, setIsRespeccing] = useState(false);
   const [unlockingSkillId, setUnlockingSkillId] = useState<string | null>(null);
+
+  const player = usePlayerStore();
+  const { callsign, handle, level, xp, nextLevelXp, breachesWon, breachesTotal, careerEarnings, avatarUrl } = player;
+
+  const effectiveProfile = React.useMemo(() => {
+    if (!data?.profile) return null;
+    const isCustomProfilePassed = (data.profile.rank?.level ?? 1) > 1 || (data.profile.stats?.totalHacks ?? 0) > 0 || (data.profile.handle && data.profile.handle !== handle && data.profile.handle !== 'ZERO_COOL');
+    const isHardcodedMock = data.profile.handle === 'ZERO_COOL' && data.profile.rank?.level === 7 && data.profile.stats?.totalCreditsEarned === 38400;
+
+    const useStore = !isCustomProfilePassed || isHardcodedMock || (handle && handle !== 'ZERO_COOL') || breachesTotal > 0;
+
+    const activeHandle = useStore ? (callsign || handle || data.profile.handle) : data.profile.handle;
+    const activeAvatar = (useStore && avatarUrl) ? avatarUrl : (data.profile.avatarUrl || avatarUrl);
+    const won = useStore ? breachesWon : (data.profile.stats?.successfulBreaches ?? breachesWon);
+    const total = useStore ? breachesTotal : (data.profile.stats?.totalHacks ?? breachesTotal);
+    const failed = Math.max(0, total - won);
+    const winRate = total > 0 ? Math.round((won / total) * 100) : (data.profile.stats?.winRatePercent ?? 0);
+    const earnings = useStore ? careerEarnings : (data.profile.stats?.totalCreditsEarned ?? careerEarnings);
+
+    return {
+      ...data.profile,
+      handle: activeHandle,
+      avatarUrl: activeAvatar,
+      rank: {
+        ...data.profile.rank,
+        level: useStore ? level : (data.profile.rank?.level ?? level),
+        currentXp: useStore ? xp : (data.profile.rank?.currentXp ?? xp),
+        nextLevelXp: useStore ? nextLevelXp : (data.profile.rank?.nextLevelXp ?? nextLevelXp),
+      },
+      stats: {
+        ...data.profile.stats,
+        successfulBreaches: won,
+        totalHacks: total,
+        failedBreaches: failed,
+        winRatePercent: winRate,
+        totalCreditsEarned: earnings,
+      },
+    };
+  }, [data?.profile, callsign, handle, level, xp, nextLevelXp, breachesWon, breachesTotal, careerEarnings, avatarUrl]);
 
   const loadData = async () => {
     try {
@@ -202,7 +242,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="scene-ground scene-arrive h-full w-full overflow-y-auto p-3 sm:p-5 font-data text-ink space-y-4">
+    <div className="scene-ground scene-arrive h-full w-full overflow-y-auto min-h-0 p-3 sm:p-5 font-data text-ink space-y-4 pb-24 pb-safe-bottom">
       {/* Top Dossier Command Bar */}
       <div className="bg-panel-light border border-line rounded-md p-3 shadow-card flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -213,11 +253,11 @@ export default function ProfilePage() {
                 OPERATIVE DOSSIER
               </span>
               <span className="type-label text-[10px] bg-accent/15 text-accent-text border border-accent/30 px-1.5 py-0.5 rounded-sm font-bold shrink-0">
-                LVL {data.profile.rank.level}
+                LVL {effectiveProfile?.rank.level ?? data.profile.rank.level}
               </span>
             </div>
             <p className="text-[11px] text-ink-muted truncate">
-              {data.profile.rank.title} • GRID STATUS: ENCRYPTED & ACTIVE
+              {effectiveProfile?.rank.title ?? data.profile.rank.title} • GRID STATUS: ENCRYPTED & ACTIVE
             </p>
           </div>
         </div>
@@ -310,7 +350,7 @@ export default function ProfilePage() {
         <div key={activeSection}>
           {activeSection === 'profile' && (
             <DeckerProfileCard
-              profile={data.profile}
+              profile={effectiveProfile || data.profile}
               onUpdateCosmetics={handleUpdateCosmetics}
             />
           )}
