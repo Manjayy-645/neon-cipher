@@ -12,10 +12,10 @@
         "@neon-cipher/game-rules": "workspace:*",
         "@neon-cipher/tokens": "workspace:*",
         "@supabase/supabase-js": "latest",
-        "@tailwindcss/postcss": "^4.3.3",
+        "@tailwindcss/postcss": "^4.3.5",
         "@vercel/analytics": "^2.0.1",
         "framer-motion": "latest",
-        "maplibre-gl": "^6.13.0",
+        "maplibre-gl": "^6.16.0",
         "next": "latest",
         "react": "latest",
         "react-dom": "latest",
@@ -30,14 +30,14 @@
         "@types/node": "latest",
         "@types/react": "latest",
         "@types/react-dom": "latest",
-        "@vitejs/plugin-react": "^6.1.2",
+        "@vitejs/plugin-react": "^6.2.1",
         "autoprefixer": "latest",
-        "eslint": "^10.12.0",
-        "eslint-config-next": "^16.4.0",
+        "eslint": "^10.14.0",
+        "eslint-config-next": "^16.4.5",
         "jsdom": "^30.1.2",
         "postcss": "latest",
         "tailwindcss": "latest",
         "typescript": "latest",
-        "vitest": "^5.0.3"
+        "vitest": "^5.1.0"
     }
 }
