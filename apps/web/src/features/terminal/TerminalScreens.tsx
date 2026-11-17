@@ -1,3 +1,4 @@
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
@@ -45,11 +46,10 @@ export const SuccessScreen: React.FC<ResultScreenProps> = ({
   );
 
   // Animated count-up for payout
-  const [displayedPayout, setDisplayedPayout] = useState(prefersReducedMotion ? totalPayout : 0);
+  const [displayedPayout, setDisplayedPayout] = useResettableState(prefersReducedMotion ? totalPayout : 0, String(totalPayout) + prefersReducedMotion);
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setDisplayedPayout(totalPayout);
       return;
     }
 
@@ -71,7 +71,7 @@ export const SuccessScreen: React.FC<ResultScreenProps> = ({
 
     const handle = requestAnimationFrame(animateCount);
     return () => cancelAnimationFrame(handle);
-  }, [totalPayout, prefersReducedMotion]);
+  }, [totalPayout, prefersReducedMotion, setDisplayedPayout]);
 
   return (
     <motion.div

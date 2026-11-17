@@ -115,7 +115,9 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
 
   const { credits, setBalances } = usePlayerStore();
 
-  useEffect(() => {
+  const [previousInitialSession, setPreviousInitialSession] = useState(initialSession);
+  if (previousInitialSession !== initialSession) {
+    setPreviousInitialSession(initialSession);
     if (initialSession) {
       setSession(initialSession);
       if (initialSession.heist) {
@@ -126,17 +128,17 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         setSecondsLeft(initialSession.timeLimitSeconds);
       }
     }
-  }, [initialSession]);
+  }
 
-  // Stage transition banner detection
+  if (heist && heist.currentStage !== prevStage) {
+    setPrevStage(heist.currentStage);
+    setShowStageLatchBanner(true);
+  }
   useEffect(() => {
-    if (heist && heist.currentStage !== prevStage) {
-      setPrevStage(heist.currentStage);
-      setShowStageLatchBanner(true);
-      const timer = setTimeout(() => setShowStageLatchBanner(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [heist?.currentStage, prevStage]);
+    if (!showStageLatchBanner) return;
+    const timer = setTimeout(() => setShowStageLatchBanner(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showStageLatchBanner, prevStage]);
 
   // Shared Trace Clock Timer
   useEffect(() => {
@@ -172,13 +174,14 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
     return () => clearInterval(interval);
   }, [timerActive, session.status, heist?.currentStage, syncMsLeft, session.id]);
 
-  // Update Nix callout whenever telemetry changes
-  useEffect(() => {
+  const [lastTelemetry, setLastTelemetry] = useState({ event: heist?.latestTelemetryEvent, role: playerRole });
+  if (lastTelemetry.event !== heist?.latestTelemetryEvent || lastTelemetry.role !== playerRole) {
+    setLastTelemetry({ event: heist?.latestTelemetryEvent, role: playerRole });
     if (heist?.latestTelemetryEvent) {
       const callout = getNixCoopCallout(heist.latestTelemetryEvent, playerRole);
       if (callout) setNixCallout(callout);
     }
-  }, [heist?.latestTelemetryEvent, playerRole]);
+  }
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -866,7 +869,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
                       CARRIER-WAVE FREQUENCY SCANNER (ALPHA ONLY):
                     </span>
                     <p className="font-data text-[11px] text-ink-muted">
-                      Use [PING DIGIT] to test whether a number is in the vault code, or hit [FLUSH ICE] to clean Bravo's distorted readouts.
+                      Use [PING DIGIT] to test whether a number is in the vault code, or hit [FLUSH ICE] to clean Bravo&apos;s distorted readouts.
                     </p>
                     <div className="grid grid-cols-5 gap-2 pt-2">
                       {'0123456789'.split('').map((d) => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useFocusedFlow } from '@/stores/overlay-store';
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChapterData, getBrokerCharacter, getMentorCharacter } from '@neon-cipher/game-rules/src/index';
@@ -31,20 +32,16 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
       ? getBrokerCharacter()
       : getMentorCharacter();
 
-  const [displayedText, setDisplayedText] = useState(
-    prefersReducedMotion ? currentDialogue.text : ''
+  const [displayedText, setDisplayedText] = useResettableState(
+    prefersReducedMotion ? currentDialogue.text : '', currentDialogue.text + prefersReducedMotion
   );
-  const [isTypingComplete, setIsTypingComplete] = useState(prefersReducedMotion);
+  const [isTypingComplete, setIsTypingComplete] = useResettableState(prefersReducedMotion, currentDialogue.text + prefersReducedMotion);
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setDisplayedText(currentDialogue.text);
-      setIsTypingComplete(true);
       return;
     }
 
-    setDisplayedText('');
-    setIsTypingComplete(false);
     let index = 0;
 
     const interval = setInterval(() => {
@@ -57,7 +54,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
     }, 18);
 
     return () => clearInterval(interval);
-  }, [currentDialogue.text, prefersReducedMotion]);
+  }, [currentDialogue.text, prefersReducedMotion, setDisplayedText, setIsTypingComplete]);
 
   const handleSkipOrNext = () => {
     if (!isTypingComplete) {
@@ -99,7 +96,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
           )}
           <div>
             <div className="font-data text-[10px] tracking-widest text-ink-muted uppercase">
-              ASSIGNMENT 0{chapter.number} // PROTOCOL BRIEFING
+              ASSIGNMENT 0{chapter.number} {'//'} PROTOCOL BRIEFING
             </div>
             <h1 className="font-heading text-xl sm:text-2xl font-bold text-ink leading-tight">
               {chapter.title}

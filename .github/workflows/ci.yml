@@ -127,8 +127,17 @@ jobs:
       - name: Typecheck
         run: pnpm --filter web exec tsc --noEmit
 
+      - name: Start isolated Data API security fixture
+        run: |
+          bash scripts/ci-data-api.sh start "$RUNNER_TEMP/neon-cipher-ci.env"
+          cat "$RUNNER_TEMP/neon-cipher-ci.env" >> "$GITHUB_ENV"
+
       - name: Test
         run: pnpm --filter web exec vitest run
 
       - name: Build
         run: pnpm --filter web build
+
+      - name: Stop isolated Data API security fixture
+        if: always()
+        run: bash scripts/ci-data-api.sh stop

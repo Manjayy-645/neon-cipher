@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -16,24 +17,21 @@ export function GlitchIntroScene() {
   const { advance } = useOnboardingStore();
 
   const [lineIndex, setLineIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showDebtCard, setShowDebtCard] = useState(false);
 
   const currentLine = GLITCH_LINES[lineIndex] || '';
+  const resetKey = currentLine + shouldReduceMotion + showDebtCard;
+  const [displayedText, setDisplayedText] = useResettableState(shouldReduceMotion ? currentLine : '', resetKey);
+  const [isTyping, setIsTyping] = useResettableState(!shouldReduceMotion && !showDebtCard && Boolean(currentLine), resetKey);
 
   // Typewriter effect
   useEffect(() => {
     if (showDebtCard || !currentLine) return;
 
     if (shouldReduceMotion) {
-      setDisplayedText(currentLine);
-      setIsTyping(false);
       return;
     }
 
-    setDisplayedText('');
-    setIsTyping(true);
     let index = 0;
     const intervalMs = Math.max(12, Math.floor(700 / currentLine.length));
     const timer = setInterval(() => {
@@ -46,7 +44,7 @@ export function GlitchIntroScene() {
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [lineIndex, currentLine, shouldReduceMotion, showDebtCard]);
+  }, [lineIndex, currentLine, shouldReduceMotion, showDebtCard, setDisplayedText, setIsTyping]);
 
   const handleNextLine = () => {
     if (showDebtCard) return;

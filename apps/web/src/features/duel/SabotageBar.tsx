@@ -56,7 +56,7 @@ export function SabotageBar({
   disabled: propDisabled,
   onSabotageResult: propOnSabotageResult,
 }: SabotageBarProps = {}) {
-  const { activeSession, useSabotage, sabotageFeedback, clearSabotageFeedback, isLoading } =
+  const { activeSession, useSabotage: fireSabotage, sabotageFeedback, clearSabotageFeedback, isLoading } =
     useDuelStore();
   const { credits: storeCredits } = usePlayerStore();
 
@@ -100,7 +100,7 @@ export function SabotageBar({
         });
       }
     } else {
-      useSabotage(tool.id);
+      fireSabotage(tool.id);
     }
   };
 

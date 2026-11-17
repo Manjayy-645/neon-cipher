@@ -52,7 +52,7 @@ export const FactionView: React.FC<FactionViewProps> = ({
                     </span>
                     <h3 className="font-heading text-lg sm:text-xl text-ink font-bold truncate">{faction.name}</h3>
                   </div>
-                  <p className="text-xs italic text-ink-muted leading-tight mt-1">"{faction.motto}"</p>
+                  <p className="text-xs italic text-ink-muted leading-tight mt-1">&quot;{faction.motto}&quot;</p>
                 </div>
 
                 <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0">

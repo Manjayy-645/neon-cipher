@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMapStore } from '../../stores/map-store';
@@ -82,24 +83,12 @@ export const NixGuide: React.FC = () => {
 
   // Typewriter effect state
   const isInstant = prefersReducedMotion || process.env.NODE_ENV === 'test';
-  const [displayedText, setDisplayedText] = useState(isInstant ? targetLine : '');
-  const [isTyping, setIsTyping] = useState(false);
+  const writerKey = targetLine + isInstant + isNixBubbleOpen;
+  const [displayedText, setDisplayedText] = useResettableState(isInstant ? targetLine : '', writerKey);
+  const [isTyping, setIsTyping] = useResettableState(!isInstant && isNixBubbleOpen, writerKey);
 
   useEffect(() => {
-    if (isInstant) {
-      setDisplayedText(targetLine);
-      setIsTyping(false);
-      return;
-    }
-
-    if (!isNixBubbleOpen) {
-      setDisplayedText('');
-      setIsTyping(false);
-      return;
-    }
-
-    setDisplayedText('');
-    setIsTyping(true);
+    if (isInstant || !isNixBubbleOpen) return;
     let index = 0;
     const interval = setInterval(() => {
       index++;
@@ -111,7 +100,7 @@ export const NixGuide: React.FC = () => {
     }, 25);
 
     return () => clearInterval(interval);
-  }, [targetLine, isNixBubbleOpen, isInstant]);
+  }, [targetLine, isNixBubbleOpen, isInstant, setDisplayedText, setIsTyping]);
 
   // Keyboard Escape listener
   useEffect(() => {

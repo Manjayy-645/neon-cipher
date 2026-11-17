@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
@@ -137,16 +138,9 @@ export function PendingQuestNotification() {
   const { step, skipped, chromeVisible } = useOnboardingStore();
   const { activeChapterId, chapters } = useCampaignStore();
 
-  const [dismissedPath, setDismissedPath] = useState<string | null>(null);
+  const [dismissedPath, setDismissedPath] = useResettableState<string | null>(null, pathname ?? '');
 
   const quest = getPendingQuest(step, skipped, activeChapterId, chapters);
-
-  // Reset dismissal if pathname or quest changes
-  useEffect(() => {
-    if (dismissedPath && dismissedPath !== pathname) {
-      setDismissedPath(null);
-    }
-  }, [pathname, dismissedPath]);
 
   // Hide if no quest, or if already on quest route, or on root splash, or dismissed on this page
   if (!quest || isFocused || (pathname && isFocusedRoute(pathname))) return null;

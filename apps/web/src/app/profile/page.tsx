@@ -56,7 +56,7 @@ export default function ProfilePage() {
         totalCreditsEarned: earnings,
       },
     };
-  }, [data?.profile, callsign, handle, level, xp, nextLevelXp, breachesWon, breachesTotal, careerEarnings, avatarUrl]);
+  }, [data, callsign, handle, level, xp, nextLevelXp, breachesWon, breachesTotal, careerEarnings, avatarUrl]);
 
   const loadData = async () => {
     try {
@@ -70,7 +70,7 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    loadData();
+    profileService.getAll().then(setData).catch(console.error).finally(() => setIsLoading(false));
   }, []);
 
   const handleUpdateCosmetics = async (cosmetics: any) => {

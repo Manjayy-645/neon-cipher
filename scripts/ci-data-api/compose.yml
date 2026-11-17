@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17.6-alpine3.22
+    environment:
+      POSTGRES_PASSWORD: local-test-password
+    volumes:
+      - ./bootstrap.sql:/docker-entrypoint-initdb.d/01-bootstrap.sql:ro
+      - ../../supabase/migrations/20261021000000_init_neon_cipher_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
+      - ./seed.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rest:
+    image: postgrest/postgrest:v13.0.7
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:local-test-password@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: local-only-test-signing-secret-at-least-32-chars
+  gateway:
+    image: nginx:1.28.0-alpine
+    depends_on: [rest]
+    ports: [127.0.0.1:54328:80]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

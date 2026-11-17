@@ -1,5 +1,6 @@
 'use client';
 
+import { useClock } from '@/lib/useClock';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getNodes, GameNode } from '../map/nodeService';
@@ -23,6 +24,7 @@ interface DistrictControl {
 }
 
 export function TurfWarBoard() {
+  const now = useClock();
   const router = useRouter();
   const [nodes] = useState<GameNode[]>(() => getNodes());
   const [defenses, setDefenses] = useState<Record<string, NodeDefenseData>>({});
@@ -234,8 +236,8 @@ export function TurfWarBoard() {
               const ownerHandle = def?.ownerHandle || (node.district === 'slums' ? 'ZERO_COOL' : 'PHANTOM_CORP');
 
               const hourlyYield = Math.floor(node.bounty / 2);
-              const decay = calculateNodeDecay(def?.lastMaintainedAt || Date.now() - 3600000 * 5, Date.now(), def?.dailyBudget || 150);
-              const income = calculateNodeIncome(hourlyYield, def?.lastCollectedAt || Date.now() - 3600000 * 5, Date.now(), 1000);
+              const decay = calculateNodeDecay(def?.lastMaintainedAt || now - 3600000 * 5, now, def?.dailyBudget || 150);
+              const income = calculateNodeIncome(hourlyYield, def?.lastCollectedAt || now - 3600000 * 5, now, 1000);
 
               const handleCardClick = () => {
                 if (isOwnedByPlayer) {

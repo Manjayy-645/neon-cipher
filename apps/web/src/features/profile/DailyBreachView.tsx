@@ -32,7 +32,7 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
           <p className="type-label text-[10px] text-ink-muted mt-0.5">ONE GLOBAL CIPHER PER DAY • COMPETE WORLDWIDE</p>
         </div>
         <div className="text-left sm:text-right shrink-0 bg-panel border border-line px-3 py-1.5 rounded-sm shadow-xs">
-          <span className="type-label text-[9px] block text-ink-muted">TODAY'S DATE</span>
+          <span className="type-label text-[9px] block text-ink-muted">TODAY&apos;S DATE</span>
           <span className="font-bold text-xs sm:text-sm text-ink tabular-nums">{data.date}</span>
         </div>
       </div>

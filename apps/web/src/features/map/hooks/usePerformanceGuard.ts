@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore, useState, useEffect } from 'react';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 export interface PerformanceGuardResult {
@@ -13,18 +13,14 @@ export interface PerformanceGuardResult {
 export function usePerformanceGuard(manualAmbientOverride?: 'auto' | 'enabled' | 'disabled'): PerformanceGuardResult {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [isLowBattery, setIsLowBattery] = useState(false);
-  const [isLowEndHardware, setIsLowEndHardware] = useState(false);
+  const isLowEndHardware = useSyncExternalStore(
+    () => () => {},
+    () => (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4) ||
+      (typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4),
+    () => false,
+  );
 
   useEffect(() => {
-    // 1. Check Hardware Resources (low core count or low device memory)
-    if (typeof navigator !== 'undefined') {
-      const lowCores = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4;
-      const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4;
-      if (lowCores || lowMemory) {
-        setIsLowEndHardware(true);
-      }
-    }
-
     // 2. Check Battery Status via navigator.getBattery()
     if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
       let batteryRef: any = null;

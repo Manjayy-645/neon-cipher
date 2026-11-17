@@ -1,5 +1,6 @@
 'use client';
 
+import { useHydrated } from '@/lib/useHydrated';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { StepId, STEPS } from '../steps';
@@ -58,11 +59,8 @@ export function OnboardingGate() {
   const pathname = usePathname();
   const router = useRouter();
   const { step, skipped, callsign, ch2Fails } = useOnboardingStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!mounted || !pathname) return;

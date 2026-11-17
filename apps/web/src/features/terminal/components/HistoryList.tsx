@@ -13,7 +13,7 @@ export function HistoryList({ history, length }: HistoryListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
-  const [latestAnnouncement, setLatestAnnouncement] = useState('');
+  const latestAnnouncement = history.length ? describeGuess(history[history.length - 1], length, history.length) : '';
 
   const scrollToBottom = useCallback((smooth = true) => {
     if (bottomRef.current && typeof bottomRef.current.scrollIntoView === 'function') {
@@ -35,8 +35,6 @@ export function HistoryList({ history, length }: HistoryListProps) {
   // Auto-scroll when new guess is added
   useEffect(() => {
     if (history.length > 0) {
-      const latest = history[history.length - 1];
-      setLatestAnnouncement(describeGuess(latest, length, history.length));
       scrollToBottom(true);
     }
   }, [history.length, length, scrollToBottom]);

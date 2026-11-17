@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSystemStore } from '@/stores/system-store';
 import { soundFx } from '@/lib/audio';
@@ -20,8 +21,8 @@ export function ConnectionBanner() {
     dismissReconnectBanner,
   } = useSystemStore();
 
-  const [countdown, setCountdown] = useState(5);
   const isActuallyOffline = !isOnline || simulatedOffline;
+  const [countdown, setCountdown] = useResettableState(5, String(isActuallyOffline) + isReconnecting);
 
   // Window online / offline listeners
   useEffect(() => {
@@ -76,25 +77,19 @@ export function ConnectionBanner() {
     soundFx.playWarning();
   }, [setMidDuelDesync]);
 
-  // Offline retry ticker
+  // Retry timing stays in the timer callback, never an effect-driven state cascade.
   useEffect(() => {
-    if (!isActuallyOffline || isReconnecting) {
-      setCountdown(5);
-      return;
-    }
-
-    if (countdown <= 1) {
-      handleManualRetry();
-      setCountdown(5);
-      return;
-    }
-
+    if (!isActuallyOffline || isReconnecting) return;
     const timer = setTimeout(() => {
-      setCountdown((prev) => prev - 1);
+      if (countdown <= 2) {
+        handleManualRetry();
+        setCountdown(5);
+      } else {
+        setCountdown((previous) => previous - 1);
+      }
     }, 1000);
-
     return () => clearTimeout(timer);
-  }, [isActuallyOffline, isReconnecting, countdown, handleManualRetry]);
+  }, [isActuallyOffline, isReconnecting, countdown, handleManualRetry, setCountdown]);
 
   // 1. Mid-Duel Desync banner (Highest priority)
   if (midDuelDesync) {

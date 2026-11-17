@@ -138,7 +138,7 @@ describe('Task 10: Guided Tutorial Overlay Component', () => {
     `;
   });
 
-  it('renders spotlight on target element and Nix speech bubble', () => {
+  it('renders spotlight on target element and Nix speech bubble', async () => {
     const handleAdvance = vi.fn();
     const handleSkip = vi.fn();
 
@@ -157,14 +157,14 @@ describe('Task 10: Guided Tutorial Overlay Component', () => {
     expect(screen.getByText(/NIX \/\/ TACTICAL GUIDE/i)).toBeInTheDocument();
     expect(screen.getByText(step1.nixDialogue)).toBeInTheDocument();
     expect(screen.getByTestId('tutorial-overlay').className).toContain('pointer-events-none');
-    expect(screen.getAllByTestId('tutorial-backdrop-guard')).toHaveLength(4);
-    expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
+    await waitFor(() => expect(screen.getAllByTestId('tutorial-backdrop-guard')).toHaveLength(4));
+    await waitFor(() => expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
       'aria-label',
       `Nix target: ${step1.title}`
-    );
+    ));
   });
 
-  it('spots the JACK IN control for the establish-link step', () => {
+  it('spots the JACK IN control for the establish-link step', async () => {
     const step2 = chapter1.tutorialSteps![1];
     document.body.innerHTML = '<button data-tutorial="jack-in">JACK IN</button>';
 
@@ -178,10 +178,10 @@ describe('Task 10: Guided Tutorial Overlay Component', () => {
       />
     );
 
-    expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
+    await waitFor(() => expect(screen.getByTestId('tutorial-target-highlight')).toHaveAttribute(
       'aria-label',
       'Nix target: ESTABLISH LINK'
-    );
+    ));
   });
 
   it('keeps the screen interactive if a tutorial target cannot be found', () => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useHydrated } from '@/lib/useHydrated';
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Hud } from '@/features/hud/Hud';
@@ -34,15 +35,12 @@ function isChromeAppRoute(pathname: string | null): boolean {
 }
 
 export function ConditionalHud() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const pathname = usePathname();
   const chromeVisible = useOnboardingStore((s) => s.chromeVisible());
   const callsign = useOnboardingStore((s) => s.callsign);
   const avatarId = useOnboardingStore((s) => s.avatarId);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!callsign) return;
@@ -62,13 +60,10 @@ export function ConditionalHud() {
 }
 
 export function ConditionalNav() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const pathname = usePathname();
   const chromeVisible = useOnboardingStore((s) => s.chromeVisible());
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) return null;
   const isVisible = chromeVisible || isChromeAppRoute(pathname);

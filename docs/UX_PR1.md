@@ -97,6 +97,10 @@ Use Node 24 and the pinned pnpm version:
 corepack pnpm install --frozen-lockfile
 corepack pnpm --filter web exec eslint .
 corepack pnpm --filter web exec tsc --noEmit
+bash scripts/ci-data-api.sh start /tmp/neon-cipher-ci.env
+set -a
+. /tmp/neon-cipher-ci.env
+set +a
 corepack pnpm --filter web exec vitest run
 corepack pnpm --filter web build
 corepack pnpm --filter web dev --hostname 0.0.0.0 --port 3000
@@ -200,3 +204,7 @@ schema changes are involved. The overlay registration store is ephemeral and cle
 unmount, including nested dialogs.
 
 PR 2 remains on hold until PR 1 is reviewed.
+
+The subsequent toolchain repair and isolated security-test setup are documented in
+[PR7_TOOLCHAIN_REVIEW.md](PR7_TOOLCHAIN_REVIEW.md). Earlier baseline check results
+above are historical; use that document for the current dependency pins.

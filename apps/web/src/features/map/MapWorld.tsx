@@ -54,6 +54,17 @@ export const MapWorld: React.FC = () => {
     setView({ x: clamped.x, y: clamped.y, z: clamped.z });
   }, [clampView]);
 
+  const [bounds, setBounds] = useState({ width: 1000, height: 1000 });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setBounds({ width: entry.contentRect.width, height: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -139,9 +150,7 @@ export const MapWorld: React.FC = () => {
     }
   }, [selected, zoomTo]);
 
-  const baseScale = containerRef.current 
-    ? Math.max(containerRef.current.getBoundingClientRect().width, containerRef.current.getBoundingClientRect().height) / 1000 
-    : 1;
+  const baseScale = Math.max(bounds.width, bounds.height) / 1000 || 1;
   const s = view.z * baseScale;
   
   const showLabels = view.z < 1.05;

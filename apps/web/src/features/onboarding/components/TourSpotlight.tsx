@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useCallback, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 
@@ -74,9 +74,8 @@ export function TourSpotlight({
   }, []);
 
   // Query DOM with retry for up to 1s if target element is not mounted yet
-  useEffect(() => {
-    updateRect();
-    updateNavBottomOffset();
+  useLayoutEffect(() => {
+    const frame = requestAnimationFrame(() => { updateRect(); updateNavBottomOffset(); });
 
     let retries = 0;
     const interval = setInterval(() => {
@@ -100,6 +99,7 @@ export function TourSpotlight({
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 
     return () => {
+      cancelAnimationFrame(frame);
       clearInterval(interval);
       window.removeEventListener('resize', handleResizeOrScroll);
       window.removeEventListener('scroll', handleResizeOrScroll, true);

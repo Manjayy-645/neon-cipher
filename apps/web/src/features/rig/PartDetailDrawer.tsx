@@ -38,6 +38,14 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
   onClose,
   onNavigateToMarket,
 }) => {
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const item = hardware[slotId];
   if (!item) return null;
 
@@ -64,13 +72,7 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
   // Stat preview diff
   const statPreview = normalizedId ? getHardwareStatPreview(normalizedId, currentRails) : null;
 
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+
 
   return (
     <motion.div

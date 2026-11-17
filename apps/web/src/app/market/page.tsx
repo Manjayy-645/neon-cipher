@@ -1,5 +1,6 @@
 'use client';
 
+import { useHydrated } from '@/lib/useHydrated';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShopkeeperScene } from '@/features/market/ShopkeeperScene';
@@ -14,8 +15,15 @@ import { isFeatureEnabled } from '@/lib/flags';
 export default function MarketPage() {
   const router = useRouter();
   const { unlocks, loadCampaign } = useCampaignStore();
-  const [view, setView] = useState<'dialogue' | 'shop'>('dialogue');
-  const [devUnlocked, setDevUnlocked] = useState(false);
+  const hydrated = useHydrated();
+  const [selectedView, setView] = useState<'dialogue' | 'shop' | null>(null);
+  const [manualDevUnlock, setDevUnlocked] = useState(false);
+  const params = new URLSearchParams(hydrated ? window.location.search : '');
+  const view = selectedView ?? (params.get('view') === 'shop' ? 'shop' : 'dialogue');
+  const devUnlocked = manualDevUnlock || (hydrated && (
+    localStorage.getItem('neon_dev_unlock_black_market') === 'true' ||
+    params.get('dev') === 'true' || params.get('unlocked') === 'true'
+  ));
 
   const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
   const chapters = useCampaignStore((s) => s.chapters);
@@ -25,19 +33,7 @@ export default function MarketPage() {
     Boolean(crackedNodes['s5']) ||
     Object.keys(crackedNodes).length >= 2;
 
-  useEffect(() => {
-    loadCampaign();
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('neon_dev_unlock_black_market');
-      const params = new URLSearchParams(window.location.search);
-      if (stored === 'true' || params.get('dev') === 'true' || params.get('unlocked') === 'true') {
-        setDevUnlocked(true);
-      }
-      if (params.get('view') === 'shop') {
-        setView('shop');
-      }
-    }
-  }, [loadCampaign]);
+  useEffect(() => { loadCampaign(); }, [loadCampaign]);
 
   // Automatically unlock Black Market if player completed Market Register or 2 street breaches
   useEffect(() => {

@@ -32,32 +32,14 @@ export const NixBubble: React.FC<NixBubbleProps> = ({
 }) => {
   const { nixDismissed, dismissNix } = usePlayerStore();
   const selectedNodeId = useMapStore((s) => s.selectedNodeId);
-  const [internalShow, setInternalShow] = useState(false);
-  const [internalMessage, setInternalMessage] = useState('');
   const shouldReduceMotion = usePrefersReducedMotion();
-
   const isControlled = isOpen !== undefined;
-  const show = isControlled ? isOpen : internalShow;
+  const node = getNodes().find((entry) => entry.id === selectedNodeId);
+  const internalMessage = node ? NIX_LINES[node.tier] : '';
+  const show = isControlled ? isOpen : !nixDismissed && Boolean(selectedNodeId && internalMessage);
   const message = propMessage ?? internalMessage;
 
-  useEffect(() => {
-    if (isControlled) return;
-    if (nixDismissed || !selectedNodeId) {
-      setInternalShow(false);
-      return;
-    }
-    const nodes = getNodes();
-    const node = nodes.find((n) => n.id === selectedNodeId);
-    if (node && NIX_LINES[node.tier]) {
-      setInternalMessage(NIX_LINES[node.tier]);
-      setInternalShow(true);
-    }
-  }, [selectedNodeId, nixDismissed, isControlled]);
-
   const handleDismiss = () => {
-    if (!isControlled) {
-      setInternalShow(false);
-    }
     onDismiss?.();
     dismissNix();
   };

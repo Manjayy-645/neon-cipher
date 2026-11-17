@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import { useEffect, useState } from 'react';
 import { useSystemStore } from '@/stores/system-store';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
@@ -9,15 +10,14 @@ export function LoadingScreen({ message }: { message?: string }) {
   const activeMsg = message || loadingMessage;
   const isVisible = globalLoading || Boolean(message);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [showLongWait, setShowLongWait] = useState(false);
+  const [showLongWait, setShowLongWait] = useResettableState(false, String(activeMsg) + isVisible);
 
   useEffect(() => {
     if (!isVisible) return;
 
-    setShowLongWait(false);
     const timer = window.setTimeout(() => setShowLongWait(true), 5000);
     return () => window.clearTimeout(timer);
-  }, [activeMsg, isVisible]);
+  }, [activeMsg, isVisible, setShowLongWait]);
 
   if (!isVisible) return null;
 
