@@ -32,6 +32,12 @@ export default function CommsPage() {
 
   return (
     <main className="scene-ground scene-arrive flex h-full w-full min-h-0 flex-col text-ink overflow-hidden">
+      {/* Paper dossier heading: Missions remains a real destination even before online play unlocks. */}
+      <header className="shrink-0 border-b border-line bg-panel px-4 py-3 sm:py-4">
+        <span className="block font-data text-[10px] uppercase tracking-[0.18em] text-accent-text">OPERATIONS DOSSIER / 02</span>
+        <h1 className="font-heading text-xl font-semibold text-ink leading-tight mt-1">Missions & Heists</h1>
+        <p className="font-data text-[11px] text-ink-muted mt-1 leading-relaxed">Continue the campaign or coordinate a co-op breach.</p>
+      </header>
       {/* Top Tab Bar: Story Campaign vs Co-op Heists */}
       <div className="bg-panel-light border-b border-line px-4 py-2 shrink-0 relative z-20">
         <SegmentedControl
