@@ -22,10 +22,12 @@ afterEach(() => {
 
 // jsdom has no native top layer. Unit tests cover modal lifecycle/callbacks;
 // real-browser tests verify inertness, Tab containment and hit testing.
-HTMLDialogElement.prototype.showModal = function () {
-  this.setAttribute('open', '');
-  this.querySelector<HTMLElement>('button, input, [tabindex="0"]')?.focus();
-};
-HTMLDialogElement.prototype.close = function () {
-  this.removeAttribute('open');
-};
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+    this.querySelector<HTMLElement>('button, input, [tabindex="0"]')?.focus();
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
+}

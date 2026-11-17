@@ -1,5 +1,8 @@
 # UX PR 1 — Modal and reminder safety
 
+This report describes the original UX commit. The subsequent credential-guard review
+and server-boundary correction are documented in [PR7_CREDENTIAL_REVIEW.md](PR7_CREDENTIAL_REVIEW.md).
+
 Scope: the first package in `NEON_CIPHER_CODEX_UX_IMPLEMENTATION_SPEC.md` only.
 Base: main at `3264f00`, as explicitly requested because develop lacks parts of the audited UI.
 No merge or production deployment. No gameplay rules, scoring, APIs, purchase/equip callbacks,
