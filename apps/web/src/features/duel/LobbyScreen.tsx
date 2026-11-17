@@ -24,12 +24,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomWager, setNewRoomWager] = useState(250);
-  const [fetchingRooms, setFetchingRooms] = useState(false);
+  const [fetchingRooms, setFetchingRooms] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Fetch rooms on mount
   useEffect(() => {
-    setFetchingRooms(true);
     duelService
       .getRooms()
       .then((data) => setRooms(data))

@@ -1,5 +1,8 @@
 'use client';
 
+import { useClock } from '@/lib/useClock';
+import { useHydrated } from '@/lib/useHydrated';
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getNodes, GameNode } from '../map/nodeService';
@@ -32,11 +35,15 @@ const AVAILABLE_ICE: Array<{
 ];
 
 export function Codemaker() {
+  const now = useClock();
   const router = useRouter();
   const syncWallet = usePlayerStore((s) => s.syncWallet);
 
   const [allNodes] = useState<GameNode[]>(() => getNodes());
-  const [selectedNodeId, setSelectedNodeId] = useState<string>('n2'); // Alley Relay default owned
+  const hydrated = useHydrated();
+  const queryNodeId = hydrated ? new URLSearchParams(window.location.search).get('nodeId') : null;
+  const initialNodeId = queryNodeId && allNodes.some((node) => node.id === queryNodeId) ? queryNodeId : 'n2';
+  const [selectedNodeId, setSelectedNodeId] = useResettableState<string>(initialNodeId, String(hydrated)); // Alley Relay default owned
   const [activeAccount, setActiveAccount] = useState<string>('ZERO_COOL');
   const [defenseData, setDefenseData] = useState<NodeDefenseData | null>(null);
 
@@ -47,19 +54,9 @@ export function Codemaker() {
   const [dailyBudget, setDailyBudget] = useState<number>(250);
 
   // Status & feedback
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useResettableState<boolean>(true, selectedNodeId);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  // Sync selected node from search param if provided
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const paramNodeId = new URLSearchParams(window.location.search).get('nodeId');
-      if (paramNodeId && allNodes.some((n) => n.id === paramNodeId)) {
-        setSelectedNodeId(paramNodeId);
-      }
-    }
-  }, [allNodes]);
 
   // Current node
   const currentNode = useMemo(() => {
@@ -69,7 +66,6 @@ export function Codemaker() {
   // Load defense for selected node
   useEffect(() => {
     let mounted = true;
-    setIsLoading(true);
 
     defenseService
       .getDefense(selectedNodeId)
@@ -126,16 +122,16 @@ export function Codemaker() {
 
   // Live decay calculation
   const decayStatus: NodeDecayStatus = useMemo(() => {
-    const lastMaintained = defenseData?.lastMaintainedAt || Date.now() - 3600000 * 4;
-    return calculateNodeDecay(lastMaintained, Date.now(), dailyBudget);
-  }, [defenseData, dailyBudget]);
+    const lastMaintained = defenseData?.lastMaintainedAt || now - 3600000 * 4;
+    return calculateNodeDecay(lastMaintained, now, dailyBudget);
+  }, [defenseData, dailyBudget, now]);
 
   // Live income calculation
   const incomeStatus: NodeIncomeStatus = useMemo(() => {
-    const lastCollected = defenseData?.lastCollectedAt || Date.now() - 3600000 * 6;
+    const lastCollected = defenseData?.lastCollectedAt || now - 3600000 * 6;
     const hourlyYield = currentNode ? Math.floor(currentNode.bounty / 2) : 75;
-    return calculateNodeIncome(hourlyYield, lastCollected, Date.now(), 1000);
-  }, [defenseData, currentNode]);
+    return calculateNodeIncome(hourlyYield, lastCollected, now, 1000);
+  }, [defenseData, currentNode, now]);
 
   const handleDigitChange = (index: number, val: string) => {
     if (!/^\d?$/.test(val)) return;

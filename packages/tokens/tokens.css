@@ -54,6 +54,11 @@
   --z-nix-pip: 30;
   --z-bottom-sheet: 40;
   --z-hud-bars: 50;
+  --z-reminder: 55;
+  --z-modal-backdrop: 80;
+  --z-modal-surface: 90;
+  --z-critical-toast: 100;
+  --modal-backdrop: rgba(40, 30, 20, 0.6);
   --z-terminal-modal: 60;
   --z-tooltip-inspector: 70;
 

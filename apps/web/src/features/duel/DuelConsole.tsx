@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { DuelSession, DuelGuess, DuelFeedEvent } from './types';
 import { duelService } from './duelService';
@@ -49,10 +50,11 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const activeSessionFromStore = initialSession || storeSession;
 
   const [session, setSession] = useState<DuelSession | null>(activeSessionFromStore);
-  const [feedFilter, setFeedFilter] = useState<'all' | 'player' | 'rival'>(
+  const [filterChoice, setFeedFilter] = useState<'all' | 'player' | 'rival'>(
     storeMobileTab || 'player'
   );
-  const [mobileTab, setMobileTab] = useState<'player' | 'rival'>(storeMobileTab || 'player');
+  const mobileTab = storeMobileTab || 'player';
+  const feedFilter = filterChoice === 'all' ? 'all' : mobileTab;
   const [input, setInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRematching, setIsRematching] = useState(false);
@@ -61,35 +63,27 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const [isStealthArmed, setIsStealthArmed] = useState<boolean>(false);
 
   // Clocks
-  const [turnClock, setTurnClock] = useState<number>(activeSessionFromStore?.turnClockSeconds || 35);
-  const [playerClockMs, setPlayerClockMs] = useState<number>(activeSessionFromStore?.playerClockMs || 35000);
-  const [rivalClockMs, setRivalClockMs] = useState<number>(activeSessionFromStore?.rivalClockMs || 35000);
+  const clockKey = [session?.playerClockMs, session?.rivalClockMs, session?.turnClockSeconds].join(':');
+  const [turnClock, setTurnClock] = useResettableState<number>(session?.turnClockSeconds ?? 35, clockKey);
+  const [playerClockMs, setPlayerClockMs] = useResettableState<number>(session?.playerClockMs ?? 35000, clockKey);
+  const [rivalClockMs, setRivalClockMs] = useResettableState<number>(session?.rivalClockMs ?? 35000, clockKey);
 
   // Unread indicator for rival guesses
   const [unreadRivalCount, setUnreadRivalCount] = useState<number>(0);
   const lastSeenRivalGuessesCount = useRef<number>(activeSessionFromStore?.rival.guesses.length || 0);
 
-  useEffect(() => {
-    if (activeSessionFromStore) {
-      setSession(activeSessionFromStore);
-    }
-  }, [activeSessionFromStore]);
+  const [previousStoreSession, setPreviousStoreSession] = useState(activeSessionFromStore);
+  if (previousStoreSession !== activeSessionFromStore) {
+    setPreviousStoreSession(activeSessionFromStore);
+    if (activeSessionFromStore) setSession(activeSessionFromStore);
+  }
 
-  useEffect(() => {
-    if (storeMobileTab) {
-      setMobileTab(storeMobileTab);
-      if (feedFilter !== 'all') {
-        setFeedFilter(storeMobileTab);
-      }
-    }
-  }, [storeMobileTab, feedFilter]);
 
   const feedBottomRef = useRef<HTMLDivElement>(null);
 
   const handleTabChange = useCallback((tab: 'all' | 'player' | 'rival') => {
     setFeedFilter(tab);
     if (tab === 'player' || tab === 'rival') {
-      setMobileTab(tab);
       setStoreMobileTab(tab);
     }
     if (tab === 'rival' || tab === 'all') {
@@ -108,15 +102,11 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   const markFeatureGuideSeen = useSettingsStore((s) => s.markFeatureGuideSeen);
 
   const [activeNixCallout, setActiveNixCallout] = useState<NixDialogueTrigger | null>(null);
-  const lastProcessedEventId = useRef<string | null>(null);
+  const [lastProcessedEventId, setLastProcessedEventId] = useState<string | null>(null);
 
-  // Monitor feed events for tactical Nix callouts
-  useEffect(() => {
-    if (!session || !session.feedEvents || session.feedEvents.length === 0) return;
-    const latestEvent = session.feedEvents[session.feedEvents.length - 1];
-    if (latestEvent.id === lastProcessedEventId.current) return;
-    lastProcessedEventId.current = latestEvent.id;
-
+  const latestEvent = session?.feedEvents?.[session.feedEvents.length - 1];
+  if (latestEvent && latestEvent.id !== lastProcessedEventId) {
+    setLastProcessedEventId(latestEvent.id);
     if (latestEvent.sabotageEvent) {
       const toolName = latestEvent.sabotageEvent.toolName.toLowerCase();
       if (toolName.includes('parity')) {
@@ -129,7 +119,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
     } else if (latestEvent.who === 'rival' && latestEvent.isStealth) {
       setActiveNixCallout(getNixDuelCallout({ type: 'stealth_probe' }));
     }
-  }, [session?.feedEvents]);
+  }
 
   const isScrambled = session?.player.activeEffects.includes('scramble_keypad') ?? false;
   const hasStatic = session?.player.activeEffects.includes('static_history') ?? false;
@@ -175,22 +165,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
     }, 250);
 
     return () => clearInterval(interval);
-  }, [session?.status, session?.guessClockMs]);
-
-  // Resync clocks when session updates
-  useEffect(() => {
-    if (session) {
-      if (session.playerClockMs !== undefined) {
-        setPlayerClockMs(session.playerClockMs);
-      }
-      if (session.rivalClockMs !== undefined) {
-        setRivalClockMs(session.rivalClockMs);
-      }
-      if (session.turnClockSeconds !== undefined) {
-        setTurnClock(session.turnClockSeconds);
-      }
-    }
-  }, [session?.playerClockMs, session?.rivalClockMs, session?.turnClockSeconds]);
+  }, [session?.status, session?.guessClockMs, setPlayerClockMs, setRivalClockMs, setTurnClock]);
 
   // Handle guess submission
   const handleSubmit = useCallback(async () => {

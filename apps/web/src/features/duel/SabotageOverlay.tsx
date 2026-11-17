@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useEffect, useState } from 'react';
 import { NixDialogueTrigger } from '@neon-cipher/game-rules';
 import { Button } from '@/components/ui/Button';
@@ -13,27 +14,15 @@ export const StaticHistoryOverlay: React.FC<StaticHistoryOverlayProps> = ({
   staticExpiry,
   onExpire,
 }) => {
-  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
-    if (!staticExpiry) return 0;
-    return Math.max(0, Math.ceil((staticExpiry - Date.now()) / 1000));
-  });
-
+  const [now, setNow] = useState(() => Date.now());
+  const secondsLeft = staticExpiry ? Math.max(0, Math.ceil((staticExpiry - now) / 1000)) : 0;
   useEffect(() => {
-    if (!staticExpiry) {
-      setSecondsLeft(0);
-      return;
-    }
-
-    const updateTimer = () => {
-      const rem = Math.max(0, Math.ceil((staticExpiry - Date.now()) / 1000));
-      setSecondsLeft(rem);
-      if (rem <= 0 && onExpire) {
-        onExpire();
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 500);
+    if (!staticExpiry) return;
+    const interval = setInterval(() => {
+      const next = Date.now();
+      setNow(next);
+      if (next >= staticExpiry) onExpire?.();
+    }, 500);
     return () => clearInterval(interval);
   }, [staticExpiry, onExpire]);
 

@@ -1,24 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useSettingsStore } from '../stores/settings-store';
 
+const query = '(prefers-reduced-motion: reduce)';
+function subscribe(listener: () => void) {
+  if (!window.matchMedia) return () => {};
+  const media = window.matchMedia(query);
+  media.addEventListener('change', listener);
+  return () => media.removeEventListener('change', listener);
+}
+const getSnapshot = () => Boolean(window.matchMedia?.(query).matches);
+const getServerSnapshot = () => false;
+
 export function usePrefersReducedMotion(): boolean {
-  const [systemReduced, setSystemReduced] = useState(false);
-  const reducedMotionSetting = useSettingsStore((s) => s.reducedMotion);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setSystemReduced(mediaQuery.matches);
-
-    const listener = (event: MediaQueryListEvent) => {
-      setSystemReduced(event.matches);
-    };
-
-    mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
-  }, []);
-
-  if (reducedMotionSetting === 'reduced') return true;
-  if (reducedMotionSetting === 'full') return false;
+  const systemReduced = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const setting = useSettingsStore((s) => s.reducedMotion);
+  if (setting === 'reduced') return true;
+  if (setting === 'full') return false;
   return systemReduced;
 }

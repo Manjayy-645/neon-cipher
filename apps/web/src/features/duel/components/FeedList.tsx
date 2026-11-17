@@ -20,7 +20,7 @@ export function FeedList({
 }: FeedListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
-  const prevCountRef = useRef(events.length);
+  const [previousCount, setPreviousCount] = useState(events.length);
 
   // Filter events based on tab
   const filteredEvents = events.filter((e) => {
@@ -29,9 +29,10 @@ export function FeedList({
     return true; // 'shared'
   });
 
-  // Screen reader announcements for new rival guesses
-  useEffect(() => {
-    if (events.length > prevCountRef.current) {
+  // Update the announcement before committing a newly received feed.
+  if (events.length !== previousCount) {
+    setPreviousCount(events.length);
+    if (events.length > previousCount) {
       const latest = events[events.length - 1];
       if (latest.who === 'rival') {
         if (latest.hidden) {
@@ -48,7 +49,9 @@ export function FeedList({
         }
       }
     }
-    prevCountRef.current = events.length;
+  }
+
+  useEffect(() => {
 
     if (bottomRef.current && typeof bottomRef.current.scrollIntoView === 'function') {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });

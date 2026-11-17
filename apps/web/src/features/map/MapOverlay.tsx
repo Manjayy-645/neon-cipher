@@ -28,23 +28,16 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
   const mapBridge = useMapStore((state) => state.unlocks.bridge);
   const campaignBridge = useCampaignStore((state) => state.unlocks.bridge);
   const bridgeUnlocked = mapBridge || campaignBridge;
-  const [displayBridgeUnlocked, setDisplayBridgeUnlocked] = useState(bridgeUnlocked);
+  const [revealedBridge, setDisplayBridgeUnlocked] = useState(bridgeUnlocked);
 
+  const instant = prefersReducedMotion || process.env.NODE_ENV === 'test';
+  const displayBridgeUnlocked = bridgeUnlocked && (instant || revealedBridge);
+  if (!bridgeUnlocked && revealedBridge) setDisplayBridgeUnlocked(false);
   useEffect(() => {
-    if (bridgeUnlocked && !displayBridgeUnlocked) {
-      if (prefersReducedMotion || process.env.NODE_ENV === 'test') {
-        setDisplayBridgeUnlocked(true);
-        return;
-      }
-      // Unlock sequence: fog thins and drifts away over 1.2s, then district tag turns OPEN and markers pop in
-      const timer = setTimeout(() => {
-        setDisplayBridgeUnlocked(true);
-      }, 1200);
-      return () => clearTimeout(timer);
-    } else if (!bridgeUnlocked && displayBridgeUnlocked) {
-      setDisplayBridgeUnlocked(false);
-    }
-  }, [bridgeUnlocked, displayBridgeUnlocked, prefersReducedMotion]);
+    if (!bridgeUnlocked || revealedBridge || instant) return;
+    const timer = setTimeout(() => setDisplayBridgeUnlocked(true), 1200);
+    return () => clearTimeout(timer);
+  }, [bridgeUnlocked, revealedBridge, instant]);
 
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [districtPositions, setDistrictPositions] = useState<Record<string, { x: number; y: number }>>({});

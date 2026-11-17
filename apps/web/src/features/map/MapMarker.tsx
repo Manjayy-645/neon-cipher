@@ -1,5 +1,6 @@
 'use client';
 
+import { useClock } from '@/lib/useClock';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameNode } from './nodeService';
@@ -20,6 +21,7 @@ function formatCountdown(seconds?: number): string {
 }
 
 export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
+  const now = useClock();
   const prefersReducedMotion = usePrefersReducedMotion();
   const selectedNodeId = useMapStore((s) => s.selectedNodeId);
   const activeNodeId = useMapStore((s) => s.activeNodeId);
@@ -43,13 +45,13 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   };
   const crackedRecord = crackedNodes[node.id] || (aliasMap[node.id] ? crackedNodes[aliasMap[node.id]] : undefined);
   const isCooldownFromCracked = Boolean(
-    crackedRecord && crackedRecord.cooldownMs > 0 && Date.now() - crackedRecord.crackedAt < crackedRecord.cooldownMs
+    crackedRecord && crackedRecord.cooldownMs > 0 && now - crackedRecord.crackedAt < crackedRecord.cooldownMs
   );
   const isOwnedFromCracked = Boolean(
-    crackedRecord && (crackedRecord.cooldownMs === 0 || Date.now() - crackedRecord.crackedAt >= crackedRecord.cooldownMs)
+    crackedRecord && (crackedRecord.cooldownMs === 0 || now - crackedRecord.crackedAt >= crackedRecord.cooldownMs)
   );
   const cooldownSecs = isCooldownFromCracked
-    ? Math.max(0, Math.ceil((crackedRecord.cooldownMs - (Date.now() - crackedRecord.crackedAt)) / 1000))
+    ? Math.max(0, Math.ceil((crackedRecord.cooldownMs - (now - crackedRecord.crackedAt)) / 1000))
     : node.timerSeconds;
 
   const effectiveNode = isCooldownFromCracked

@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
@@ -7,6 +8,7 @@ import { useOnboardingStore } from '../onboardingStore';
 import { useCampaignStore } from '@/stores/campaign-store';
 import { getChapterById } from '@neon-cipher/game-rules';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
+import { isFocusedRoute, useOverlayStore } from '@/stores/overlay-store';
 import { StepId } from '../steps';
 
 export interface PendingQuest {
@@ -129,25 +131,19 @@ export function getPendingQuest(
 
 export function PendingQuestNotification() {
   const pathname = usePathname();
+  const isFocused = useOverlayStore((state) => state.modals.length > 0 || state.focusedFlows.length > 0);
   const router = useRouter();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const { step, skipped, chromeVisible } = useOnboardingStore();
   const { activeChapterId, chapters } = useCampaignStore();
 
-  const [dismissedPath, setDismissedPath] = useState<string | null>(null);
+  const [dismissedPath, setDismissedPath] = useResettableState<string | null>(null, pathname ?? '');
 
   const quest = getPendingQuest(step, skipped, activeChapterId, chapters);
 
-  // Reset dismissal if pathname or quest changes
-  useEffect(() => {
-    if (dismissedPath && dismissedPath !== pathname) {
-      setDismissedPath(null);
-    }
-  }, [pathname, dismissedPath]);
-
   // Hide if no quest, or if already on quest route, or on root splash, or dismissed on this page
-  if (!quest) return null;
+  if (!quest || isFocused || (pathname && isFocusedRoute(pathname))) return null;
   if (!pathname || pathname === '/' || pathname === quest.route) return null;
   if (pathname.startsWith('/terminal') && pathname !== quest.route) return null;
   if (dismissedPath === pathname) return null;
@@ -189,7 +185,7 @@ export function PendingQuestNotification() {
         exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.98 }}
         transition={prefersReducedMotion ? { duration: 0.05 } : { duration: 0.15, ease: 'easeOut' }}
         style={{ bottom: bottomPosition }}
-        className="absolute bottom-[calc(var(--nav-bottom-height,64px)+env(safe-area-inset-bottom,0px)+8px)] left-0 right-0 mx-auto w-fit max-w-[calc(100%-20px)] sm:max-w-[360px] z-hud-bars pointer-events-auto select-none"
+        className="absolute bottom-[calc(var(--nav-bottom-height,64px)+env(safe-area-inset-bottom,0px)+8px)] left-0 right-0 mx-auto w-fit max-w-[calc(100%-20px)] sm:max-w-[360px] z-reminder pointer-events-auto select-none"
       >
         <div
           onClick={handleResume}

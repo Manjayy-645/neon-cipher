@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSettingsStore } from '@/stores/settings-store';
 import { usePlayerStore } from '@/stores/player-store';
@@ -8,6 +8,7 @@ import { authService } from '../auth/authService';
 import { soundFx } from '@/lib/audio';
 import { ReducedMotionMode } from './types';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { BottomDrawer } from '@/components/ui/BottomDrawer';
 import { useCampaignStore } from '@/stores/campaign-store';
 
@@ -29,18 +30,6 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
   const [isResetting, setIsResetting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  // Close on Escape key
-  useEffect(() => {
-    if (!activeOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleClose?.();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeOpen, handleClose]);
 
   if (!activeOpen) return null;
 
@@ -104,19 +93,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
 
   return (
     <>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Settings configuration"
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70"
-        onClick={() => handleClose?.()}
-      >
-        <div
-          className="scene-ground w-full max-w-[480px] max-h-[90vh] border-t sm:border border-line rounded-t-lg sm:rounded-lg shadow-sheet flex flex-col overflow-hidden text-ink font-data"
-          onClick={(e) => e.stopPropagation()}
-        >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-panel shrink-0">
+      <Modal label="Settings configuration" onClose={() => handleClose?.()}
+        className="scene-ground border-t border-line rounded-t-lg shadow-sheet text-ink font-data"
+        header={(
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-panel shrink-0">
           <div className="flex items-center gap-3">
             <img src="/icons/icon-settings.svg" alt="" className="w-6 h-6 object-contain pointer-events-none" aria-hidden="true" />
             <div>
@@ -132,7 +112,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             <img src="/icons/icon-close.svg" alt="" className="w-5 h-5 object-contain pointer-events-none" aria-hidden="true" />
           </Button>
         </div>
-
+        )}>
         {/* Status notification toast */}
         {statusMessage && (
           <div className="bg-accent/15 border-b border-accent px-4 py-2 text-accent-text text-xs flex items-center justify-between">
@@ -429,19 +409,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
           </section>
 
         </div>
-      </div>
-      </div>
+      </Modal>
       <BottomDrawer
         open={confirmReset}
         onClose={() => setConfirmReset(false)}
         title="RESET CAMPAIGN?"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-ink-muted leading-relaxed">
-            This clears chapter and node progress, campaign unlocks, and wallet
-            history. Your balance and tool inventory return to the starter
-            values. Your callsign and settings stay unchanged.
-          </p>
+      footer={(
           <div className="flex flex-col gap-2">
             <Button
               type="button"
@@ -463,6 +436,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
               CANCEL
             </Button>
           </div>
+      )}
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-ink-muted leading-relaxed">
+            This clears chapter and node progress, campaign unlocks, and wallet
+            history. Your balance and tool inventory return to the starter
+            values. Your callsign and settings stay unchanged.
+          </p>
+
         </div>
       </BottomDrawer>
     </>

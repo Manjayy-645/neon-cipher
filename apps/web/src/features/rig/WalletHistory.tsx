@@ -11,7 +11,6 @@ export const WalletHistory: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchHistory = (selectedFilter: 'all' | 'credits' | 'coins') => {
-    setLoading(true);
     const param = selectedFilter === 'all' ? undefined : selectedFilter;
     rigService
       .getWalletHistory(param)
@@ -35,7 +34,7 @@ export const WalletHistory: React.FC = () => {
       <SegmentedControl<'all' | 'credits' | 'coins'>
         ariaLabel="Ledger Currency Filter"
         value={filter}
-        onChange={(val) => setFilter(val)}
+        onChange={(val) => { setLoading(true); setFilter(val); }}
         options={[
           { id: 'all', label: 'ALL' },
           { id: 'credits', label: 'CREDITS' },

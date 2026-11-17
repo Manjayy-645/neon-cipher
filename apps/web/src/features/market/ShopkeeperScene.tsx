@@ -1,5 +1,6 @@
 'use client';
 
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
@@ -24,18 +25,14 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
   onLeave,
 }) => {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [displayedText, setDisplayedText] = useState(prefersReducedMotion ? dialogue : '');
-  const [isTypingComplete, setIsTypingComplete] = useState(prefersReducedMotion);
+  const [displayedText, setDisplayedText] = useResettableState(prefersReducedMotion ? dialogue : '', dialogue + prefersReducedMotion);
+  const [isTypingComplete, setIsTypingComplete] = useResettableState(prefersReducedMotion, dialogue + prefersReducedMotion);
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setDisplayedText(dialogue);
-      setIsTypingComplete(true);
       return;
     }
 
-    setDisplayedText('');
-    setIsTypingComplete(false);
     let index = 0;
 
     const interval = setInterval(() => {
@@ -48,7 +45,7 @@ export const ShopkeeperScene: React.FC<ShopkeeperSceneProps> = ({
     }, 20);
 
     return () => clearInterval(interval);
-  }, [dialogue, prefersReducedMotion]);
+  }, [dialogue, prefersReducedMotion, setDisplayedText, setIsTypingComplete]);
 
   const handleSkipTyping = () => {
     if (!isTypingComplete) {

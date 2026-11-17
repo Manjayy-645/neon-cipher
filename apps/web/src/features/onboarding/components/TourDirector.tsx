@@ -1,5 +1,8 @@
 'use client';
 
+import { useClock } from '@/lib/useClock';
+import { useHydrated } from '@/lib/useHydrated';
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { StepId, STEP_ORDER, STEPS, STALL_HINTS, STALL_MS, CH2_NODE_ID, TUTORIAL } from '../steps';
@@ -62,6 +65,7 @@ export function getNextStallHint(
 }
 
 export function TourDirector() {
+  const now = useClock();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -78,22 +82,17 @@ export function TourDirector() {
     recordCh2Fail,
   } = useOnboardingStore();
 
-  const [mounted, setMounted] = useState(false);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const mounted = useHydrated();
+  const [currentLineIndex, setCurrentLineIndex] = useResettableState(0, step);
   const [deadKeyTarget, setDeadKeyTarget] = useState<string | null>(null);
-  const [activeStallHint, setActiveStallHint] = useState<string | null>(null);
+  const [activeStallHint, setActiveStallHint] = useResettableState<string | null>(null, step);
   const lastStallHintIndexRef = useRef<number>(-1);
-  const lastGuessTimeRef = useRef<number>(Date.now());
+  const lastGuessTimeRef = useRef<number>(now);
   const firstGuessTrackedRef = useRef(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Reset line index when step changes
   useEffect(() => {
-    setCurrentLineIndex(0);
-    setActiveStallHint(null);
     lastGuessTimeRef.current = Date.now();
   }, [step]);
 
@@ -163,7 +162,7 @@ export function TourDirector() {
     });
 
     return () => unsubscribe();
-  }, [step, seen, startedAt, advance, markSeen, recordWin, recordCh2Fail]);
+  }, [step, seen, startedAt, advance, markSeen, recordWin, recordCh2Fail, setActiveStallHint]);
 
   // Stall hint timer
   useEffect(() => {
@@ -183,7 +182,7 @@ export function TourDirector() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [step]);
+  }, [step, setActiveStallHint]);
 
   const handleSkipTour = useCallback(() => {
     skip();

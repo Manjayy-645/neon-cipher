@@ -8,6 +8,7 @@ import { usePlayerStore } from '@/stores/player-store';
 import { useCampaignStore } from '@/stores/campaign-store';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { emit } from '@/features/onboarding/events';
 import { normalizeHardwareId, getHardwareStatPreview } from '@neon-cipher/game-rules';
 
@@ -461,21 +462,9 @@ function ConfirmPurchaseSheet({
     item.currency === 'credits' ? `$${shortfall.toLocaleString()} credits` : `${shortfall} coins`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
-      onClick={onCancel}
-    >
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[480px] bg-panel-light border-t border-line rounded-t-[16px] p-4 sm:p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
-      >
+    <Modal label="Confirm Transaction" onClose={onCancel}
+      className="bg-panel-light border-t border-line rounded-t-lg p-4 sm:p-5 shadow-sheet"
+      header={(
         <div className="flex items-center justify-between border-b border-line pb-2.5">
           <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
             Confirm Transaction
@@ -484,13 +473,42 @@ function ConfirmPurchaseSheet({
             variant="icon"
             onClick={onCancel}
             aria-label="Close"
-            className="w-7 h-7 min-w-[32px] min-h-[32px] rounded-full text-xs p-1"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full text-xs p-1"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </Button>
         </div>
+      )}
+      dismissible={!isPurchasing}
+      footer={(
+        <div className="flex gap-2.5 mt-1">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            CANCEL
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={onConfirm}
+            disabled={isShort || isPurchasing}
+            loading={isPurchasing}
+            className="flex-1"
+            data-tour={
+              item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
+                ? 'buy-firewall-patch'
+                : undefined
+            }
+          >
+            {isPurchasing ? 'PROCESSING...' : isShort ? 'CANNOT AFFORD' : 'CONFIRM PURCHASE'}
+          </Button>
+        </div>
+      )}>
+      <div className="flex flex-col gap-4">
 
         <div className="flex items-center gap-3">
           {item.icon && (
@@ -624,33 +642,8 @@ function ConfirmPurchaseSheet({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-2.5 mt-1">
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-            className="flex-1"
-          >
-            CANCEL
-          </Button>
-
-          <Button
-            variant="primary"
-            onClick={onConfirm}
-            disabled={isShort || isPurchasing}
-            loading={isPurchasing}
-            className="flex-1"
-            data-tour={
-              item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
-                ? 'buy-firewall-patch'
-                : undefined
-            }
-          >
-            {isPurchasing ? 'PROCESSING...' : isShort ? 'CANNOT AFFORD' : 'CONFIRM PURCHASE'}
-          </Button>
-        </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 }
 
@@ -667,30 +660,10 @@ function EquipDrawer({
   onToggleEquip: (toolId: string) => void;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[480px] bg-panel-light border-t border-line rounded-t-[16px] p-4 sm:p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
-      >
+    <Modal label="Equip Breach Tools" onClose={onClose}
+      className="bg-panel-light border-t border-line rounded-t-lg p-4 sm:p-5 shadow-sheet"
+      header={(
         <div className="flex items-center justify-between border-b border-line pb-2.5">
           <div>
             <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium block">
@@ -716,6 +689,18 @@ function EquipDrawer({
             </span>
           </Button>
         </div>
+      )}
+      footer={(
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={onClose}
+          className="mt-1"
+        >
+          DONE
+        </Button>
+      )}>
+      <div className="flex flex-col gap-4">
 
         {/* Active Tool Slots */}
         <div className="grid grid-cols-2 gap-2.5 bg-panel p-3 rounded-[10px] border border-line">
@@ -826,43 +811,25 @@ function EquipDrawer({
           )}
         </div>
 
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={onClose}
-          className="mt-1"
-        >
-          DONE
-        </Button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 }
 
 function CoinStoreStubModal({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.95, y: 15 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 15 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-panel-light border border-line rounded-[12px] p-6 max-w-sm w-full flex flex-col gap-4 text-center shadow-card"
-      >
+    <Modal label="Coin Exchange Offline" onClose={onClose}
+      className="bg-panel-light border border-line rounded-lg p-6 text-center shadow-card"
+      footer={(
+        <Button
+          variant="primary"
+          fullWidth
+          onClick={onClose}
+        >
+          RETURN TO MARKET
+        </Button>
+      )}>
+      <div className="flex flex-col gap-4">
         <div className="w-12 h-12 rounded-full bg-money/15 border border-money/40 flex items-center justify-center text-money-text mx-auto">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
@@ -891,14 +858,7 @@ function CoinStoreStubModal({ onClose }: { onClose: () => void }) {
           <span className="font-bold text-money-text">45 Coins Available</span>
         </div>
 
-        <Button
-          variant="primary"
-          fullWidth
-          onClick={onClose}
-        >
-          RETURN TO MARKET
-        </Button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 }

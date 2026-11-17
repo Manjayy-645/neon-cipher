@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useLayoutEffect, useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TutorialStep, ChapterData } from '@neon-cipher/game-rules/src/index';
 import { useCampaignStore } from '@/stores/campaign-store';
@@ -37,15 +37,16 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
     } else {
       setTargetRect(null);
     }
-  }, [activeStep?.targetSelector]);
+  }, [activeStep]);
 
-  useEffect(() => {
-    updateRect();
+  useLayoutEffect(() => {
+    const frame = requestAnimationFrame(updateRect);
     const interval = setInterval(updateRect, 300);
     window.addEventListener('resize', updateRect);
     window.addEventListener('scroll', updateRect, true);
 
     return () => {
+      cancelAnimationFrame(frame);
       clearInterval(interval);
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);

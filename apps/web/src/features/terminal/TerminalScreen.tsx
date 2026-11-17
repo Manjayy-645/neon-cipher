@@ -1,5 +1,6 @@
 'use client';
 
+import { useClock } from '@/lib/useClock';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,6 +69,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const [secret, setSecret] = useState<string | undefined>(undefined);
   const [failureReason, setFailureReason] = useState<'TRACE TIMEOUT' | 'ATTEMPTS EXHAUSTED' | null>(null);
 
+  const now = useClock();
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [isQuitModalOpen, setIsQuitModalOpen] = useState(false);
 
@@ -580,16 +582,16 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     (!allowDuplicates && new Set(entry).size !== entry.length);
 
   const handleSubmitRef = React.useRef(handleSubmit);
-  handleSubmitRef.current = handleSubmit;
+  useEffect(() => { handleSubmitRef.current = handleSubmit; }, [handleSubmit]);
 
   const handleDigitRef = React.useRef(handleDigit);
-  handleDigitRef.current = handleDigit;
+  useEffect(() => { handleDigitRef.current = handleDigit; }, [handleDigit]);
 
   const handleBackspaceRef = React.useRef(handleBackspace);
-  handleBackspaceRef.current = handleBackspace;
+  useEffect(() => { handleBackspaceRef.current = handleBackspace; }, [handleBackspace]);
 
   const handleClearRef = React.useRef(handleClear);
-  handleClearRef.current = handleClear;
+  useEffect(() => { handleClearRef.current = handleClear; }, [handleClear]);
 
   // Physical Keyboard Input (desktop support for 0-9, Backspace, Delete, Enter, Escape)
   useEffect(() => {
@@ -657,7 +659,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const nodeType = config.nodeType || node?.type || 'vending';
 
   const clockMsRemaining = session.config.timerSeconds
-    ? session.config.timerSeconds * 1000 - (Date.now() - session.startedAt)
+    ? session.config.timerSeconds * 1000 - (now - session.startedAt)
     : null;
 
   const isTimeoutLoss =

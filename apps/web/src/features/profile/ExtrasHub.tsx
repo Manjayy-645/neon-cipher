@@ -312,7 +312,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
 
                   {currentReplay.guesses[currentStepIndex].note && (
                     <p className="text-xs italic text-terminal-muted">
-                      "{currentReplay.guesses[currentStepIndex].note}"
+                      &quot;{currentReplay.guesses[currentStepIndex].note}&quot;
                     </p>
                   )}
                 </div>

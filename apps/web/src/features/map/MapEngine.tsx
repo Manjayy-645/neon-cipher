@@ -51,7 +51,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
   const [fps, setFps] = useState(0);
   const [zoom, setZoom] = useState(0);
   const [center, setCenter] = useState<[number, number]>([0, 0]);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [loadedMap, setLoadedMap] = useState<maplibregl.Map | null>(null);
 
   const showDevOverlay = isFeatureEnabled('devOverlay');
 
@@ -105,7 +105,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
 
     mapInstance.current.on('load', () => {
       if (mapInstance.current) {
-        setIsMapLoaded(true);
+        setLoadedMap(map);
         handleMapMovement();
       }
     });
@@ -178,7 +178,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
 
   // Programmatic camera moves based on state machine
   useEffect(() => {
-    if (!mapInstance.current || !isMapLoaded) return;
+    if (!mapInstance.current || loadedMap === null) return;
 
     const targetKey = `${view}:${selectedDistrict || ''}:${view === 'node' ? selectedNodeId || '' : ''}`;
     if (lastCameraTarget.current === targetKey) return;
@@ -218,7 +218,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
         });
       }
     }
-  }, [view, selectedDistrict, selectedNodeId, isMapLoaded, prefersReducedMotion]);
+  }, [view, selectedDistrict, selectedNodeId, loadedMap, prefersReducedMotion]);
 
   // Pinch-out / zoom listener: step back state if zooming out past threshold
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
 
       </div>
 
-      {isMapLoaded && mapInstance.current && <AmbientLife map={mapInstance.current} />}
+      {loadedMap && <AmbientLife map={loadedMap} />}
       <FogLayer />
       <div
         data-testid="time-of-day-tint"
@@ -303,8 +303,8 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
           opacity: 'var(--time-tint-opacity)',
         }}
       />
-      {isMapLoaded && mapInstance.current && (
-        <MapOverlay map={mapInstance.current} nodes={nodes} zoom={zoom} />
+      {loadedMap && (
+        <MapOverlay map={loadedMap} nodes={nodes} zoom={zoom} />
       )}
 
       {showDevOverlay && (

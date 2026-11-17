@@ -133,7 +133,7 @@ export function BootSequence({ onComplete, autoRoute = true }: BootSequenceProps
           </h1>
           <p className="font-data text-xs text-ink-muted tracking-widest uppercase mt-1 flex items-center gap-1.5 flex-wrap">
             <span>STREET CRACKING CONSOLE</span>
-            <span>//</span>
+            <span>{'//'}</span>
             <span>CITY FIELD GUIDE</span>
           </p>
         </div>

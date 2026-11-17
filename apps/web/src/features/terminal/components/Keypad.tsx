@@ -32,17 +32,15 @@ export function Keypad({
   const [hasSeenNixElimination, setHasSeenNixElimination] = useState(false);
   const [showNixBubble, setShowNixBubble] = useState(false);
 
-  // Monitor first dead digit elimination for Rookie Assist
+  if (assistMode === 'rookie' && deadDigits.size > 0 && !hasSeenNixElimination) {
+    setHasSeenNixElimination(true);
+    setShowNixBubble(true);
+  }
   useEffect(() => {
-    if (assistMode === 'rookie' && deadDigits.size > 0 && !hasSeenNixElimination) {
-      setHasSeenNixElimination(true);
-      setShowNixBubble(true);
-      const timer = setTimeout(() => {
-        setShowNixBubble(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [assistMode, deadDigits.size, hasSeenNixElimination]);
+    if (!showNixBubble) return;
+    const timer = setTimeout(() => setShowNixBubble(false), 5000);
+    return () => clearTimeout(timer);
+  }, [showNixBubble]);
 
   const keys = [
     { label: '1', value: 1, type: 'digit' },

@@ -1,5 +1,7 @@
 'use client';
 
+import { useHydrated } from '@/lib/useHydrated';
+import { useResettableState } from '@/lib/useResettableState';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'framer-motion';
@@ -19,12 +21,11 @@ export function SplashScreen() {
   const shouldReduceMotion = useReducedMotion();
   const { step, callsign, advance, reset } = useOnboardingStore();
 
-  const [displayedBootLine, setDisplayedBootLine] = useState('');
+  const [displayedBootLine, setDisplayedBootLine] = useResettableState(shouldReduceMotion ? BOOT_LINE : '', String(shouldReduceMotion));
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   useEffect(() => {
-    setMounted(true);
     if (typeof router.prefetch === 'function') {
       router.prefetch('/terminal/tutorial-soda');
       router.prefetch('/map');
@@ -34,7 +35,6 @@ export function SplashScreen() {
   // Typewriter effect (max 1.2s, instant under reduced motion)
   useEffect(() => {
     if (shouldReduceMotion) {
-      setDisplayedBootLine(BOOT_LINE);
       return;
     }
 
@@ -49,7 +49,7 @@ export function SplashScreen() {
     }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [shouldReduceMotion]);
+  }, [shouldReduceMotion, setDisplayedBootLine]);
 
   const handleStart = (e?: React.SyntheticEvent) => {
     if (e) {
@@ -197,11 +197,7 @@ export function SplashScreen() {
         open={confirmResetOpen}
         onClose={() => setConfirmResetOpen(false)}
         title="START NEW GAME?"
-      >
-        <div className="flex flex-col gap-4">
-          <p className="font-data text-xs text-ink-muted leading-relaxed">
-            Starting a new game will reset all progress on this device and return to Chapter 1.
-          </p>
+      footer={(
           <div className="flex flex-col gap-2 mt-2">
             <Button
               variant="danger"
@@ -218,6 +214,13 @@ export function SplashScreen() {
               CANCEL
             </Button>
           </div>
+      )}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="font-data text-xs text-ink-muted leading-relaxed">
+            Starting a new game will reset all progress on this device and return to Chapter 1.
+          </p>
+
         </div>
       </BottomDrawer>
     </div>
