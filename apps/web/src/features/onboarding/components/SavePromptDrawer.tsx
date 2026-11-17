@@ -39,12 +39,7 @@ export function SavePromptDrawer({ open }: SavePromptDrawerProps) {
       open={open}
       onClose={handleNotNow}
       title="Save your progress?"
-    >
-      <div className="flex flex-col gap-5 py-2">
-        <p className="font-data text-xs sm:text-sm text-ink-muted leading-relaxed">
-          Your progress lives on this device. An account keeps it safe and lets you duel.
-        </p>
-
+      footer={(
         <div className="flex flex-col gap-2.5 pt-2">
           <Button
             variant="primary"
@@ -63,6 +58,13 @@ export function SavePromptDrawer({ open }: SavePromptDrawerProps) {
             NOT NOW
           </Button>
         </div>
+      )}
+    >
+      <div className="flex flex-col gap-5 py-2">
+        <p className="font-data text-xs sm:text-sm text-ink-muted leading-relaxed">
+          Your progress lives on this device. An account keeps it safe and lets you duel.
+        </p>
+
       </div>
     </BottomDrawer>
   );

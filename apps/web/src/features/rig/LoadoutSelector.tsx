@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CATALOG, CatalogItem, getItemIcon } from '../market/catalog';
+import { Modal } from '@/components/ui/Modal';
+import { CATALOG, getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
 
 interface LoadoutSelectorProps {
@@ -24,15 +24,6 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
   title = 'LOADOUT SELECTOR',
   subtitle = 'Arm up to two consumable sabotage tools for the next infiltration.',
 }) => {
-  React.useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   const ownedTools = CATALOG.filter(
@@ -40,23 +31,9 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
   );
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-[480px] bg-panel border-t border-line rounded-t-lg p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
-        >
-          {/* Header */}
+    <Modal label={title} onClose={onClose}
+      className="bg-panel border-t border-line rounded-t-lg p-5 shadow-sheet"
+      header={(
           <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2">
             <div>
               <h2 className="font-heading text-lg font-bold text-ink">{title}</h2>
@@ -73,6 +50,19 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
               </span>
             </Button>
           </div>
+      )}
+      footer={(
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={onClose}
+            className="mt-1"
+          >
+            CONFIRM LOADOUT
+          </Button>
+      )}>
+      <div className="flex flex-col gap-4">
+          {/* Header */}
 
           {/* Active 2-Bay Rig Sockets */}
           <div className="grid grid-cols-2 gap-2.5 bg-panel-dark/10 p-3 rounded-md border border-ink-muted/30">
@@ -191,16 +181,7 @@ export const LoadoutSelector: React.FC<LoadoutSelectorProps> = ({
             )}
           </div>
 
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={onClose}
-            className="mt-1"
-          >
-            CONFIRM LOADOUT
-          </Button>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </Modal>
   );
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import { useFocusedFlow } from '@/stores/overlay-store';
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { coopService, CoopSessionView, CoopHeistView } from './coopService';
@@ -66,6 +67,7 @@ const DEFAULT_SESSION: CoopSessionView = {
 };
 
 export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
+  useFocusedFlow();
   // Session State (Server Authoritative)
   const [session, setSession] = useState<CoopSessionView>(initialSession || DEFAULT_SESSION);
 

@@ -311,7 +311,10 @@ describe('STYLE B2: Interactivity pass for every clickable element', () => {
         />
       );
 
-      fireEvent.keyDown(window, { key: 'Escape' });
+      // jsdom does not synthesize Escape's native dialog cancel action.
+      // Real Escape and focus containment are exercised by overlay-safety.cjs.
+      fireEvent(screen.getByRole('dialog', { name: 'LOADOUT SELECTOR' }),
+        new Event('cancel', { cancelable: true }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });

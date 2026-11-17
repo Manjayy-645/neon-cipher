@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PendingQuestNotification } from '../components/PendingQuestNotification';
 import { useOnboardingStore } from '../onboardingStore';
+import { Modal } from '@/components/ui/Modal';
+import { useFocusedFlow, useOverlayStore } from '@/stores/overlay-store';
 import { useCampaignStore } from '@/stores/campaign-store';
 
 const mockPush = vi.fn();
@@ -142,7 +144,7 @@ describe('PendingQuestNotification Component', () => {
     expect(notification).toHaveStyle({
       bottom: 'calc(var(--nav-bottom-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px)',
     });
-    expect(notification.className).toContain('z-hud-bars');
+    expect(notification.className).toContain('z-reminder');
 
     const resumeBtn = screen.getByTestId('pending-quest-action');
     expect(resumeBtn.className).toContain('pointer-events-auto');
@@ -150,4 +152,32 @@ describe('PendingQuestNotification Component', () => {
     fireEvent.click(resumeBtn);
     expect(mockPush).toHaveBeenCalledWith('/terminal/n4');
   });
+  it.each(['/terminal/n4', '/terminal/tutorial-soda', '/coop', '/duel/match/qa'])('suppresses reminders on focused route %s', (path) => {
+    useOnboardingStore.setState({ step: 'market.buy', skipped: false });
+    currentPathname = path;
+    render(<PendingQuestNotification />);
+    expect(screen.queryByTestId('pending-quest-notification')).not.toBeInTheDocument();
+  });
+
+  it('suppresses during a modal and resumes when the last modal closes', () => {
+    useOnboardingStore.setState({ step: 'market.buy', skipped: false });
+    const { rerender } = render(<PendingQuestNotification />);
+    expect(screen.getByTestId('pending-quest-notification')).toBeInTheDocument();
+    rerender(<><PendingQuestNotification /><Modal label="Purchase" onClose={() => {}}>Details</Modal></>);
+    expect(screen.queryByTestId('pending-quest-notification')).not.toBeInTheDocument();
+    rerender(<PendingQuestNotification />);
+    expect(screen.getByTestId('pending-quest-notification')).toBeInTheDocument();
+    expect(useOverlayStore.getState().modals).toHaveLength(0);
+  });
+
+  it('suppresses on an in-page briefing/co-op flow and restores on exit', () => {
+    function Briefing() { useFocusedFlow(); return <p>Accept Assignment</p>; }
+    useOnboardingStore.setState({ step: 'market.buy', skipped: false });
+    currentPathname = '/comms';
+    const { rerender } = render(<><PendingQuestNotification /><Briefing /></>);
+    expect(screen.queryByTestId('pending-quest-notification')).not.toBeInTheDocument();
+    rerender(<PendingQuestNotification />);
+    expect(screen.getByTestId('pending-quest-notification')).toBeInTheDocument();
+  });
+
 });

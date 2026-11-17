@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Modal } from '@/components/ui/Modal';
 
 interface ClueLegendDrawerProps {
   isOpen: boolean;
@@ -9,25 +9,11 @@ interface ClueLegendDrawerProps {
 }
 
 export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
+  if (!isOpen) return null;
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="legend-title"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs"
-        >
-          {/* Backdrop click */}
-          <div className="absolute inset-0" onClick={onClose} />
-
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative w-full max-w-sm rounded-t-[16px] sm:rounded-[12px] bg-terminal-panel border border-terminal-line p-5 shadow-sheet flex flex-col gap-4 text-terminal-ink z-10"
-          >
+    <Modal label="Clue Legend" onClose={onClose}
+      className="rounded-t-lg bg-terminal-panel border border-terminal-line p-5 shadow-sheet text-terminal-ink"
+      header={(
             <div className="flex items-center justify-between border-b border-terminal-line/60 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full border border-terminal-phosphor/60 overflow-hidden shrink-0">
@@ -55,6 +41,17 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
                 ✕
               </button>
             </div>
+      )}
+      footer={(
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-11 min-h-[44px] rounded-[6px] border border-terminal-line bg-terminal-bg text-terminal-ink hover:border-terminal-phosphor font-data text-xs font-bold uppercase tracking-wider"
+            >
+              GOT IT
+            </button>
+      )}>
+      <div className="flex flex-col gap-4">
 
             <div className="flex flex-col gap-3 font-data text-xs">
               {/* PAN */}
@@ -111,16 +108,7 @@ export function ClueLegendDrawer({ isOpen, onClose }: ClueLegendDrawerProps) {
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full h-11 min-h-[44px] rounded-[6px] border border-terminal-line bg-terminal-bg text-terminal-ink hover:border-terminal-phosphor font-data text-xs font-bold uppercase tracking-wider"
-            >
-              GOT IT
-            </button>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </Modal>
   );
 }

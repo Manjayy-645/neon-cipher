@@ -1,5 +1,6 @@
 'use client';
 
+import { useFocusedFlow } from '@/stores/overlay-store';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChapterData, getBrokerCharacter, getMentorCharacter } from '@neon-cipher/game-rules/src/index';
@@ -18,6 +19,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
   onAccept,
   onBack,
 }) => {
+  useFocusedFlow();
   const prefersReducedMotion = usePrefersReducedMotion();
   const debt = useCampaignStore((s) => s.debt);
 

@@ -197,11 +197,7 @@ export function SplashScreen() {
         open={confirmResetOpen}
         onClose={() => setConfirmResetOpen(false)}
         title="START NEW GAME?"
-      >
-        <div className="flex flex-col gap-4">
-          <p className="font-data text-xs text-ink-muted leading-relaxed">
-            Starting a new game will reset all progress on this device and return to Chapter 1.
-          </p>
+      footer={(
           <div className="flex flex-col gap-2 mt-2">
             <Button
               variant="danger"
@@ -218,6 +214,13 @@ export function SplashScreen() {
               CANCEL
             </Button>
           </div>
+      )}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="font-data text-xs text-ink-muted leading-relaxed">
+            Starting a new game will reset all progress on this device and return to Chapter 1.
+          </p>
+
         </div>
       </BottomDrawer>
     </div>

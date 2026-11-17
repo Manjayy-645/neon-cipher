@@ -26,6 +26,8 @@
       "fogTint": "#7E878C"
     }
   },
+  "layer": { "reminder": 55, "modalBackdrop": 80, "modalSurface": 90, "criticalToast": 100 },
+  "modalBackdrop": "rgba(40, 30, 20, 0.6)",
   "shadow": {
     "marker": "0 1px 1px rgba(40,30,20,0.45)",
     "card": "0 2px 8px rgba(0,0,0,0.25)",
