@@ -23,7 +23,7 @@ fs.mkdirSync(output,{recursive:true});
   const done=dialog.getByRole('button',{name:'GOT IT',exact:true});
   await done.scrollIntoViewIfNeeded();
   assert(await done.evaluate(el=>{const r=el.getBoundingClientRect();return r.bottom<=innerHeight && r.top>=0;}));
-  for(let i=0;i<12;i++){await page.keyboard.press('Tab');assert(await dialog.evaluate(el=>el.contains(document.activeElement)));}
+  for(let i=0;i<12;i++){await page.keyboard.press('Tab');assert(await dialog.evaluate(el=>el.matches(':modal') && (el.contains(document.activeElement) || document.activeElement===document.body)), 'No background control may gain focus; Chromium may focus the document between native wrap cycles');}
   await page.screenshot({path:path.join(output,'legend-200-percent.png')});
   await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
   assert(await help.evaluate(el=>document.activeElement===el));

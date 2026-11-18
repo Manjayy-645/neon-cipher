@@ -106,6 +106,7 @@ corepack pnpm --filter web start --port 3000
 NODE_PATH=/path/to/playwright/node_modules node apps/web/e2e/redesign.cjs
 NODE_PATH=/path/to/playwright/node_modules node apps/web/e2e/overlay-safety.cjs
 NODE_PATH=/path/to/playwright/node_modules node apps/web/e2e/accessibility.cjs
+NODE_PATH=/path/to/playwright/node_modules node apps/web/e2e/onboarding.cjs
 # When finished:
 bash scripts/ci-data-api.sh stop
 ```
@@ -116,6 +117,11 @@ outputs/browser/viewports. The accessibility runner verifies 200% layout-equival
 pixels and DPR 2 (a 1440×1000 capture). This is viewport/density emulation, not
 a claim of native tab-zoom verification; the installed headless Chromium does
 not expose the extension zoom control.
+
+Additional onboarding evidence: [phone welcome](ux-redesign/screenshots/welcome-390x844.png),
+[desktop welcome](ux-redesign/screenshots/welcome-1440x1000.png),
+[guided lesson](ux-redesign/screenshots/guided-lesson-390x844.png),
+[200% equivalent reflow](ux-redesign/screenshots/reflow-legend-200-percent.png).
 
 ## Remaining risks and release boundaries
 
@@ -143,7 +149,7 @@ involved. Do not merge the stacked PRs or deploy production without approval.
 - PR #8 navigation baseline: lint/typecheck/build passed; 1,264 tests passed.
 - Final lint: zero errors; 29 warning-level diagnostics remain visible.
 - Final typecheck and local production build passed; frozen install passed.
-- Full suite: **1,298 passed across 85 files**. Targeted tests also cover the
+- Full suite: **1,299 passed across 85 files**. Targeted tests also cover the
   latest prerequisite Escape guards, identity, layout and confirmation updates.
 - Production browser journey: **90 screen checks** across 360×740, 390×844,
   844×390, 1366×768 and 1440×1000. Actual hit testing includes node actions,
@@ -151,6 +157,13 @@ involved. Do not merge the stacked PRs or deploy production without approval.
 - Native overlay regression: **35 passed**, including modal ownership, keyboard
   containment, Escape, focus return, nested Settings/reset, mission acceptance,
   no-purchase cancellation and co-op reminder exclusion.
+- New-player browser checks pass at phone/desktop sizes: truthful choice labels,
+  guided lesson, reachable exit and no progress change on Cancel.
+- 200% layout-equivalent reflow (720×500 CSS pixels, DPR 2), reduced motion,
+  shape-only preview, skip link and native dialog keyboard/focus checks pass.
+  Chromium may focus the document between native Tab wrap cycles; no background
+  control is allowed to gain focus. The terminal now leaves Enter to focused
+  controls and moves digit typing into the terminal, rather than swallowing Help.
 - Both original security guards pass and remain unchanged, as do the admin
   helper, private-key requirement, game-rule source and backend/store code.
 - Machine-readable results: [screen checks](ux-redesign/screen-results.json) and

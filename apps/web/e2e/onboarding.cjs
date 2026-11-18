@@ -1,0 +1,28 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const base=process.env.BASE_URL || 'http://localhost:3000';
+assert(['localhost','127.0.0.1'].includes(new URL(base).hostname));
+const output=process.env.UX_EVIDENCE_DIR || '/tmp/neon-cipher-onboarding';fs.mkdirSync(output,{recursive:true});
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']});
+try {for(const viewport of [{width:390,height:844},{width:1440,height:1000}]) {
+const context=await browser.newContext({viewport,reducedMotion:'reduce'});const page=await context.newPage();page.setDefaultTimeout(30000);
+await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+const learn=page.getByTestId('splash-start-btn');await learn.waitFor();
+assert.match(await learn.innerText(),/LEARN TO CRACK CODES/);
+assert.match(await page.getByTestId('splash-know-game-btn').innerText(),/QUICK SKILLS CHECK/);
+assert.match(await page.locator('#city-outcome').innerText(),/mark Chapter 1 complete.*Chapter 2/);
+await page.screenshot({path:path.join(output,`welcome-${viewport.width}x${viewport.height}.png`)});
+await learn.click();await page.getByTestId('terminal-header').waitFor();
+const coachExit=page.getByTestId('spotlight-skip-bubble-btn');await coachExit.waitFor();
+assert.equal(await page.getByTestId('spotlight-skip-corner-btn').count(),0);
+await page.screenshot({path:path.join(output,`guided-lesson-${viewport.width}x${viewport.height}.png`)});
+await coachExit.click();const exit=page.getByRole('dialog',{name:'Exit Nix tutorial?'});await exit.waitFor();
+await page.screenshot({path:path.join(output,`tutorial-exit-${viewport.width}x${viewport.height}.png`)});
+await page.getByTestId('cancel-exit-tutorial-btn').click();await exit.waitFor({state:'hidden'});
+assert.match(page.url(),/\/terminal\/tutorial-soda$/);
+assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('nc.onboarding.v1')).state.skipped),false);
+console.log('PASS',`${viewport.width}x${viewport.height}`,'new-player choices, guided lesson, reachable coach exit and no progress change on cancel');
+await context.close();
+}} finally {await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
