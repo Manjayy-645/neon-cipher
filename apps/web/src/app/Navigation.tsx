@@ -55,6 +55,7 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
               onClick={() => { setActiveTab(item.tab); onTabChange?.(item.tab); }}
               aria-label={battleLocked ? 'Battle — online duels unlock in Chapter 4; view battle modes' : item.description}
               aria-current={active ? 'page' : undefined}
+              style={{ backgroundColor: active ? 'var(--accent)' : undefined, color: active ? 'var(--on-accent)' : 'var(--ink-muted)' }}
               data-testid={`nav-item-${item.tab}`}
               data-tour={item.tab === 'comms' ? 'nav-comms' : undefined}
               className={`group relative flex-1 min-w-0 min-h-[44px] mx-0.5 my-1 rounded-[6px] flex flex-col items-center justify-center gap-[3px] no-underline outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${active ? 'bg-accent text-on-accent shadow-sm' : 'text-ink-muted hover:bg-panel-light hover:text-ink'}`}
