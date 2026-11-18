@@ -129,8 +129,8 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
   return (
     <div className="scene-ground w-full h-full flex flex-col text-ink overflow-hidden min-h-0">
       {/* Market Header */}
-      <header className="px-4 py-4 sm:py-5 border-b border-line bg-panel-light/90 shrink-0">
-        <div className="flex items-start justify-between gap-3">
+      <header className="px-4 py-3 lg:py-5 border-b border-line bg-panel-light/90 shrink-0">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button
               variant="icon"
@@ -177,7 +177,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
               compact
               onClick={() => setIsCoinStoreModalOpen(true)}
               className="px-2.5 py-1.5 min-h-[44px] bg-money/10 border-money/30 text-[11px] font-bold text-money-text gap-1.5"
-              title="Buy Coins (Stub)"
+              title="Coin exchange is offline"
               aria-label="Open coin exchange"
             >
               <span className="w-2.5 h-2.5 rounded-full bg-money inline-block" />
@@ -222,7 +222,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
       </div>
 
       {/* Item Catalog List */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-24 grid grid-cols-1 gap-3 auto-rows-max">
+      <div role="region" aria-label="Market catalogue" className="flex-1 min-h-0 overflow-y-auto p-4 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-3 auto-rows-max">
         {itemsInTab.map((item) => {
           const owned = inventory[item.id] || 0;
           const isMaxed = item.maxOwned !== undefined && owned >= item.maxOwned;
@@ -238,6 +238,7 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
               isMaxed={isMaxed}
               isLocked={isLocked}
               isEquipped={equippedTools.includes(item.id)}
+              balance={item.currency === 'credits' ? credits : coins}
               onBuyClick={() => handleOpenConfirm(item)}
               onEquipClick={() => handleToggleEquipTool(item.id)}
             />
@@ -287,154 +288,57 @@ export const BlackMarket: React.FC<BlackMarketProps> = ({ onBackToDialogue }) =>
    COMPONENTS
    ========================================================================= */
 
-function ItemCard({
-  item,
-  ownedCount,
-  isMaxed,
-  isLocked = false,
-  isEquipped = false,
-  onBuyClick,
-  onEquipClick,
-}: {
+function ItemCard({ item, ownedCount, isMaxed, isLocked = false, isEquipped = false, balance, onBuyClick, onEquipClick }: {
   item: CatalogItem;
   ownedCount: number;
   isMaxed: boolean;
   isLocked?: boolean;
   isEquipped?: boolean;
+  balance: number;
   onBuyClick: () => void;
   onEquipClick?: () => void;
 }) {
-  const isCoinCurrency = item.currency === 'coins';
-
+  const price = item.currency === 'coins' ? `${item.price} Coins` : `$${item.price.toLocaleString()}`;
   return (
-    <div className="scene-card bg-panel-light border border-line rounded-[12px] p-3.5 sm:p-4 shadow-card flex flex-col gap-3">
-      {/* Title & description */}
-      <div className="flex items-start gap-3 min-w-0">
-        {item.icon && (
-          <div className="w-12 h-12 rounded-[8px] bg-panel border border-line p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
-          </div>
-        )}
+    <article className="scene-card bg-panel-light border border-line rounded-md p-4 shadow-card flex flex-col gap-3 min-w-0">
+      <div className="flex items-start gap-3">
+        {item.icon && <div className="w-12 h-12 rounded-md bg-panel border border-line p-1 shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.icon} alt="" className="w-full h-full object-contain" />
+        </div>}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-heading text-base font-bold text-ink leading-tight">
-              {item.name}
-            </h3>
-            {ownedCount > 0 && (
-              <span className="bg-panel border border-line text-ink text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold">
-                x{ownedCount}
-              </span>
-            )}
-            {isLocked && (
-              <span
-                data-testid={`locked-badge-${item.id}`}
-                className="bg-amber-950/60 border border-amber-500/50 text-amber-300 text-[10px] font-data px-2 py-0.5 rounded-[4px] font-bold uppercase tracking-wider"
-              >
-                REQ: CH.{item.tierRequired}
-              </span>
-            )}
-          </div>
-          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">
-            {item.effect}
-          </p>
+          <h3 className="font-heading text-lg text-ink leading-tight">{item.name}</h3>
+          <p className="font-data text-xs text-ink-muted mt-1 leading-relaxed">{item.effect}</p>
         </div>
       </div>
-
-      {/* Data Rows: Label above value, 1px line divider between columns */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2.5 px-3 bg-panel rounded-[8px] border border-line/60">
-        <div className="flex flex-col">
-          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
-            Cost
-          </span>
-          <span className="font-data text-[15px] font-bold text-money-text flex items-center gap-1">
-            {isCoinCurrency ? (
-              <>
-                <span className="w-2.5 h-2.5 rounded-full bg-money inline-block shrink-0" />
-                <span>{item.price} Coins</span>
-              </>
-            ) : (
-              <span>${item.price.toLocaleString()}</span>
-            )}
-          </span>
-        </div>
-
-        <div className="flex flex-col border-l border-line/60 pl-3">
-          <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
-            Inventory
-          </span>
-          <span className="font-data text-[15px] font-bold text-ink">
-            {item.maxOwned !== undefined ? `${ownedCount} / ${item.maxOwned}` : `${ownedCount} owned`}
-          </span>
-        </div>
-
-        <div className="flex flex-col col-span-2 sm:col-span-1 pt-1.5 sm:pt-0 border-t sm:border-t-0 sm:border-l border-line/60 sm:pl-3">
-          {item.bountyPenaltyPercent ? (
-            <>
-              <span className="font-data text-[11px] uppercase tracking-[1.5px] text-danger-text font-medium">
-                Penalty
-              </span>
-              <span className="font-data text-[15px] font-bold text-danger-text">
-                -{item.bountyPenaltyPercent}% Bounty
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
-                Category
-              </span>
-              <span className="font-data text-[15px] font-bold text-ink uppercase">
-                {item.category}
-              </span>
-            </>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-data text-xs">
+        <strong className="text-money-text text-base">{price}</strong>
+        <span>{isEquipped ? 'Equipped · ' : ''}{ownedCount} owned{item.maxOwned !== undefined ? ` / ${item.maxOwned} max` : ''}</span>
+        {item.bountyPenaltyPercent && <span className="text-danger-text">−{item.bountyPenaltyPercent}% bounty when used</span>}
+        {isLocked && <span data-testid={`locked-badge-${item.id}`} className="text-ink-muted">Requires Chapter {item.tierRequired}</span>}
       </div>
-
-      {/* Card footer: compact action button, never overlaps text */}
-      <div className="border-t border-line/40 pt-2.5 mt-auto flex items-center justify-between gap-2">
-        <span className="font-data text-[11px] text-ink-muted truncate">
-          {isLocked
-            ? `Unlocks after clearing Chapter ${item.tierRequired}`
-            : isMaxed
-            ? 'Capacity reached'
-            : item.maxOwned
-            ? `Permanent (max ${item.maxOwned})`
-            : 'Consumable tool'}
+      <details className="font-data text-xs text-ink-muted border-t border-line pt-1">
+        <summary className="min-h-[44px] flex items-center cursor-pointer text-accent-text font-semibold focus-visible:outline-2 focus-visible:outline-accent">Item details &amp; field notes</summary>
+        <div className="pb-2 space-y-2 leading-relaxed">
+          <p>{item.maxOwned ? `Permanent upgrade. Maximum ${item.maxOwned} owned.` : 'Consumable: used during a breach.'}</p>
+          {item.mechanicalEffect && <p>{item.mechanicalEffect}</p>}
+          {item.tradeOff && <p className="text-danger-text">Trade-off: {item.tradeOff}</p>}
+          {item.glitchPitch && <p>Glitch: {item.glitchPitch}</p>}
+          {item.nixTip && <p>Nix: {item.nixTip}</p>}
+          {item.alexExplanation && <p>Alex: {item.alexExplanation}</p>}
+          {item.recommendedWhen && <p>{item.recommendedWhen}</p>}
+        </div>
+      </details>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
+        <span className="font-data text-xs text-ink-muted">
+          {isLocked ? `Clear Chapter ${item.tierRequired}` : isMaxed ? 'Capacity reached' : balance < item.price ? `Short by ${item.currency === 'credits' ? '$' : ''}${(item.price - balance).toLocaleString()}${item.currency === 'coins' ? ' coins' : ''}` : 'Game currency only'}
         </span>
-
-        <div className="flex items-center gap-2">
-          {(item.category === 'tools' || item.category === 'exploits') && ownedCount > 0 && onEquipClick && (
-            <Button
-              variant={isEquipped ? 'secondary' : 'primary'}
-              compact
-              onClick={onEquipClick}
-              data-tour={
-                item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
-                  ? 'equip-firewall-patch'
-                  : undefined
-              }
-            >
-              {isEquipped ? 'EQUIPPED' : 'EQUIP'}
-            </Button>
-          )}
-
-          <Button
-            variant={isLocked || isMaxed ? 'secondary' : 'compact'}
-            compact
-            onClick={onBuyClick}
-            disabled={isMaxed || isLocked}
-            data-tour={
-              item.id === 'tool-firewall-patch' || item.id === 'firewall-patch'
-                ? 'buy-firewall-patch'
-                : undefined
-            }
-          >
-            {isLocked ? 'LOCKED' : isMaxed ? 'OWNED' : 'BUY'}
-          </Button>
+        <div className="flex gap-2">
+          {(item.category === 'tools' || item.category === 'exploits') && ownedCount > 0 && onEquipClick && <Button variant="secondary" compact onClick={onEquipClick} data-tour={item.id === 'tool-firewall-patch' || item.id === 'firewall-patch' ? 'equip-firewall-patch' : undefined}>{isEquipped ? 'EQUIPPED' : 'EQUIP'}</Button>}
+          <Button variant={isLocked || isMaxed ? 'secondary' : 'primary'} compact onClick={onBuyClick} disabled={isMaxed || isLocked} data-tour={item.id === 'tool-firewall-patch' || item.id === 'firewall-patch' ? 'buy-firewall-patch' : undefined}>{isLocked ? 'LOCKED' : isMaxed ? 'OWNED' : 'BUY'}</Button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -472,6 +376,7 @@ function ConfirmPurchaseSheet({
           <Button
             variant="icon"
             onClick={onCancel}
+            disabled={isPurchasing}
             aria-label="Close"
             className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full text-xs p-1"
           >
@@ -487,6 +392,7 @@ function ConfirmPurchaseSheet({
           <Button
             variant="secondary"
             onClick={onCancel}
+            disabled={isPurchasing}
             className="flex-1"
           >
             CANCEL
@@ -495,7 +401,7 @@ function ConfirmPurchaseSheet({
           <Button
             variant="primary"
             onClick={onConfirm}
-            disabled={isShort || isPurchasing}
+            disabled={isShort || isPurchasing || feedback?.type === 'success'}
             loading={isPurchasing}
             className="flex-1"
             data-tour={
@@ -545,6 +451,11 @@ function ConfirmPurchaseSheet({
             </span>
           </div>
 
+          <div className="flex justify-between gap-3 border-t border-line pt-2" data-testid="purchase-resulting-balance">
+            <span>Balance after purchase</span>
+            <strong className={isShort ? 'text-danger-text' : 'text-ink'}>{isShort ? 'Insufficient funds' : item.currency === 'coins' ? `${currentBalance - item.price} Coins` : `$${(currentBalance - item.price).toLocaleString()}`}</strong>
+          </div>
+          <p className="text-ink-muted">Uses game currency. No real-money payment.</p>
           {/* Exploit specific reduced bounty warning */}
           {item.category === 'exploits' && item.bountyPenaltyPercent && (
             <div className="mt-1 p-2.5 bg-danger/10 border border-danger/30 rounded-[8px] text-danger-text text-xs leading-snug">
@@ -565,7 +476,8 @@ function ConfirmPurchaseSheet({
 
         {/* Mentor Build Guidance */}
         {(item.glitchPitch || item.nixTip || item.alexExplanation) && (
-          <div className="bg-panel p-3.5 rounded-[10px] border border-line flex flex-col gap-2 font-data text-xs">
+          <details className="bg-panel p-3.5 rounded-[10px] border border-line font-data text-xs">
+            <summary className="min-h-[44px] cursor-pointer text-accent-text">Read mentor field notes</summary>
             {item.glitchPitch && (
               <div className="flex items-start gap-2">
                 <span className="font-bold text-accent text-[10px] uppercase shrink-0">GLITCH:</span>
@@ -589,7 +501,7 @@ function ConfirmPurchaseSheet({
                 RECOMMENDED: {item.recommendedWhen}
               </div>
             )}
-          </div>
+          </details>
         )}
 
         {/* Live Impact Preview Card for Rig Hardware */}
@@ -604,9 +516,9 @@ function ConfirmPurchaseSheet({
             >
               <div className="flex justify-between items-center border-b border-line/60 pb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-                  LIVE IMPACT PREVIEW // 4-DIGIT NODE
+                  EXAMPLE IMPACT // 4-DIGIT NODE
                 </span>
-                <span className="text-[9px] text-ink-muted uppercase">HARDWARE UPGRADE</span>
+                <span className="text-[9px] text-ink-muted uppercase">BASELINE: NO MODULES</span>
               </div>
               {preview.changes.map((ch, idx) => (
                 <div key={idx} className="flex justify-between items-center">

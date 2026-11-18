@@ -37,6 +37,12 @@ describe('Paper navigation: discoverable game modes', () => {
     expect(getTabForPathname('/story')).toBe('comms');
   });
 
+  it('does not keep Market highlighted on a secondary Profile route', () => {
+    mocks.usePathname.mockReturnValue('/profile');
+    render(<Navigation />);
+    expect(screen.getByRole('navigation').querySelector('[aria-current]')).toBeNull();
+  });
+
   it('keeps current-page semantics on the active destination', () => {
     mocks.usePathname.mockReturnValue('/duel');
     render(<Navigation />);

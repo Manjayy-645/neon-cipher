@@ -3,11 +3,20 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
+export interface BreachReceipt {
+  bonusCredits: number;
+  campaignLedgerCredit?: number;
+  debtReduced?: number;
+  remainingDebt?: number;
+  confirmedBalance?: number;
+}
+
 interface BreachBannerProps {
   status: 'won' | 'lost';
   secret?: string;
   payout?: number;
   fine?: number;
+  receipt?: BreachReceipt;
   attemptsUsed?: number;
   maxAttempts?: number | null;
   failureReason?: 'TRACE TIMEOUT' | 'ATTEMPTS EXHAUSTED' | string;
@@ -23,6 +32,7 @@ export function BreachBanner({
   secret,
   payout,
   fine,
+  receipt,
   attemptsUsed,
   maxAttempts,
   failureReason,
@@ -144,6 +154,22 @@ export function BreachBanner({
             <span className="terminal-result-muted">PAYOUT CREDITED: </span>
             <span className="terminal-result-success font-bold">+${payout}</span>
           </div>
+        )}
+        {isWon && receipt && (
+          <section aria-label="Confirmed breach receipt" className="terminal-result-subpanel w-full rounded-md border p-3 text-left font-data text-xs space-y-2">
+            <h3 className="font-bold uppercase tracking-wide">Breach receipt</h3>
+            <dl className="space-y-2">
+              <div className="flex justify-between gap-3"><dt>Base payout</dt><dd>+${payout ?? 0}</dd></div>
+              {receipt.bonusCredits > 0 && <div className="flex justify-between gap-3"><dt>Earned tool bonus</dt><dd>+${receipt.bonusCredits}</dd></div>}
+              {receipt.campaignLedgerCredit !== undefined && <div className="flex justify-between gap-3"><dt>Campaign ledger credit</dt><dd>+${receipt.campaignLedgerCredit}</dd></div>}
+              <div className="flex justify-between gap-3 border-t border-terminal-line pt-2 font-bold"><dt>Confirmed credits added</dt><dd>+${(payout ?? 0) + receipt.bonusCredits + (receipt.campaignLedgerCredit ?? 0)}</dd></div>
+              {receipt.confirmedBalance !== undefined && <div className="flex justify-between gap-3"><dt>Current wallet balance</dt><dd>${receipt.confirmedBalance.toLocaleString()}</dd></div>}
+              {receipt.debtReduced !== undefined && <div className="flex justify-between gap-3"><dt>Debt reduced separately</dt><dd>−${receipt.debtReduced}</dd></div>}
+              {receipt.remainingDebt !== undefined && <div className="flex justify-between gap-3"><dt>Debt remaining</dt><dd>${receipt.remainingDebt.toLocaleString()}</dd></div>}
+            </dl>
+            {receipt.confirmedBalance === undefined && <p className="terminal-result-muted">Wallet balance is not yet confirmed. Check the Rig ledger for the latest balance.</p>}
+            {receipt.campaignLedgerCredit !== undefined && <p className="terminal-result-muted leading-relaxed">This simulation credits the debt-relief amount to your wallet and reduces debt by the same amount. The advertised contract bounty is not an additional wallet award.</p>}
+          </section>
         )}
         {!isWon && fine !== undefined && (
           <div className="terminal-result-subpanel w-full p-2.5 rounded-[6px] border font-data text-xs">

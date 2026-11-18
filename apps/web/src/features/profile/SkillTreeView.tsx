@@ -324,6 +324,8 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
                   return (
                     <div
                       key={skill.id}
+                      id={`skill-${skill.id}`}
+                      tabIndex={-1}
                       className={`p-3.5 rounded-sm border transition-all flex flex-col justify-between shadow-xs ${
                         skill.unlocked
                           ? 'bg-panel border-accent/70 ring-1 ring-accent/20'
@@ -352,10 +354,10 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
                             {skill.unlocked ? 'UNLOCKED' : `TIER ${skill.tier} • ${skill.pointCost} SP`}
                           </span>
                         </div>
-                        <p className="text-xs text-ink-muted leading-relaxed">{skill.description}</p>
                         <div className="bg-panel-light border border-line p-2 rounded-sm text-[10px] text-accent-text font-semibold">
                           EFFECT: {skill.effectSummary}
                         </div>
+                        <p className="text-xs text-ink-muted leading-relaxed">{skill.description}</p>
                       </div>
 
                       {/* Action / Prereq / Capstone notice */}
@@ -371,7 +373,14 @@ export const SkillTreeView: React.FC<SkillTreeViewProps> = ({
                           </div>
                         ) : !prereqsMet ? (
                           <span className="text-[10px] text-danger-text bg-danger/10 border border-danger/30 p-1.5 rounded-sm font-medium">
-                            Req: {skill.prerequisites.join(', ')}
+                            Requires: {skill.prerequisites.map((id, index) => (
+                              <React.Fragment key={id}>
+                                {index > 0 && ', '}
+                                <a className="underline underline-offset-2 inline-flex items-center min-h-[44px]" href={`#skill-${id}`} onClick={(event) => { event.preventDefault(); const target = document.getElementById(`skill-${id}`); target?.scrollIntoView({ block: 'center', behavior: 'instant' }); target?.focus(); }}>
+                                  {skills.find((entry) => entry.id === id)?.name ?? id.replace(/_/g, ' ')}
+                                </a>
+                              </React.Fragment>
+                            ))}
                           </span>
                         ) : (
                           <Button

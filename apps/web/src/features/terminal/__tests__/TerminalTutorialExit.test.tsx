@@ -79,7 +79,8 @@ describe('Nix Tutorial Exit & Skip Mechanics', () => {
 
       const skipTutorialBtn = await screen.findByTestId('splash-skip-tutorial-btn');
       expect(skipTutorialBtn).toBeInTheDocument();
-      expect(skipTutorialBtn).toHaveTextContent(/SKIP TUTORIAL/i);
+      expect(skipTutorialBtn).toHaveTextContent(/ENTER THE CITY/i);
+      expect(skipTutorialBtn).toHaveAccessibleDescription(/mark Chapter 1 complete.*Chapter 2/i);
 
       fireEvent.click(skipTutorialBtn);
 

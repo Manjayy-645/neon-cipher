@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { clueMarks } from '@neon-cipher/game-rules';
+import { useSettingsStore } from '@/stores/settings-store';
+import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 interface ClueMarksProps {
   pans: number;
@@ -13,10 +15,11 @@ interface ClueMarksProps {
 
 export function ClueMarks({ pans, pots, length, animated = false }: ClueMarksProps) {
   const marks = clueMarks(pans, pots, length);
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = usePrefersReducedMotion();
+  const shapeOnly = useSettingsStore((state) => state.colorBlindMode);
 
   return (
-    <div className="flex items-center gap-1 sm:gap-1.5" aria-hidden="true">
+    <div className="flex items-center gap-1 sm:gap-1.5" data-clue-mode={shapeOnly ? 'shape-only' : 'color-and-shape'} aria-hidden="true">
       {marks.map((mark, index) => {
         const renderMarkShape = () => {
           switch (mark) {
@@ -26,7 +29,7 @@ export function ClueMarks({ pans, pots, length, animated = false }: ClueMarksPro
                 <div
                   data-clue="pan"
                   title="Pan: correct digit & spot"
-                  className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px] rounded-full bg-terminal-phosphor shadow-[0_0_8px_rgba(111,191,122,0.4)] shrink-0"
+                  className={`w-[14px] h-[14px] sm:w-[15px] sm:h-[15px] rounded-full shrink-0 ${shapeOnly ? 'bg-terminal-ink' : 'bg-terminal-phosphor'}`}
                 />
               );
             case 'pot':
@@ -35,7 +38,7 @@ export function ClueMarks({ pans, pots, length, animated = false }: ClueMarksPro
                 <div
                   data-clue="pot"
                   title="Pot: correct digit, wrong spot"
-                  className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px] rounded-full border-2 border-terminal-amber bg-terminal-amber/20 shrink-0"
+                  className={`w-[14px] h-[14px] sm:w-[15px] sm:h-[15px] rounded-full border-2 shrink-0 ${shapeOnly ? 'border-terminal-ink' : 'border-terminal-amber bg-terminal-amber/20'}`}
                 />
               );
             case 'miss':
@@ -47,7 +50,7 @@ export function ClueMarks({ pans, pots, length, animated = false }: ClueMarksPro
                   title="Miss: not in cipher"
                   className="w-[14px] h-[14px] sm:w-[15px] sm:h-[15px] flex items-center justify-center shrink-0"
                 >
-                  <div className="w-[10px] h-[2.5px] bg-terminal-muted/80 rounded-full" />
+                  <div className={`w-[10px] h-[2.5px] rounded-full ${shapeOnly ? 'bg-terminal-ink' : 'bg-terminal-muted/80'}`} />
                 </div>
               );
           }

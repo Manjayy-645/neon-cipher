@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CoopConsole } from '../CoopConsole';
 import { coopService, CoopSessionView } from '../coopService';
@@ -95,6 +95,32 @@ describe('3-Stage Asymmetric Cooperative Heist Engine & Nix Guidance', () => {
     expect(screen.getByText(/You're the eyes and ears, Alpha/i)).toBeInTheDocument();
     expect(screen.getAllByText(/You're on heavy cracking duty, Bravo/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('jack-in-heist-button')).toBeInTheDocument();
+  });
+
+  it('shows actual probe codes and count-based clues with a safe leave confirmation', () => {
+    const exit = vi.fn();
+    render(<CoopConsole initialSession={sessionState} onExit={exit} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Partner & clues' }));
+    expect(screen.getByRole('button', { name: 'Partner & clues' })).toHaveAttribute('aria-pressed', 'true');
+    const history = within(screen.getByRole('region', { name: 'Actual probe results' }));
+    expect(history.getByText('123')).toBeInTheDocument();
+    expect(history.getByText('3 Pan · 0 Pot')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave practice' }));
+    expect(exit).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep playing' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave practice' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Leave practice' }));
+    expect(exit).toHaveBeenCalledOnce();
+  });
+
+  it('keeps preflight recoverable and discloses an unavailable practice connection', async () => {
+    vi.spyOn(coopService, 'startSession').mockRejectedValueOnce(new Error('offline'));
+    render(<CoopConsole />);
+    await act(async () => fireEvent.click(screen.getByTestId('jack-in-heist-button')));
+    expect(screen.getByRole('alert')).toHaveTextContent('practice connection failed');
+    expect(screen.getByTestId('jack-in-heist-button')).toBeEnabled();
+    expect(screen.getByText(/Human co-op is not available/)).toBeInTheDocument();
   });
 
   it('2. Partner Telemetry Rail & Stage 1 8-Second Dual-Key Sync Window', () => {

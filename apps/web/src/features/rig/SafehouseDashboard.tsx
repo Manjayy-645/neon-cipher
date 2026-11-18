@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SafehouseProperty } from '@/app/api/mock/db';
 import { rigService } from './rigService';
 import { usePlayerStore } from '@/stores/player-store';
 import { Button } from '@/components/ui/Button';
-import { triggerToast } from '@/stores/toast-store';
+import { Modal } from '@/components/ui/Modal';
 
 interface SafehouseDashboardProps {
   properties: SafehouseProperty[];
@@ -37,15 +37,7 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Live dividend ticker animation effect (simulates continuous accumulation)
-  const [tickerTick, setTickerTick] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerTick((t) => t + 1);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
+  const [purchasePreview, setPurchasePreview] = useState<SafehouseProperty | null>(null);
   const handleClaimDividends = async (prop: SafehouseProperty) => {
     setClaimingId(prop.id);
     setFeedback(null);
@@ -137,7 +129,7 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 divide-x divide-line bg-panel p-2.5 rounded-[8px] border border-line text-center">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-3 divide-x divide-line bg-panel p-2.5 rounded-[8px] border border-line text-center">
           <div className="px-2">
             <span className="font-data text-[10px] text-ink-muted uppercase tracking-[1px] block">
               DAILY DIVIDEND
@@ -166,16 +158,17 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
           </div>
         </div>
 
-        {/* Live Dividend Ticker Bar */}
+        <div className="border border-line rounded-md bg-panel p-3 font-data text-xs flex flex-wrap justify-between gap-2"><span>NET DAILY YIELD <span className="text-ink-muted">(dividend − upkeep)</span></span><strong className="text-money-text" data-testid="safehouse-net-yield">${(stats.totalDailyDividend - stats.totalUpkeep).toLocaleString()}/day</strong></div>
+        {/* Recorded claimable dividends */}
         <div className="bg-panel border border-line rounded-[8px] p-2.5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-money animate-pulse shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-money shrink-0" />
             <span className="font-data text-[10px] text-ink-muted uppercase tracking-[1.5px] font-medium truncate">
-              DIVIDEND FEED TICKER:
+              RECORDED DIVIDENDS:
             </span>
           </div>
           <span className="font-data text-[13px] font-semibold text-money-text shrink-0">
-            ${(stats.totalDailyDividend > 0 ? 150 + tickerTick * 2 : 0).toLocaleString()} ACCUMULATING
+            ${properties.filter((property) => property.owned).reduce((sum, property) => sum + property.accumulatedDividends, 0).toLocaleString()} CLAIMABLE
           </span>
         </div>
       </div>
@@ -194,8 +187,8 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
       )}
 
       {/* Properties List */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="flex items-center justify-between lg:col-span-2">
           <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted font-medium">
             SYNDICATE REAL ESTATE
           </span>
@@ -205,29 +198,10 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
           const isOwned = prop.owned;
           const canAfford = credits >= prop.cost;
 
-          const handleCardClick = () => {
-            if (isOwned) {
-              handleClaimDividends(prop);
-            } else if (canAfford) {
-              handlePurchaseSafehouse(prop);
-            } else {
-              triggerToast(`Short by $${(prop.cost - credits).toLocaleString()} to acquire ${prop.name}`, { type: 'locked' });
-            }
-          };
-
           return (
             <div
               key={prop.id}
-              role="button"
-              tabIndex={0}
-              onClick={handleCardClick}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleCardClick();
-                }
-              }}
-              className={`scene-card p-3.5 sm:p-4 rounded-[12px] border bg-panel-light shadow-card flex flex-col gap-3 transition-transform duration-[120ms] cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+              className={`scene-card p-3.5 sm:p-4 rounded-[12px] border bg-panel-light shadow-card flex flex-col gap-3  ${
                 isOwned ? 'border-accent/50' : 'border-line'
               }`}
             >
@@ -289,6 +263,7 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
                 </div>
               </div>
 
+              <p className="font-data text-xs text-money-text">Net daily yield: ${(prop.dailyDividend - prop.upkeep).toLocaleString()} after upkeep</p>
               {/* Dedicated Card Footer Row for Actions */}
               <div className="mt-auto pt-2.5 border-t border-line/40 flex items-center justify-end">
                 {isOwned ? (
@@ -311,7 +286,7 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
                     reason={!canAfford ? `SHORT BY $${(prop.cost - credits).toLocaleString()}` : undefined}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePurchaseSafehouse(prop);
+                      setPurchasePreview(prop);
                     }}
                     className={canAfford ? 'bg-accent text-white border-transparent' : ''}
                   >
@@ -324,6 +299,11 @@ export const SafehouseDashboard: React.FC<SafehouseDashboardProps> = ({
         })}
       </div>
 
+      {purchasePreview && <Modal label="Confirm safehouse purchase" onClose={() => setPurchasePreview(null)} dismissible={!purchasingId} className="bg-panel-light border border-line rounded-t-lg p-4 shadow-sheet"
+        header={<h2 className="font-heading text-2xl">Acquire {purchasePreview.name}?</h2>}
+        footer={<div className="flex gap-2"><Button variant="secondary" onClick={() => setPurchasePreview(null)} disabled={Boolean(purchasingId)} className="flex-1">Cancel</Button><Button variant="primary" loading={Boolean(purchasingId)} disabled={Boolean(purchasingId) || credits < purchasePreview.cost} onClick={async () => { await handlePurchaseSafehouse(purchasePreview); setPurchasePreview(null); }} className="flex-1">Confirm purchase</Button></div>}>
+        <dl className="font-data text-sm grid grid-cols-2 gap-3 py-4"><dt>Game-credit cost</dt><dd>${purchasePreview.cost.toLocaleString()}</dd><dt>Balance after purchase</dt><dd>${(credits - purchasePreview.cost).toLocaleString()}</dd><dt>Net daily yield</dt><dd>${(purchasePreview.dailyDividend - purchasePreview.upkeep).toLocaleString()}</dd></dl>
+      </Modal>}
       {/* District Leases & Syndicate Holdings Section */}
       {ownedLeases.length > 0 && (
         <div className="flex flex-col gap-3 mt-2">

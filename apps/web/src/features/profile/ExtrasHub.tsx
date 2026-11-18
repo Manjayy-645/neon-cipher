@@ -71,11 +71,14 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
 
   return (
     <div className="scene-card bg-panel-light border border-line rounded-md p-4 sm:p-5 text-ink font-data shadow-card space-y-6">
+      <p role="note" className="text-sm text-ink-muted leading-relaxed border border-line rounded-sm p-3 bg-panel">
+        Sample archive. These badges, replay examples, contacts and dispatches demonstrate the interface; they are not verified achievements or live social presence.
+      </p>
       {/* Header and Sub Navigation */}
       <div className="border-b border-line pb-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-wide text-ink">DECKER NETWORK & EXTRAS</h2>
               <span className="type-label bg-accent/15 text-accent-text border border-accent/30 px-2 py-0.5 rounded-sm text-[10px] font-bold">
                 SUBSYSTEMS
@@ -85,7 +88,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
           </div>
           <div className="text-xs text-ink-muted flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span>Telemetry & Logs Online</span>
+            <span>Sample archive</span>
           </div>
         </div>
 
@@ -148,7 +151,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
                             : 'bg-panel-light text-ink-muted border-line'
                         }`}
                       >
-                        {ach.unlocked ? 'CLAIMED' : `${ach.progress}/${ach.maxProgress}`}
+                        {ach.unlocked ? 'SAMPLE UNLOCK' : `${ach.progress}/${ach.maxProgress}`}
                       </span>
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed">{ach.description}</p>
@@ -183,6 +186,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs bg-panel border border-line p-3 rounded-sm shadow-xs">
             <span className="type-label font-bold text-ink">SELECT LOG:</span>
             <select
+              aria-label="Replay example"
               value={activeReplayId}
               onChange={(e) => {
                 setActiveReplayId(e.target.value);
@@ -401,7 +405,7 @@ export const ExtrasHub: React.FC<ExtrasHubProps> = ({
           <div className="flex justify-between items-center text-xs">
             <span className="type-label text-[10px] text-ink font-bold">DECKER COMMS FREQUENCIES</span>
             <span className="text-[10px] text-ink-muted">
-              {friends.filter((f) => f.status === 'online').length} Deckers Online
+              {friends.length} sample contacts · live availability unverified
             </span>
           </div>
           <div className="space-y-2">

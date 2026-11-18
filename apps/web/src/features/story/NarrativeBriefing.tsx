@@ -7,18 +7,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChapterData, getBrokerCharacter, getMentorCharacter } from '@neon-cipher/game-rules/src/index';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { getNodeById } from '@/features/map/nodeService';
 import { Button } from '@/components/ui/Button';
 
 export interface NarrativeBriefingProps {
   chapter: ChapterData;
   onAccept: () => void;
   onBack?: () => void;
+  locked?: boolean;
 }
 
 export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
   chapter,
   onAccept,
   onBack,
+  locked = false,
 }) => {
   useFocusedFlow();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -73,16 +76,18 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
     }
   };
 
+  const targetNode = getNodeById(chapter.mapNodeId);
   const debtPercent = Math.round((debt.paid / debt.initial) * 100);
 
   return (
     <div
       data-testid="narrative-briefing-screen"
-      className="scene-ground w-full h-full flex flex-col justify-between p-4 sm:p-6 text-ink overflow-y-auto min-h-0 pb-24 pb-safe-bottom"
+      className="scene-ground w-full h-full flex flex-col text-ink overflow-hidden min-h-0"
     >
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
       {/* Top Bar: Chapter number & Back button */}
-      <div className="flex items-center justify-between border-b border-line pb-3 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 shrink-0">
+        <div className="flex min-w-0 flex-1 basis-56 items-center gap-2">
           {onBack && (
             <Button
               variant="icon"
@@ -104,13 +109,27 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
           </div>
         </div>
 
-        <div className="text-right">
-          <span className="font-data text-[11px] font-bold px-2.5 py-1 rounded-sm bg-panel border border-line text-ink-muted">
-            TIER {chapter.rules.digits === 3 ? '1' : chapter.rules.digits === 4 ? '2' : '3'} NODE
+        <div className="shrink-0 text-left sm:text-right">
+          <span className="font-data inline-block whitespace-nowrap text-[11px] font-bold px-2.5 py-1 rounded-sm bg-panel border border-line text-ink-muted">
+            TIER {targetNode?.tier ?? '—'} CITY NODE
           </span>
         </div>
       </div>
 
+      <section aria-label="Assignment summary" className="border border-line rounded-md bg-panel-light p-4 space-y-3">
+        <p className="font-data text-xs text-accent-text uppercase tracking-wider">Your next target</p>
+        <h2 className="font-heading text-2xl text-ink">{targetNode?.name ?? chapter.target}</h2>
+        {targetNode && targetNode.name !== chapter.target && <p className="font-data text-xs text-ink-muted">Contract alias: {chapter.target}. The same target appears on the city map as {targetNode.name}.</p>}
+        <p className="font-data text-sm text-ink-muted">{chapter.lesson}</p>
+        {locked && <p className="font-data text-sm text-danger-text" role="status">Complete Chapter {chapter.number - 1} before accepting this assignment. You can review its requirement here.</p>}
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-data text-xs">
+          <div><dt className="text-ink-muted">City base bounty</dt><dd className="font-bold text-money-text">{targetNode?.bounty.toLocaleString() ?? '—'} CR</dd></div>
+          <div><dt className="text-ink-muted">Listed contract bounty</dt><dd className="font-bold text-money-text">{chapter.contract.bounty.toLocaleString()} CR</dd></div>
+          <div><dt className="text-ink-muted">Debt relief</dt><dd className="font-bold">{chapter.contract.debtReduction.toLocaleString()} CR</dd></div>
+          <div><dt className="text-ink-muted">On completion</dt><dd className="font-bold text-accent-text">{chapter.unlockRewardLabel}</dd></div>
+        </dl>
+        <p className="font-data text-xs text-ink-muted">City bounty and campaign contract terms are separate. The listed contract bounty is not an additional confirmed wallet payment. In this simulation, the debt-relief transaction both reduces your loan and credits the same amount to your wallet. The completion receipt records actual returned amounts.</p>
+      </section>
       {/* Debt Balance Progress Bar (Style Guide & Item 2) */}
       <div className="mt-3 p-3 bg-panel rounded-md border border-line shrink-0" data-testid="debt-progress-box">
         <div className="flex justify-between items-center text-xs font-data mb-1.5">
@@ -131,6 +150,7 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
             aria-valuemin={0}
             aria-valuemax={100}
             role="progressbar"
+            aria-label="Debt repaid"
           />
         </div>
         <div className="flex justify-between items-center mt-1 text-[10px] font-data text-ink-muted">
@@ -141,7 +161,89 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
         </div>
       </div>
 
-      {/* Character Dialogue Section with Large Portrait & Typewriter */}
+      {/* Contract Terms Section (Specs & Loan Shark Stipulations) */}
+      <div className="bg-panel p-4 rounded-md border border-line space-y-3 shrink-0" data-testid="contract-terms">
+        <div className="flex items-center justify-between border-b border-line pb-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span className="font-data text-xs font-bold uppercase tracking-wider text-ink">
+              CONTRACT TARGET // {chapter.target}
+            </span>
+          </div>
+          <span className="font-data text-xs text-ink-muted">
+            LOC: {chapter.mapLocation}
+          </span>
+        </div>
+
+        {/* Optical Surveillance / Target Location Feed */}
+        {chapter.sceneImage && (
+          <div className="relative w-full h-40 sm:h-48 rounded-[8px] overflow-hidden border border-line shadow-card">
+            <img
+              src={chapter.sceneImage}
+              alt={`${chapter.target} at ${chapter.mapLocation}`}
+              className="w-full h-full object-cover brightness-95 contrast-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-panel/90 via-panel/20 to-transparent pointer-events-none" />
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-panel/90 backdrop-blur-xs border border-line text-[10px] font-data text-ink font-semibold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+              <span>SURVEILLANCE FEED // {chapter.mapLocation}</span>
+            </div>
+            <div className="absolute bottom-2 left-2 font-data text-[11px] text-ink font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span>TARGET RECON: {chapter.target}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Specs Grid */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-ink-muted tracking-wider">DIGITS</span>
+            <span className="font-heading text-lg font-bold">{chapter.rules.digits}</span>
+            <span className="text-[9px] text-ink-muted uppercase">
+              {chapter.rules.allowDuplicates ? 'Repeats' : 'Unique'}
+            </span>
+          </div>
+          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-ink-muted tracking-wider">ATTEMPTS</span>
+            <span className="font-heading text-lg font-bold">
+              {chapter.rules.unlimitedTries ? '∞' : chapter.rules.attempts}
+            </span>
+            <span className="text-[9px] text-ink-muted uppercase">Max tries</span>
+          </div>
+          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-ink-muted tracking-wider">TRACE CLOCK</span>
+            <span className="font-heading text-lg font-bold">
+              {chapter.rules.timerSeconds > 0 ? `${chapter.rules.timerSeconds}s` : 'NONE'}
+            </span>
+            <span className="text-[9px] text-ink-muted uppercase">Lockout</span>
+          </div>
+          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
+            <span className="text-[10px] font-bold text-ink-muted tracking-wider">LISTED BOUNTY</span>
+            <span className="font-heading text-lg font-bold text-money-text">
+              ${chapter.contract.bounty}
+            </span>
+            <span className="text-[9px] text-money-text uppercase">Contract bounty</span>
+          </div>
+        </div>
+
+        {/* Contract terms list */}
+        <div className="space-y-1.5 pt-1">
+          <span className="font-data text-[10px] uppercase font-bold text-ink-muted tracking-wider">
+            MANDATORY PROTOCOL CLAUSES:
+          </span>
+          <ul className="space-y-1 text-xs font-data text-ink-muted">
+            {chapter.contract.terms.map((term, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-accent font-bold">▪</span>
+                <span>{term}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+<details className="bg-panel-light border border-line rounded-md p-3"><summary className="min-h-11 flex items-center cursor-pointer font-data text-sm font-bold text-ink">Read the full character briefing</summary>      {/* Character Dialogue Section with Large Portrait & Typewriter */}
       <div className="my-4 flex flex-col md:flex-row gap-4 items-center shrink-0">
         {/* Large Portrait (1:1 aspect ratio, min 120px) */}
         <div className="relative shrink-0" data-testid="briefing-portrait">
@@ -215,95 +317,16 @@ export const NarrativeBriefing: React.FC<NarrativeBriefingProps> = ({
         </div>
       </div>
 
-      {/* Contract Terms Section (Specs & Loan Shark Stipulations) */}
-      <div className="bg-panel p-4 rounded-md border border-line space-y-3 shrink-0" data-testid="contract-terms">
-        <div className="flex items-center justify-between border-b border-line pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-accent" />
-            <span className="font-data text-xs font-bold uppercase tracking-wider text-ink">
-              CONTRACT TARGET // {chapter.target}
-            </span>
-          </div>
-          <span className="font-data text-xs text-ink-muted">
-            LOC: {chapter.mapLocation}
-          </span>
-        </div>
-
-        {/* Optical Surveillance / Target Location Feed */}
-        {chapter.sceneImage && (
-          <div className="relative w-full h-40 sm:h-48 rounded-[8px] overflow-hidden border border-line shadow-card">
-            <img
-              src={chapter.sceneImage}
-              alt={`${chapter.target} at ${chapter.mapLocation}`}
-              className="w-full h-full object-cover brightness-95 contrast-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-panel/90 via-panel/20 to-transparent pointer-events-none" />
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-panel/90 backdrop-blur-xs border border-line text-[10px] font-data text-ink font-semibold uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
-              <span>SURVEILLANCE FEED // {chapter.mapLocation}</span>
-            </div>
-            <div className="absolute bottom-2 left-2 font-data text-[11px] text-ink font-bold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <span>TARGET RECON: {chapter.target}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Specs Grid */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-ink-muted tracking-wider">DIGITS</span>
-            <span className="font-heading text-lg font-bold">{chapter.rules.digits}</span>
-            <span className="text-[9px] text-ink-muted uppercase">
-              {chapter.rules.allowDuplicates ? 'Repeats' : 'Unique'}
-            </span>
-          </div>
-          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-ink-muted tracking-wider">ATTEMPTS</span>
-            <span className="font-heading text-lg font-bold">
-              {chapter.rules.unlimitedTries ? '∞' : chapter.rules.attempts}
-            </span>
-            <span className="text-[9px] text-ink-muted uppercase">Max tries</span>
-          </div>
-          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-ink-muted tracking-wider">TRACE CLOCK</span>
-            <span className="font-heading text-lg font-bold">
-              {chapter.rules.timerSeconds > 0 ? `${chapter.rules.timerSeconds}s` : 'NONE'}
-            </span>
-            <span className="text-[9px] text-ink-muted uppercase">Lockout</span>
-          </div>
-          <div className="bg-panel-light p-2 rounded-sm border border-line/60 flex flex-col items-center">
-            <span className="text-[10px] font-bold text-ink-muted tracking-wider">PAYOUT</span>
-            <span className="font-heading text-lg font-bold text-money-text">
-              ${chapter.contract.bounty}
-            </span>
-            <span className="text-[9px] text-money-text uppercase">Bounty</span>
-          </div>
-        </div>
-
-        {/* Contract terms list */}
-        <div className="space-y-1.5 pt-1">
-          <span className="font-data text-[10px] uppercase font-bold text-ink-muted tracking-wider">
-            MANDATORY PROTOCOL CLAUSES:
-          </span>
-          <ul className="space-y-1 text-xs font-data text-ink-muted">
-            {chapter.contract.terms.map((term, i) => (
-              <li key={i} className="flex items-start gap-1.5">
-                <span className="text-accent font-bold">▪</span>
-                <span>{term}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+</details>
       </div>
-
       {/* Primary Action Button: ACCEPT ASSIGNMENT */}
-      <div className="mt-4 shrink-0">
+      <div className="shrink-0 p-4 border-t border-line bg-panel-light pb-safe-bottom">
         <Button
           variant="primary"
           arrow
           fullWidth
           onClick={onAccept}
+          disabled={locked}
           data-testid="accept-assignment-button"
         >
           ACCEPT ASSIGNMENT

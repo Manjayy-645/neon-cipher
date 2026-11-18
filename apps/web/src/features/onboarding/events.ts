@@ -1,5 +1,6 @@
 export type OnboardingEvent =
-  | { type: 'terminal:guess'; count: number; hasDeadDigit: boolean; solved: boolean }
+  | { type: 'terminal:guess'; count: number; hasDeadDigit: boolean; solved: boolean; pans?: number; pots?: number }
+  | { type: 'terminal:exit-requested' }
   | { type: 'terminal:won'; nodeId: string; guesses: number }
   | { type: 'terminal:lost'; nodeId: string }
   | { type: 'map:districtTagTapped'; district: string }

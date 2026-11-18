@@ -198,4 +198,22 @@ describe('SettingsDrawer Component (6.0)', () => {
     expect(authService.logout).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/login');
   });
+  it('exposes selected options and a live shape-only clue preview', async () => {
+    render(<SettingsDrawer isOpen={true} />);
+    expect(screen.getByRole('heading', { name: 'Gameplay' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Accessibility' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Audio' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Account' })).toBeDefined();
+    const shapeOnly = screen.getByRole('button', { name: /Shape-Only/i });
+    expect(shapeOnly).toHaveAttribute('aria-pressed', 'false');
+    await act(async () => { fireEvent.click(shapeOnly); });
+    expect(shapeOnly).toHaveAttribute('aria-pressed', 'true');
+    const preview = screen.getByTestId('settings-clue-preview');
+    expect(preview.querySelector('[data-clue-mode="shape-only"]')).not.toBeNull();
+    expect(preview.querySelectorAll('[data-clue="pan"]')).toHaveLength(1);
+    expect(preview.querySelectorAll('[data-clue="pot"]')).toHaveLength(1);
+    expect(preview.querySelectorAll('[data-clue="miss"]')).toHaveLength(1);
+    expect(preview).toHaveTextContent('Pan: 1 correct digit in the correct slot.');
+  });
+
 });

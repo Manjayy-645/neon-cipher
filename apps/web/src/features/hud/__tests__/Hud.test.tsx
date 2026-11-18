@@ -21,6 +21,7 @@ vi.mock('next/navigation', () => ({
 
 describe('HUD Component (STYLE S2)', () => {
   beforeEach(() => {
+    sessionStorage.clear();
     mockPush.mockClear();
     mockBack.mockClear();
     mockPathname.mockReturnValue('/map');
@@ -203,14 +204,14 @@ describe('HUD Component (STYLE S2)', () => {
     expect(mockBack).not.toHaveBeenCalled();
   });
 
-  it('toggles away from /profile (navigates back) when avatar button is clicked while on /profile', () => {
+  it('returns to the city fallback when profile was loaded directly', () => {
     mockPathname.mockReturnValue('/profile');
     render(<Hud />);
     const avatarBtn = screen.getByTestId('hud-avatar-btn');
     expect(avatarBtn.getAttribute('aria-label')).toBe('Exit decker profile');
     fireEvent.click(avatarBtn);
-    expect(mockBack).toHaveBeenCalled();
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/map');
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it('displays accent ring indicator on avatar slot when on /profile', () => {

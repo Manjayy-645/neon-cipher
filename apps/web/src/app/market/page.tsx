@@ -10,6 +10,8 @@ import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { campaignService } from '@/features/story/campaignService';
 import { triggerToast } from '@/stores/toast-store';
 import { Button } from '@/components/ui/Button';
+import { useMapStore } from '@/stores/map-store';
+import { getNodes } from '@/features/map/nodeService';
 import { isFeatureEnabled } from '@/lib/flags';
 
 export default function MarketPage() {
@@ -18,8 +20,9 @@ export default function MarketPage() {
   const hydrated = useHydrated();
   const [selectedView, setView] = useState<'dialogue' | 'shop' | null>(null);
   const [manualDevUnlock, setDevUnlocked] = useState(false);
+  const marketTutorialGate = useOnboardingStore((state) => state.step === 'market.gate' && !state.skipped);
   const params = new URLSearchParams(hydrated ? window.location.search : '');
-  const view = selectedView ?? (params.get('view') === 'shop' ? 'shop' : 'dialogue');
+  const view = selectedView ?? (params.get('view') === 'dialogue' || (marketTutorialGate && params.get('view') !== 'shop') ? 'dialogue' : 'shop');
   const devUnlocked = manualDevUnlock || (hydrated && (
     localStorage.getItem('neon_dev_unlock_black_market') === 'true' ||
     params.get('dev') === 'true' || params.get('unlocked') === 'true'
@@ -67,24 +70,10 @@ export default function MarketPage() {
   const isUnlocked = unlocks.blackMarket || devUnlocked || isCh2Completed;
 
   if (!isUnlocked) {
-    const handleLockedCardClick = () => {
-      triggerToast("Breach the Market Register node on the City Map to unlock Glitch's Market", { type: 'locked' });
-    };
-
     return (
       <main className="scene-ground scene-arrive w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 text-ink text-center overflow-y-auto min-h-0">
         <div
-          role="button"
-          tabIndex={0}
-          onClick={handleLockedCardClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleLockedCardClick();
-            }
-          }}
-          aria-label="Black market locked: Breach the Market Register node on the City Map to unlock Glitch's Market"
-          className="max-w-md w-full p-6 bg-panel-light rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 outline-none text-center"
+          className="max-w-md w-full p-6 bg-panel-light rounded-[12px] border border-line shadow-card flex flex-col items-center gap-4 text-center"
         >
           {/* Shuttered Storefront Preview */}
           <div className="w-full h-36 rounded-[8px] overflow-hidden relative border border-line">
@@ -134,12 +123,14 @@ export default function MarketPage() {
               arrow
               onClick={(e) => {
                 e.stopPropagation();
+                const target = getNodes().find((node) => node.name === 'Market Register');
+                if (target) { useMapStore.getState().selectNode(target.id); useMapStore.getState().setSheetState('expanded'); }
                 router.push('/map');
               }}
               data-testid="go-to-story-button"
               className="w-full"
             >
-              VIEW CITY MAP
+              TRACK MARKET REGISTER
             </Button>
             {process.env.NODE_ENV === 'development' && isFeatureEnabled('devOverlay') && (
               <Button

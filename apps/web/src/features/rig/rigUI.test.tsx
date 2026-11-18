@@ -5,6 +5,7 @@ import { CyberdeckSchematic } from './CyberdeckSchematic';
 import { PartDetailDrawer } from './PartDetailDrawer';
 import { SafehouseDashboard } from './SafehouseDashboard';
 import { WalletHistory } from './WalletHistory';
+import { usePlayerStore } from '@/stores/player-store';
 import { rigService } from './rigService';
 import { RigHardwareItem, SafehouseProperty, Transaction } from '@/app/api/mock/db';
 
@@ -152,6 +153,21 @@ describe('Task 9: Rig UI Components', () => {
       totalTraceReduction: 15,
     };
 
+    it('requires a safehouse purchase preview and cancellation never spends credits', () => {
+      const purchase = vi.spyOn(rigService, 'purchaseSafehouse');
+      const previousCredits = usePlayerStore.getState().credits;
+      usePlayerStore.setState({ credits: 50000 });
+      render(<SafehouseDashboard properties={mockProperties} stats={mockStats} onRefresh={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: 'ACQUIRE FOR $35,000' }));
+      expect(screen.getByRole('dialog', { name: 'Confirm safehouse purchase' })).toBeInTheDocument();
+      expect(screen.getByText('$15,000')).toBeInTheDocument();
+      expect(purchase).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(purchase).not.toHaveBeenCalled();
+      usePlayerStore.setState({ credits: previousCredits });
+    });
+
     it('renders properties, aggregate metrics, and property cards', () => {
       const handleRefresh = vi.fn();
 
@@ -166,6 +182,8 @@ describe('Task 9: Rig UI Components', () => {
       expect(screen.getByText('Slums Underpass Bunker')).toBeDefined();
       expect(screen.getByText('Industrial Warehouse Loft')).toBeDefined();
       expect(screen.getByText(/SAFEHOUSE NETWORK/i)).toBeDefined();
+      expect(screen.getByTestId('safehouse-net-yield')).toHaveTextContent('$330/day');
+      expect(screen.getByText('$350 CLAIMABLE')).toBeInTheDocument();
     });
   });
 

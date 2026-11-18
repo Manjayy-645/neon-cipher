@@ -185,7 +185,7 @@ export const NixGuide: React.FC = () => {
   return (
     <div
       data-testid="nix-guide-container"
-      className="z-nix-pip pointer-events-none transition-all duration-300 ease-out flex flex-col items-start gap-2"
+      className="z-nix-pip pointer-events-none transition-all duration-300 ease-out flex flex-col items-start gap-2 [@media(max-height:500px)]:!top-3 [@media(max-height:500px)]:!left-auto [@media(max-height:500px)]:right-3"
       style={positionStyles}
     >
       <div className="flex items-start gap-2 pointer-events-auto">
@@ -228,7 +228,7 @@ export const NixGuide: React.FC = () => {
               transition={
                 prefersReducedMotion ? { duration: 0.05 } : { duration: 0.2, ease: 'easeOut' }
               }
-              className="relative max-w-[min(92vw,340px)] bg-panel-light border border-line border-l-4 border-l-accent rounded-[14px] shadow-card p-3.5 pr-10 cursor-pointer select-none text-ink text-left"
+              className="relative max-w-[min(calc(100vw-88px),340px)] bg-panel-light border border-line border-l-4 border-l-accent rounded-[14px] shadow-card p-3.5 pr-10 cursor-pointer select-none text-ink text-left"
               onClick={handleBubbleClick}
             >
               <div className="font-heading text-[12px] font-bold tracking-[1.2px] uppercase text-accent-text mb-1">

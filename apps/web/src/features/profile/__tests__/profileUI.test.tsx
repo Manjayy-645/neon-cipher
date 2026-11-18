@@ -166,7 +166,7 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       render(<SkillTreeView skills={mockSkills} availablePoints={10} onUnlockSkill={handleUnlock} />);
 
       // Deep Deduction requires entropy_reduction (not unlocked)
-      expect(screen.getByText(/Req: entropy_reduction/)).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Entropy Reduction' })).toHaveAttribute('href', '#skill-entropy_reduction');
     });
 
     it('renders 3 canonical branches (Infiltration, Analysis, Exploitation) and Nix guides', () => {
@@ -388,7 +388,7 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       const handleSubmit = vi.fn();
       render(<DailyBreachView data={mockDaily} onSubmitAttempt={handleSubmit} />);
 
-      const submitBtn = screen.getByRole('button', { name: /submit daily attempt/i });
+      const submitBtn = screen.getByRole('button', { name: /save preview attempt/i });
       fireEvent.click(submitBtn);
 
       expect(handleSubmit).toHaveBeenCalledWith(4, 42);
@@ -408,7 +408,7 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       const handleSubmit = vi.fn();
       render(<DailyBreachView data={completedDaily} onSubmitAttempt={handleSubmit} />);
 
-      expect(screen.getByText('✓ DAILY BREACH COMPLETED')).toBeDefined();
+      expect(screen.getByText('✓ PREVIEW ATTEMPT RECORDED')).toBeDefined();
       expect(screen.getAllByText('#2').length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -479,7 +479,7 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
 
       expect(screen.getByText('First Contact')).toBeDefined();
       expect(screen.getByText('+50 coins')).toBeDefined();
-      expect(screen.getByText('CLAIMED')).toBeDefined();
+      expect(screen.getByText('SAMPLE UNLOCK')).toBeDefined();
     });
 
     it('allows stepping through replay log with Next and Prev buttons', () => {
@@ -640,16 +640,16 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       render(<ProfilePage />);
 
       // Should display top navigation tabs once loaded
-      const skillsTab = await screen.findByRole('button', { name: /8.1 skills/i });
+      const skillsTab = await screen.findByRole('button', { name: /^skills/i });
       expect(skillsTab).toBeDefined();
 
-      const factionsTab = screen.getByRole('button', { name: /8.2 factions/i });
+      const factionsTab = screen.getByRole('button', { name: /^factions/i });
       expect(factionsTab).toBeDefined();
 
-      const dailyTab = screen.getByRole('button', { name: /8.3 daily/i });
+      const dailyTab = screen.getByRole('button', { name: /^daily/i });
       expect(dailyTab).toBeDefined();
 
-      const extrasTab = screen.getByRole('button', { name: /8.4 extras/i });
+      const extrasTab = screen.getByRole('button', { name: /^network & extras/i });
       expect(extrasTab).toBeDefined();
 
       // Default section is 8.0 Profile
@@ -658,6 +658,9 @@ describe('Task 13: Profile, Skills, Factions, Daily Breach & Extras UI', () => {
       // Switch to 8.1 Skills
       fireEvent.click(skillsTab);
       expect(screen.getByText('NEURAL SKILL TREE')).toBeDefined();
+      fireEvent.change(screen.getByLabelText('Dossier section'), { target: { value: 'daily' } });
+      expect(screen.getByText(/does not start a live global challenge/)).toBeDefined();
+      expect(screen.getByRole('link', { name: /Back to previous screen/i })).toHaveAttribute('href', '/map');
     });
   });
 });

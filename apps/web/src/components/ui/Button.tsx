@@ -132,7 +132,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
     case 'primary':
       variantClasses =
         'min-h-[48px] px-6 text-[15px] font-semibold tracking-[3px] uppercase ' +
-        'bg-accent text-white border border-transparent shadow-sm ' +
+        'bg-accent text-on-accent border border-transparent shadow-sm ' +
         '[@media(hover:hover)]:hover:brightness-92 ' +
         'active:brightness-85';
       break;
@@ -156,7 +156,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
     case 'danger':
       variantClasses =
         'min-h-[48px] px-6 text-[15px] font-semibold tracking-[3px] uppercase ' +
-        'bg-danger text-white border border-transparent shadow-sm ' +
+        'bg-danger text-on-accent border border-transparent shadow-sm ' +
         '[@media(hover:hover)]:hover:brightness-92 ' +
         'active:brightness-85';
       break;

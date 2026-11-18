@@ -7,6 +7,8 @@ import { Hud } from '@/features/hud/Hud';
 import { Navigation } from '@/app/Navigation';
 import { ONBOARDING_AVATARS, useOnboardingStore } from '../onboardingStore';
 import { usePlayerStore } from '@/stores/player-store';
+import { useDuelStore } from '@/stores/duel-store';
+import { useOverlayStore } from '@/stores/overlay-store';
 
 function isChromeAppRoute(pathname: string | null): boolean {
   if (!pathname) return false;
@@ -34,12 +36,22 @@ function isChromeAppRoute(pathname: string | null): boolean {
   );
 }
 
+/** Timed consoles supply their own confirmed exit instead of global links. */
+export function isFocusedConsoleRoute(pathname: string | null): boolean {
+  return Boolean(pathname && (
+    pathname.startsWith('/terminal/') || pathname === '/coop' ||
+    pathname.startsWith('/coop/') || pathname.startsWith('/duel/match/')
+  ));
+}
+
 export function ConditionalHud() {
   const mounted = useHydrated();
   const pathname = usePathname();
   const chromeVisible = useOnboardingStore((s) => s.chromeVisible());
   const callsign = useOnboardingStore((s) => s.callsign);
   const avatarId = useOnboardingStore((s) => s.avatarId);
+  const activeDuel = useDuelStore((state) => state.activeSession?.status === 'active');
+  const focusedFlow = useOverlayStore((state) => state.focusedFlows.length > 0);
 
 
   useEffect(() => {
@@ -52,7 +64,9 @@ export function ConditionalHud() {
     });
   }, [callsign, avatarId]);
 
-  if (!mounted) return null;
+  if (!mounted || isFocusedConsoleRoute(pathname) ||
+    (pathname === '/duel' && activeDuel) ||
+    (pathname === '/comms' && focusedFlow)) return null;
   const isVisible = chromeVisible || isChromeAppRoute(pathname);
   if (!isVisible) return null;
 
@@ -63,9 +77,13 @@ export function ConditionalNav() {
   const mounted = useHydrated();
   const pathname = usePathname();
   const chromeVisible = useOnboardingStore((s) => s.chromeVisible());
+  const activeDuel = useDuelStore((state) => state.activeSession?.status === 'active');
+  const focusedFlow = useOverlayStore((state) => state.focusedFlows.length > 0);
 
 
-  if (!mounted) return null;
+  if (!mounted || isFocusedConsoleRoute(pathname) ||
+    (pathname === '/duel' && activeDuel) ||
+    (pathname === '/comms' && focusedFlow)) return null;
   const isVisible = chromeVisible || isChromeAppRoute(pathname);
   if (!isVisible) return null;
 

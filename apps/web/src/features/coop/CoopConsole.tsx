@@ -2,6 +2,8 @@
 
 import { useFocusedFlow } from '@/stores/overlay-store';
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { coopService, CoopSessionView, CoopHeistView } from './coopService';
 import { usePlayerStore } from '@/stores/player-store';
@@ -76,6 +78,10 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   const heist = session.heist;
 
   // Active Role View ('alpha' | 'bravo' | 'split')
+  const router = useRouter();
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [partnerView, setPartnerView] = useState(false);
+  const leavePractice = () => { if (onExit) onExit(); else router.push('/comms'); };
   const [activeRole, setActiveRole] = useState<'split' | 'alpha' | 'beta'>('split');
   const [playerRole, setPlayerRole] = useState<'ALPHA' | 'BRAVO'>(
     heist?.playerRole ? normalizeCoopRole(heist.playerRole) : 'BRAVO'
@@ -112,6 +118,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   const [betaGuess, setBetaGuess] = useState<string>('');
   const [partnerLog, setPartnerLog] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { credits, setBalances } = usePlayerStore();
 
@@ -195,6 +202,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
 
   // Launch 3-Stage Heist Session
   const handleStartHeist = async (selectedRole: 'ALPHA' | 'BRAVO') => {
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const newSession = await coopService.startSession({
@@ -210,6 +218,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         setSecondsLeft(Math.floor(newSession.heist.sharedClockMsRemaining / 1000));
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Failed to start heist session:', err);
     } finally {
       setIsSubmitting(false);
@@ -219,6 +228,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Stage 1 Guess Submit
   const handleStage1Submit = async () => {
     if (!heist || stage1Guess.length !== 3 || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.submitGuess({
@@ -234,6 +244,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         if (callout) setNixCallout(callout);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Stage 1 guess failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -243,6 +254,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Stage 2 Bravo Guess Submit
   const handleStage2Submit = async () => {
     if (!heist || stage2Guess.length !== 4 || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.submitGuess({
@@ -258,6 +270,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         if (callout) setNixCallout(callout);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Stage 2 guess failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -267,6 +280,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Stage 2 Alpha Scanner Actions
   const handlePingDigit = async (digit: number) => {
     if (!heist || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.pingDigit(session.id, digit);
@@ -277,6 +291,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         if (callout) setNixCallout(callout);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Ping digit failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -285,6 +300,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
 
   const handleFlushIce = async () => {
     if (!heist || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.flushIce(session.id);
@@ -295,6 +311,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         if (callout) setNixCallout(callout);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Flush ICE failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -304,6 +321,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Stage 3 Master Vault Guess Submit
   const handleStage3Submit = async () => {
     if (!heist || stage3Guess.length !== 5 || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.submitGuess({
@@ -322,6 +340,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         setBalances(credits + res.session.payout.eachPlayerShare, usePlayerStore.getState().coins);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Stage 3 guess failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -331,6 +350,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Stage 3 Overdrive Trigger
   const handleTriggerOverdrive = async () => {
     if (!heist || isSubmitting || session.status !== 'active') return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.triggerOverdrive(session.id);
@@ -342,6 +362,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         if (callout) setNixCallout(callout);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Overdrive failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -359,6 +380,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
       return;
     }
 
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.submitGuess({
@@ -374,6 +396,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         setBalances(credits + res.session.payout.eachPlayerShare, usePlayerStore.getState().coins);
       }
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Failed to submit alpha guess:', err);
     } finally {
       setIsSubmitting(false);
@@ -393,6 +416,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
       return;
     }
 
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.submitGuess({
@@ -404,6 +428,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
       setBetaGuess('');
       if (res.rewardMessage) addPartnerMessage(res.rewardMessage);
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Failed to submit beta guess:', err);
     } finally {
       setIsSubmitting(false);
@@ -413,12 +438,14 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   // Partner Bot Solve Stage (Support)
   const handleSimulatePartnerSolve = async () => {
     if (session.status !== 'active' || isSubmitting) return;
+    setActionError(null);
     setIsSubmitting(true);
     try {
       const res = await coopService.simulatePartnerStage(session.id);
       setSession(res.session);
       if (res.rewardMessage) addPartnerMessage(res.rewardMessage);
     } catch (err: unknown) {
+      setActionError("The practice connection failed. Your last confirmed state is still shown; try the action again.");
       console.error('Failed to simulate partner solve:', err);
     } finally {
       setIsSubmitting(false);
@@ -435,9 +462,9 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
     return (
       <div
         data-surface="terminal"
-        className="w-full flex-1 min-h-0 flex flex-col items-center justify-center p-4 bg-ground text-ink overflow-y-auto"
+        className="w-full flex-1 min-h-0 flex flex-col items-center p-4 bg-ground text-ink overflow-y-auto"
       >
-        <div className="w-full max-w-xl bg-panel border border-line rounded-md p-6 shadow-card flex flex-col gap-6">
+        <div className="w-full max-w-4xl bg-panel border border-line rounded-md p-6 shadow-card flex flex-col gap-6">
           {/* Header */}
           <div className="border-b border-line pb-4">
             <span className="font-data text-[10px] uppercase tracking-[2px] text-accent-text block">
@@ -447,16 +474,18 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
               Select Your Heist Operative
             </h1>
             <p className="font-data text-xs text-ink-muted pt-1">
-              Two operatives infiltrate in parallel across 3 high-security corporate vault stages.
+              Practice with Nix (AI) across three vault stages. Choose your role; Nix takes the other console. Human co-op is not available in this preview.
             </p>
           </div>
 
+          {actionError && <p role="alert" className="font-data text-sm text-danger-text border border-danger rounded-sm p-3">{actionError}</p>}
           {/* Role Cards */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Alpha Card */}
-            <div
+            <button
+              type="button" aria-pressed={playerRole === 'ALPHA'}
               onClick={() => setPlayerRole('ALPHA')}
-              className={`p-4 rounded-md border cursor-pointer transition-colors flex flex-col gap-2 min-h-[140px] ${
+              className={`p-4 rounded-md border cursor-pointer transition-colors flex flex-col gap-2 min-h-[140px] text-left focus-visible:ring-2 focus-visible:ring-accent ${
                 playerRole === 'ALPHA'
                   ? 'bg-accent/15 border-accent ring-1 ring-accent'
                   : 'bg-panel-light border-line hover:border-ink-muted'
@@ -471,12 +500,13 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
               <p className="font-data text-xs text-ink-muted leading-relaxed">
                 {alphaInfo.briefing}
               </p>
-            </div>
+            </button>
 
             {/* Bravo Card */}
-            <div
+            <button
+              type="button" aria-pressed={playerRole === 'BRAVO'}
               onClick={() => setPlayerRole('BRAVO')}
-              className={`p-4 rounded-md border cursor-pointer transition-colors flex flex-col gap-2 min-h-[140px] ${
+              className={`p-4 rounded-md border cursor-pointer transition-colors flex flex-col gap-2 min-h-[140px] text-left focus-visible:ring-2 focus-visible:ring-accent ${
                 playerRole === 'BRAVO'
                   ? 'bg-accent/15 border-accent ring-1 ring-accent'
                   : 'bg-panel-light border-line hover:border-ink-muted'
@@ -491,7 +521,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
               <p className="font-data text-xs text-ink-muted leading-relaxed">
                 {bravoInfo.briefing}
               </p>
-            </div>
+            </button>
           </div>
 
           {/* Nix Briefing Bubble */}
@@ -510,12 +540,8 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-2">
-            {onExit && (
-              <Button type="button" variant="secondary" onClick={onExit}>
-                CANCEL
-              </Button>
-            )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={leavePractice}>Back to Missions</Button>
             <Button
               type="button"
               variant="primary"
@@ -524,7 +550,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
               data-testid="jack-in-heist-button"
               className="min-h-[44px] px-6 text-sm font-bold tracking-wider"
             >
-              JACK IN // INITIATE HEIST
+              START PRACTICE WITH NIX
             </Button>
           </div>
         </div>
@@ -541,7 +567,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
   return (
     <div
       data-surface="terminal"
-      className="scene-ground w-full flex-1 min-h-0 flex flex-col text-ink overflow-y-auto pb-24 pb-safe-bottom select-none"
+      className="scene-ground w-full flex-1 min-h-0 flex flex-col text-ink overflow-y-auto pb-6 pb-safe-bottom select-none"
     >
       {/* ============================================================ */}
       {/* TOP HEADER & LIVE PARTNER TELEMETRY RAIL (HUD) */}
@@ -550,7 +576,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         <div className="flex items-center gap-3">
           <div>
             <span className="font-data text-[10px] uppercase tracking-[1.5px] text-ink-muted block">
-              CO-OP HEIST CONSOLE // TWO-MAN RIG LINK
+              CO-OP PRACTICE / NIX (AI)
             </span>
             <h1 className="font-heading text-base font-bold text-ink">
               {stageInfo ? stageInfo.title : 'Synchronized Heist'}
@@ -574,7 +600,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           {heist && (
             <div
               data-testid="partner-telemetry-rail"
-              className="hidden sm:flex items-center gap-2 px-3 py-1 bg-panel border border-line rounded-sm text-xs font-data"
+              className="flex flex-wrap items-center gap-2 px-3 py-1 bg-panel border border-line rounded-sm text-xs font-data"
             >
               <span className="text-ink-muted text-[10px] uppercase font-bold">PARTNER:</span>
               <span className="text-accent-text font-bold">{heist.partnerCallsign}</span>
@@ -662,9 +688,20 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
         </div>
       )}
 
+      {actionError && <p role="alert" className="font-data text-sm text-danger-text border border-danger rounded-sm p-3 m-4">{actionError}</p>}
+      {is3Stage ? (
+        <div className="shrink-0 border-b border-line bg-panel px-4 py-2 flex flex-wrap items-center gap-2">
+          <div className="flex gap-2 lg:hidden" role="group" aria-label="Co-op console view">
+            <Button variant={!partnerView ? 'primary' : 'secondary'} compact aria-pressed={!partnerView} onClick={() => setPartnerView(false)}>My console</Button>
+            <Button variant={partnerView ? 'primary' : 'secondary'} compact aria-pressed={partnerView} onClick={() => setPartnerView(true)}>Partner & clues</Button>
+          </div>
+          <Button variant="secondary" compact onClick={handleSimulatePartnerSolve} disabled={session.status !== 'active' || isSubmitting} data-testid="partner-solve-button">Ask Nix to act</Button>
+          <Button variant="ghost" compact className="ml-auto" onClick={() => setShowLeaveConfirmation(true)}>Leave practice</Button>
+        </div>
+      ) : <>
       {/* View Switcher Bar (Split, Alpha, Beta) */}
-      <div className="bg-panel border-b border-line px-4 py-2 flex items-center justify-between shrink-0">
-        <div className="flex gap-2">
+      <div className="bg-panel border-b border-line px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant={activeRole === 'split' ? 'primary' : 'secondary'}
@@ -707,9 +744,12 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
-          <span>Nix Partner Bot Action</span>
+          <span>Ask Nix to act</span>
         </Button>
       </div>
+
+        <Button variant="ghost" compact onClick={() => setShowLeaveConfirmation(true)}>Leave practice</Button>
+      </>}
 
       {/* Outcome Banners */}
       {session.status === 'won' && (
@@ -745,12 +785,30 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
       {/* 3-STAGE ASYMMETRIC HEIST CONSOLE */}
       {/* ============================================================ */}
       {is3Stage && heist ? (
-        <div className="flex-1 flex flex-col gap-4 p-4 max-w-4xl mx-auto w-full">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 max-w-6xl mx-auto w-full content-start">
+          <aside aria-label="Partner and probe history" className={`${partnerView ? 'flex' : 'hidden lg:flex'} lg:order-2 flex-col gap-4 min-w-0`}>
+            <section className="p-4 border border-line bg-panel-light rounded-md space-y-2">
+              <h2 className="font-heading text-lg">Partner: Nix (AI)</h2>
+              <p className="font-data text-xs text-ink-muted">You are {playerRole}. Nix handles {playerRole === 'ALPHA' ? 'BRAVO' : 'ALPHA'}.</p>
+              <p className="font-data text-sm">{heist.partnerAction}</p>
+              <p className="font-data text-xs text-ink-muted">Stage {heist.currentStage} of 3 · Shared crew clock</p>
+            </section>
+            <section className="p-4 border border-line bg-panel-light rounded-md space-y-3" aria-label="Actual probe results">
+              <h2 className="font-heading text-lg">Probe history</h2>
+              <p className="font-data text-xs text-ink-muted">Pan = correct position. Pot = right digit, different position. Counts apply to the whole code.</p>
+              {(heist.currentStage === 1 ? [...heist.stage1.alpha.guesses, ...heist.stage1.bravo.guesses] : heist.currentStage === 2 ? heist.stage2.guesses : heist.stage3.guesses).length === 0 ? <p className="font-data text-xs text-ink-muted">No probes yet. Results appear here after a guess.</p> : <ol className="space-y-2 max-h-80 overflow-y-auto">
+                {(heist.currentStage === 1 ? [...heist.stage1.alpha.guesses, ...heist.stage1.bravo.guesses] : heist.currentStage === 2 ? heist.stage2.guesses : heist.stage3.guesses).slice().sort((a, b) => b.timestamp - a.timestamp).map((record, index) => <li key={`${record.role}-${record.timestamp}-${index}`} className="border-t border-line pt-2 font-data text-xs space-y-1">
+                  <div className="flex justify-between gap-2"><span>{record.role}</span><strong className="tracking-widest text-base">{record.guess}</strong></div>
+                  <p>{record.pans} Pan · {record.pots} Pot{record.isFalsified ? ' · ICE may distort this reading' : ''}</p>
+                </li>)}
+              </ol>}
+            </section>
+          </aside>
           {/* STAGE 1: PERIMETER HANDSHAKE */}
           {heist.currentStage === 1 && (
             <div
               data-testid="stage-1-container"
-              className="bg-panel-light p-4 rounded-md border border-line shadow-card flex flex-col gap-4"
+              className={`${partnerView ? 'hidden lg:flex' : 'flex'} lg:col-span-2 lg:order-1 bg-panel-light p-4 rounded-md border border-line shadow-card flex-col gap-4`}
             >
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <div>
@@ -845,7 +903,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           {heist.currentStage === 2 && (
             <div
               data-testid="stage-2-container"
-              className="bg-panel-light p-4 rounded-md border border-line shadow-card flex flex-col gap-4"
+              className={`${partnerView ? 'hidden lg:flex' : 'flex'} lg:col-span-2 lg:order-1 bg-panel-light p-4 rounded-md border border-line shadow-card flex-col gap-4`}
             >
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <div>
@@ -985,7 +1043,7 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           {heist.currentStage === 3 && (
             <div
               data-testid="stage-3-container"
-              className="bg-panel-light p-4 rounded-md border border-line shadow-card flex flex-col gap-4"
+              className={`${partnerView ? 'hidden lg:flex' : 'flex'} lg:col-span-2 lg:order-1 bg-panel-light p-4 rounded-md border border-line shadow-card flex-col gap-4`}
             >
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <div>
@@ -1295,12 +1353,12 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           className="bg-panel-light p-3 rounded-md border border-line shadow-card flex flex-col gap-1.5"
         >
           <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted font-bold">
-            CREW COMMS // LIVE DATA LINK
+            CREW COMMS / PRACTICE LOG
           </span>
           <div className="flex flex-col gap-1 max-h-24 overflow-y-auto text-xs font-data">
             {partnerLog.length === 0 ? (
               <span className="text-ink-muted italic">
-                Secure audio channel linked. Operatives online.
+                Practice channel ready. Nix is your AI partner.
               </span>
             ) : (
               partnerLog.map((log, i) => (
@@ -1313,6 +1371,9 @@ export function CoopConsole({ initialSession, onExit }: CoopConsoleProps = {}) {
           </div>
         </div>
       </div>
+      {showLeaveConfirmation && <Modal label="Leave co-op practice?" onClose={() => setShowLeaveConfirmation(false)} header={<h2 className="font-heading text-xl">Leave co-op practice?</h2>} footer={<div className="flex gap-2"><Button variant="secondary" onClick={() => setShowLeaveConfirmation(false)}>Keep playing</Button><Button variant="primary" onClick={leavePractice}>Leave practice</Button></div>}>
+        <p className="font-data text-sm">The crew clock keeps running when you leave. Stay to finish this practice attempt, or return to Missions.</p>
+      </Modal>}
     </div>
   );
 }

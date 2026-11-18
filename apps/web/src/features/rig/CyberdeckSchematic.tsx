@@ -53,7 +53,7 @@ export const CyberdeckSchematic: React.FC<CyberdeckSchematicProps> = ({
   return (
     <div className="w-full relative flex flex-col items-center">
       {/* Cyberdeck Schematic SVG Blueprint */}
-      <div className="scene-card w-full max-w-md bg-panel-light border border-line rounded-md p-4 shadow-card relative overflow-hidden">
+      <div className="scene-card w-full bg-panel-light border border-line rounded-md p-4 shadow-card relative overflow-hidden">
 
         {/* Chassis Header */}
         <div className="flex justify-between items-center border-b border-ink-muted/40 pb-2 mb-3 text-[10px] font-data text-ink-muted">
@@ -196,11 +196,12 @@ function HardwareSlotCard({
               {railLabel || (tier ? `BUS ${tier}` : 'CO-PROC RAIL')}
             </span>
             <h4
-              className={`font-heading text-xs font-bold truncate ${
+              className={`font-heading text-xs font-bold break-words ${
                 isBurned ? 'text-danger-text' : isInstalled ? 'text-ink' : 'text-ink-muted'
               }`}
             >
-              {title}
+              {!isInstalled && <span className="block text-ink-muted font-data text-xs">Empty slot</span>}
+              <span className={!isInstalled ? 'text-[10px]' : ''}>{title}</span>
             </h4>
           </div>
         </div>

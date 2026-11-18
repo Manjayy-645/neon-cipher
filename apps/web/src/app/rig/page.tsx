@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { PresetPreview } from '@/features/rig/PresetPreview';
+import { CATALOG } from '@/features/market/catalog';
 import { CyberdeckSchematic } from '@/features/rig/CyberdeckSchematic';
 import { PartDetailDrawer } from '@/features/rig/PartDetailDrawer';
 import { LoadoutSelector } from '@/features/rig/LoadoutSelector';
@@ -13,22 +15,24 @@ import { usePlayerStore } from '@/stores/player-store';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Button } from '@/components/ui/Button';
 import { triggerToast } from '@/stores/toast-store';
-import { HardwareRailSlot, RigHardwareId, RIG_PRESETS } from '@neon-cipher/game-rules';
+import { HardwareRailSlot, RigHardwareId, RIG_PRESETS, type RigPreset } from '@neon-cipher/game-rules';
 
 export default function RigPage() {
   const router = useRouter();
   const { credits, coins, inventory, equippedTools, syncWallet } = usePlayerStore();
 
   const [activeTab, setActiveTab] = useState<'cyberdeck' | 'safehouse' | 'ledger'>('cyberdeck');
+  const [rigError, setRigError] = useState(false);
   const [rigData, setRigData] = useState<RigStateResponse | null>(null);
   const [safehouseData, setSafehouseData] = useState<SafehouseStateResponse | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [isLoadoutOpen, setIsLoadoutOpen] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
+  const [previewPreset, setPreviewPreset] = useState<RigPreset | null>(null);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   // Load initial rig and safehouse states from mock server
-  const loadRigState = () => {
+  const loadRigState = useCallback(() => {
     rigService
       .getRig()
       .then((data) => {
@@ -38,20 +42,20 @@ export default function RigPage() {
           equippedTools: data.equippedTools,
         });
       })
-      .catch((err) => console.error('Error fetching rig:', err));
-  };
+      .catch((err) => { console.error('Error fetching rig:', err); setRigError(true); });
+  }, [syncWallet]);
 
-  const loadSafehouses = () => {
+  const loadSafehouses = useCallback(() => {
     rigService
       .getSafehouses()
       .then((data) => setSafehouseData(data))
       .catch((err) => console.error('Error fetching safehouses:', err));
-  };
+  }, []);
 
   useEffect(() => {
     loadRigState();
     loadSafehouses();
-  }, []);
+  }, [loadRigState, loadSafehouses]);
 
   const handleSelectSlot = (slotId: string) => {
     if (slotId.startsWith('tool-slot')) {
@@ -126,7 +130,7 @@ export default function RigPage() {
   return (
     <main className="scene-ground scene-arrive w-full h-full flex flex-col text-ink overflow-hidden min-h-0">
       {/* Top Header */}
-      <header className="px-4 py-4 sm:py-5 bg-panel/90 border-b border-line shrink-0 flex items-center justify-between gap-3">
+      <header className="px-4 py-3 lg:py-5 bg-panel/90 border-b border-line shrink-0 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <span aria-hidden="true" className="hidden xs:flex w-10 h-10 shrink-0 items-center justify-center rounded-md border border-accent/40 bg-accent/10 text-accent-text font-heading text-xl">
             R
@@ -168,13 +172,14 @@ export default function RigPage() {
       </div>
 
       {/* Main Tab Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-24 flex flex-col gap-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6 flex flex-col gap-4">
+        {activeTab === 'cyberdeck' && !rigData && <div className="font-data text-sm p-4 bg-panel-light border border-line rounded-md" role={rigError ? 'alert' : 'status'}>{rigError ? <><p>Could not load your rig. Check your connection and try again.</p><Button variant="secondary" onClick={() => { setRigError(false); loadRigState(); }}>Retry rig</Button></> : 'Loading installed hardware…'}</div>}
         {activeTab === 'cyberdeck' && rigData && (
-          <div className="flex flex-col gap-4 items-center w-full max-w-md mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full max-w-6xl mx-auto">
             {/* Alex's Recommended Loadout Presets Header Card */}
             <div
               data-testid="alex-loadout-presets"
-              className="w-full bg-panel-light border border-line rounded-md p-3.5 shadow-card font-data text-xs flex flex-col gap-2.5"
+              className="order-2 w-full bg-panel-light border border-line rounded-md p-3.5 shadow-card font-data text-xs flex flex-col gap-2.5"
             >
               <div className="flex items-center justify-between border-b border-line/60 pb-2">
                 <div className="flex items-center gap-2">
@@ -187,7 +192,7 @@ export default function RigPage() {
                       ALEX&apos;S RECOMMENDED PRESETS
                     </span>
                     <span className="text-[10px] text-ink-muted">
-                      1-Tap Build Helper // Optimized Archetypes
+                      Preview owned parts before applying
                     </span>
                   </div>
                 </div>
@@ -202,12 +207,12 @@ export default function RigPage() {
                       key={preset.id}
                       variant={isActive ? 'primary' : 'secondary'}
                       compact
-                      onClick={() => handleApplyPreset(preset.id as any)}
+                      onClick={() => setPreviewPreset(preset)}
                       data-testid={`preset-btn-${preset.id}`}
                       className="text-left flex flex-col items-start p-2 h-auto text-[10px]"
                     >
                       <span className="font-bold uppercase tracking-wider block">
-                        [{preset.name}]
+                        Preview {preset.name}
                       </span>
                       <span className="text-[9px] opacity-80 line-clamp-1">
                         {preset.tagline}
@@ -225,7 +230,8 @@ export default function RigPage() {
               )}
             </div>
 
-            {/* Cyberdeck Schematic */}
+            <section className="order-1 space-y-3 lg:col-start-1 lg:row-start-1">
+            <h2 className="font-heading text-xl">Installed hardware &amp; consumable bays</h2>
             <CyberdeckSchematic
               hardware={rigData.hardware}
               equippedRails={rigData.equippedRails}
@@ -243,6 +249,16 @@ export default function RigPage() {
             >
               MANAGE INTRUSION LOADOUT ({equippedTools.length}/2)
             </Button>
+            </section>
+            <section className="order-3 bg-panel-light border border-line rounded-md p-4 lg:col-span-2" aria-label="Owned inventory">
+              <h2 className="font-heading text-xl mb-3">Inventory</h2>
+              <p className="font-data text-xs text-ink-muted mb-3">Stored items are separate from installed hardware. Consumables are used during breaches.</p>
+              <ul className="grid grid-cols-1 lg:grid-cols-2 gap-2 font-data text-xs">{Object.entries(inventory).filter(([, qty]) => qty > 0).map(([id, qty]) => {
+                const item = CATALOG.find((entry) => entry.id === id);
+                return <li key={id} className="flex justify-between gap-3 border-b border-line py-2"><span>{item?.name ?? rigData.hardware[id]?.name ?? id.replaceAll('_', ' ').replaceAll('-', ' ')}{equippedTools.includes(id) ? ' · Equipped' : ''}</span><strong>×{qty}</strong></li>;
+              })}</ul>
+              {Object.values(inventory).every((qty) => qty <= 0) && <p className="font-data text-xs">No stored items. Visit Market to browse equipment.</p>}
+            </section>
           </div>
         )}
 
@@ -258,6 +274,7 @@ export default function RigPage() {
         {activeTab === 'ledger' && <WalletHistory />}
       </div>
 
+      {previewPreset && rigData && <PresetPreview preset={previewPreset} rig={rigData} onApply={handleApplyPreset} onClose={() => setPreviewPreset(null)} />}
       {/* Part Detail Inspection / Repair Drawer */}
       {selectedSlotId && rigData && (
         <PartDetailDrawer

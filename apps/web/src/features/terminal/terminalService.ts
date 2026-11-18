@@ -27,6 +27,12 @@ export interface SessionData {
   startedAt: number;
 }
 
+export interface CampaignReceipt {
+  debtReduced: number;
+  remainingDebt: number;
+  payout: number;
+}
+
 export interface GuessResult {
   pots?: number;
   pans?: number;
@@ -40,6 +46,7 @@ export interface GuessResult {
   burnedHardware?: string;
   refundedAttempt?: boolean;
   firstTurnBonus?: number;
+  campaign?: CampaignReceipt | null;
   error?: string;
 }
 

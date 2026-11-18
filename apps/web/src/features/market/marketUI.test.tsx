@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ShopkeeperScene } from './ShopkeeperScene';
 import { BlackMarket } from './BlackMarket';
@@ -67,6 +67,20 @@ describe('Task 8: Market UI Components', () => {
       // Click District Leases tab
       fireEvent.click(screen.getByText('DISTRICT LEASES'));
       expect(screen.getByText('Slums Public Node Lease')).toBeInTheDocument();
+    });
+
+    it('previews the resulting balance and cancels without spending', async () => {
+      const purchase = vi.spyOn(walletService, 'purchaseItem');
+      render(<BlackMarket onBackToDialogue={vi.fn()} />);
+      await waitFor(() => expect(walletService.getWallet).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByText('$12,500')).toBeInTheDocument());
+      fireEvent.click(screen.getAllByRole('button', { name: 'BUY' })[0]);
+      const dialog = screen.getByRole('dialog', { name: 'Confirm Transaction' });
+      expect(within(dialog).getByTestId('purchase-resulting-balance')).toHaveTextContent('$12,125');
+      expect(purchase).not.toHaveBeenCalled();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'CANCEL' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(purchase).not.toHaveBeenCalled();
     });
 
     it('opens and closes the Coin store offline stub modal', async () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { CHAPTERS, getChapterById } from '@neon-cipher/game-rules/src/index';
 import { NarrativeBriefing } from './NarrativeBriefing';
 import { ChapterSelect } from './ChapterSelect';
@@ -62,6 +62,25 @@ describe('Task 10: NarrativeBriefing UI Component', () => {
     expect(screen.getByTestId('debt-progress-box')).toBeInTheDocument();
     expect(screen.getByText(/\$10,000 REMAINING/i)).toBeInTheDocument();
     expect(screen.getByText(/-\$1,500 DEBT/i)).toBeInTheDocument();
+  });
+
+  it('separates the actual city bounty from contract terms and debt relief', () => {
+    const chapter2 = getChapterById('chapter-2')!;
+    render(<NarrativeBriefing chapter={chapter2} onAccept={vi.fn()} />);
+    const summary = within(screen.getByRole('region', { name: 'Assignment summary' }));
+    expect(summary.getByText('75 CR')).toBeInTheDocument();
+    expect(summary.getByText('650 CR')).toBeInTheDocument();
+    expect(summary.getByText('2,500 CR')).toBeInTheDocument();
+    expect(summary.getByText(/both reduces your loan and credits the same amount to your wallet/)).toBeInTheDocument();
+  });
+
+  it('keeps the Chapter 3 contract alias tied to the actual city target', () => {
+    render(<NarrativeBriefing chapter={getChapterById('chapter-3')!} onAccept={vi.fn()} locked />);
+    const summary = within(screen.getByRole('region', { name: 'Assignment summary' }));
+    expect(summary.getByRole('heading', { name: 'Hideout Safe' })).toBeInTheDocument();
+    expect(summary.getByText(/Contract alias: Chop-shop Safe/)).toBeInTheDocument();
+    expect(screen.getByTestId('accept-assignment-button')).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent('Complete Chapter 2');
   });
 
   it('allows skipping typewriter text and triggers ACCEPT ASSIGNMENT', () => {

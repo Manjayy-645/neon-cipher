@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DuelSession } from '../types';
 import { DuelConsole } from '../DuelConsole';
@@ -101,7 +101,8 @@ describe('TASK 11: Matchmaking Lobby, 1v1 Split Console & Resolution', () => {
         render(<MatchmakingLobby />);
       });
 
-      expect(screen.getByText('MATCHMAKING LOBBY')).toBeInTheDocument();
+      expect(screen.getByText('Duel practice lobby')).toBeInTheDocument();
+      expect(screen.getByText(/LOCAL PREVIEW \/ NO HUMAN MATCHMAKING/)).toBeInTheDocument();
       expect(screen.getByTestId('match-type-casual')).toBeInTheDocument();
       expect(screen.getByTestId('match-type-wager')).toBeInTheDocument();
       expect(screen.getByTestId('match-type-turf')).toBeInTheDocument();
@@ -153,6 +154,19 @@ describe('TASK 11: Matchmaking Lobby, 1v1 Split Console & Resolution', () => {
   });
 
   describe('2. 1v1 Split Console (4.1) & Guess Streams', () => {
+    it('labels simulation truthfully and confirms leaving a timed duel', () => {
+      const exit = vi.fn();
+      render(<DuelConsole initialSession={mockBaseSession} onExit={exit} />);
+      expect(screen.getByText(/Local duel simulation/)).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('surrender-button'));
+      expect(exit).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Keep playing' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('surrender-button'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Leave duel' }));
+      expect(exit).toHaveBeenCalledOnce();
+    });
+
     it('renders status bar with opponent handle, shared attempts pool, and turn clock', () => {
       render(<DuelConsole initialSession={mockBaseSession} onExit={vi.fn()} />);
 

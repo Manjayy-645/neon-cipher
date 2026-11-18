@@ -136,7 +136,7 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
     });
   });
 
-  describe('Part 3: Cracking Terminal 3-Row Layout & Pinned Control Deck', () => {
+  describe('Part 3: Adaptive terminal workspace and accessible control deck', () => {
     it('maintains pinned Control Deck and accessible Keypad when guess history expands', async () => {
       // Mock session with 10 attempts allowed
       vi.spyOn(terminalService, 'startSession').mockResolvedValue({
@@ -168,9 +168,12 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
       // Wait for terminal load
       expect(await screen.findByText(/Rusty Soda Machine/i)).toBeInTheDocument();
 
-      // Check header compact strip class
-      const header = document.querySelector('header');
-      expect(header).toHaveClass('terminal-compact-strip');
+      // Functional identity/actions now have their own header, separate from trim.
+      const header = screen.getByTestId('terminal-header');
+      expect(header).toContainElement(screen.getByRole('heading', { name: 'Rusty Soda Machine' }));
+      expect(header).toContainElement(screen.getByRole('button', { name: 'Open Clue Legend' }));
+      expect(header).toContainElement(screen.getByRole('button', { name: 'Pause breach timer' }));
+      expect(screen.getByTestId('terminal-workspace')).toContainElement(screen.getByRole('group', { name: 'Terminal Keypad' }));
 
       // Type digits: 1, 2, 3
       fireEvent.click(screen.getByRole('button', { name: '1' }));
@@ -207,10 +210,19 @@ describe('Responsive Viewport, Anti-Overlap & Safe-Area Layout Suite', () => {
       const heading = await screen.findByRole('heading', { name: /black market/i });
       expect(heading).toBeInTheDocument();
 
-      const scrollContainer = document.querySelector('.overflow-y-auto');
+      const scrollContainer = screen.getByRole('region', { name: 'Market catalogue' });
       expect(scrollContainer).toBeInTheDocument();
       expect(scrollContainer).toHaveClass('flex-1', 'min-h-0');
-      expect(scrollContainer).toHaveClass('pb-24');
+      expect(scrollContainer).toHaveClass('overflow-y-auto');
+      const marketWorkspace = heading.closest('.scene-ground');
+      expect(marketWorkspace).toHaveClass('h-full', 'min-h-0', 'overflow-hidden', 'flex', 'flex-col');
+      expect(scrollContainer.parentElement).toBe(marketWorkspace);
+      expect(scrollContainer.contains(heading)).toBe(false);
+      // Navigation occupies its own shell row; catalogue actions scroll inside
+      // the remaining flex area rather than relying on a guessed nav-height pad.
+      const buyActions = screen.getAllByRole('button', { name: 'BUY' });
+      expect(buyActions.length).toBeGreaterThan(0);
+      expect(buyActions.every((button) => scrollContainer.contains(button))).toBe(true);
     });
 
     it('Chapter Select enforces min-h-0 and safe bottom padding', async () => {

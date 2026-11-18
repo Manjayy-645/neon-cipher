@@ -90,7 +90,7 @@ export function Keypad({
 
       {/* 3x4 Keypad Grid */}
       <div
-        className="grid grid-cols-3 gap-1 sm:gap-1.5 w-full max-w-[300px]"
+        className="grid grid-cols-3 gap-2 w-full max-w-[360px]"
         role="group"
         aria-label="Terminal Keypad"
         data-tutorial="keypad"
@@ -180,7 +180,7 @@ export function Keypad({
                 className={`h-[44px] keypad-btn-height min-h-[44px] min-w-[44px] rounded-[6px] border font-data text-xs font-bold tracking-wider uppercase transition-transform duration-120 active:scale-[0.96] flex items-center justify-center select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terminal-phosphor focus-visible:ring-offset-2 focus-visible:ring-offset-terminal-bg ${
                   isSubmitDisabled
                     ? 'border-terminal-line/30 bg-terminal-panel/30 text-terminal-muted/40 cursor-not-allowed'
-                    : 'border-terminal-phosphor bg-terminal-phosphor text-terminal-bg shadow-[0_0_12px_rgba(111,191,122,0.3)] hover:brightness-105'
+                    : 'border-terminal-phosphor bg-terminal-phosphor text-terminal-bg hover:brightness-105'
                 }`}
               >
                 SUBMIT
