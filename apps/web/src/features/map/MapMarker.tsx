@@ -1,6 +1,7 @@
 'use client';
 
 import { useClock } from '@/lib/useClock';
+import { useCampaignStore } from '@/stores/campaign-store';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameNode } from './nodeService';
@@ -15,6 +16,8 @@ import { emit } from '@/features/onboarding/events';
 
 function formatCountdown(seconds?: number): string {
   if (seconds === undefined || seconds <= 0) return '00:00';
+  if (seconds >= 86400) return `${Math.ceil(seconds / 86400)}d`;
+  if (seconds >= 3600) return `${Math.ceil(seconds / 3600)}h`;
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -27,7 +30,9 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   const activeNodeId = useMapStore((s) => s.activeNodeId);
   const selectNode = useMapStore((s) => s.selectNode);
   const setActiveNodeId = useMapStore((s) => s.setActiveNodeId);
-  const bridgeUnlocked = useMapStore((s) => s.unlocks.bridge);
+  const mapBridge = useMapStore((s) => s.unlocks.bridge);
+  const campaignBridge = useCampaignStore((s) => s.unlocks.bridge);
+  const bridgeUnlocked = mapBridge || campaignBridge;
 
   const step = useOnboardingStore((s) => s.step);
   const crackedNodes = useOnboardingStore((s) => s.crackedNodes);
@@ -52,6 +57,8 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
   );
   const cooldownSecs = isCooldownFromCracked
     ? Math.max(0, Math.ceil((crackedRecord.cooldownMs - (now - crackedRecord.crackedAt)) / 1000))
+    : node.status === 'cooldown' && node.cooldownEndsAt
+    ? Math.max(0, Math.ceil((node.cooldownEndsAt - now) / 1000))
     : node.timerSeconds;
 
   const effectiveNode = isCooldownFromCracked
@@ -86,10 +93,11 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
     emit({ type: 'map:nodeSelected', nodeId: node.id });
 
     if (isLocked) {
-      triggerToast(`${node.name} is locked: Complete Chapter 2 to gain district clearance.`, { type: 'locked' });
+      triggerToast(`${node.name} is locked: Complete Chapter 3 to gain district clearance.`, { type: 'locked' });
     }
     if (setActiveNodeId) {
       setActiveNodeId(node.id);
+      useMapStore.getState().setSelectedDistrict(node.district);
     } else {
       selectNode(node.id);
     }
@@ -122,7 +130,7 @@ export const MapMarker: React.FC<{ node: GameNode }> = ({ node }) => {
           handleSelect();
         }
       }}
-      aria-label={`${node.name}, tier ${node.tier}, ${isLocked ? 'locked' : effectiveNode.status}`}
+      aria-label={`${node.name}, tier ${node.tier}, ${isLocked ? 'locked' : effectiveNode.status}${effectiveNode.status === 'cooldown' ? `, countermeasure reset estimate ${formatCountdown(cooldownSecs)}` : ''}`}
     >
       <div className="relative flex flex-col items-center">
         <MarkerIcon size="md" node={effectiveNode} isLocked={isLocked} isSelected={isSelected} />

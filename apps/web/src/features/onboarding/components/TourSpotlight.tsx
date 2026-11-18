@@ -10,6 +10,8 @@ export interface TourSpotlightProps {
   speaker: 'nix' | 'glitch';
   onTap?: () => void;
   showSkip?: boolean;
+  showCornerSkip?: boolean;
+  skipLabel?: string;
   onSkip?: () => void;
   isTapToAdvance?: boolean;
 }
@@ -29,6 +31,8 @@ export function TourSpotlight({
   speaker,
   onTap,
   showSkip = true,
+  showCornerSkip = true,
+  skipLabel = 'SKIP TUTORIAL',
   onSkip,
   isTapToAdvance = false,
 }: TourSpotlightProps) {
@@ -244,7 +248,7 @@ export function TourSpotlight({
       )}
 
       {/* Skip Tour Button in corner */}
-      {showSkip && onSkip && (
+      {showSkip && showCornerSkip && onSkip && (
         <div className="fixed top-3 right-3 z-40 pointer-events-auto">
           <Button
             variant="ghost"
@@ -326,21 +330,20 @@ export function TourSpotlight({
                     onSkip();
                   }}
                   data-testid="spotlight-skip-bubble-btn"
-                  aria-label="Skip tutorial from bubble"
+                  aria-label={skipLabel === 'EXIT TUTORIAL' ? 'Exit tutorial' : 'Skip tutorial from bubble'}
                   className="font-data text-[11px] font-bold tracking-wider uppercase text-ink-muted hover:text-danger active:text-danger transition-colors h-[44px] min-h-[44px] flex items-center gap-1"
                 >
-                  <span>SKIP TUTORIAL ✕</span>
+                  <span>{skipLabel} ✕</span>
                 </button>
               ) : (
                 <span />
               )}
 
               {isTapToAdvance && (
-                <div className="flex items-center">
-                  <span className="font-data text-[10px] font-bold tracking-wider uppercase text-accent-text">
-                    TAP TO CONTINUE ▶
-                  </span>
-                </div>
+                <button type="button" aria-label="Continue guide" onClick={(event) => { event.stopPropagation(); onTap?.(); }}
+                  className="min-h-[44px] px-2 font-data text-[11px] font-bold tracking-wider uppercase text-accent-text focus-visible:ring-2 focus-visible:ring-accent">
+                  Continue ▶
+                </button>
               )}
             </div>
           </div>

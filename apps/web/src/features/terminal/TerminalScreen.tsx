@@ -1,5 +1,8 @@
 'use client';
 
+import styles from './TerminalWorkspace.module.css';
+import { Modal } from '@/components/ui/Modal';
+
 import { useClock } from '@/lib/useClock';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +13,8 @@ import { useSettingsStore } from '@/stores/settings-store';
 import { useCampaignStore } from '@/stores/campaign-store';
 import { useMapStore } from '@/stores/map-store';
 import { getChapterById } from '@neon-cipher/game-rules';
+import { walletService } from '@/features/market/walletService';
+import type { BreachReceipt } from './components/BreachBanner';
 import { terminalService, SessionData } from './terminalService';
 import { TerminalFrame } from './TerminalFrame';
 import { getNodeById } from '@/features/map/nodeService';
@@ -27,7 +32,7 @@ import {
 import { soundFx } from '@/lib/audio';
 import { TutorialOverlay } from '@/features/story/TutorialOverlay';
 import { QuitModal } from './TerminalScreens';
-import { emit } from '@/features/onboarding/events';
+import { emit, subscribe } from '@/features/onboarding/events';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 import { TUTORIAL, CH2_NODE_ID } from '@/features/onboarding/steps';
 import { campaignService } from '@/features/story/campaignService';
@@ -37,6 +42,7 @@ import { isSameNode, NODE_ALIAS_MAP, getCanonicalNodeId } from '@/features/map/n
 
 export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const router = useRouter();
+  const workspaceRef = React.useRef<HTMLDivElement>(null);
   const { addCredits, subtractCredits, equippedTools, inventory, syncWallet } = usePlayerStore();
   const rookieAssist = useSettingsStore((s) => s.rookieAssist);
   const assistMode: 'rookie' | 'pro' = rookieAssist ? 'rookie' : 'pro';
@@ -65,6 +71,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState(0);
   const [payout, setPayout] = useState<number | undefined>(undefined);
+  const [earnedBonuses, setEarnedBonuses] = useState(0);
+  const [receipt, setReceipt] = useState<BreachReceipt | undefined>();
   const [fine, setFine] = useState<number | undefined>(undefined);
   const [secret, setSecret] = useState<string | undefined>(undefined);
   const [failureReason, setFailureReason] = useState<'TRACE TIMEOUT' | 'ATTEMPTS EXHAUSTED' | null>(null);
@@ -99,6 +107,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   // Check if a blocking modal or pause overlay is covering the terminal
   const isInputModalOpen = Boolean(
     isManualPaused ||
+    isQuitModalOpen ||
     isLegendOpen ||
     showExitTutorialModal ||
     inspectedToolId !== null
@@ -127,6 +136,10 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
       }
     }
   }, [isOverlayOpen]);
+
+  useEffect(() => subscribe((event) => {
+    if (event.type === 'terminal:exit-requested') setShowExitTutorialModal(true);
+  }), []);
 
   const handleExitTutorial = useCallback(() => {
     setShowExitTutorialModal(true);
@@ -367,7 +380,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
         setToolFeedback(err.message || 'Failed to deploy intrusion tool');
       }
     },
-    [session, status, isActivatingTool, activatedTools, syncWallet, nodeId]
+    [session, status, isActivatingTool, activatedTools, syncWallet, nodeId, history.length]
   );
 
   const handleDigit = useCallback(
@@ -469,6 +482,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
         count: newHistory.length,
         hasDeadDigit: deadDigitsNow.size > 0,
         solved: isWon,
+        pans: newRecord.pans,
+        pots: newRecord.pots,
       });
 
       if (isWon) {
@@ -490,6 +505,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
       setValidationError(null);
 
       if (res.firstTurnBonus) {
+        setEarnedBonuses((previous) => previous + (res.firstTurnBonus ?? 0));
         addCredits(res.firstTurnBonus);
         triggerToast(`Syndicate Skimmer: +$${res.firstTurnBonus} CR bonus!`);
       }
@@ -512,6 +528,17 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           const finalPayout = typeof res.payout === 'number' ? res.payout : (payout ?? 0);
           usePlayerStore.getState().recordBreach(true, finalPayout, 150);
           setPayout(finalPayout);
+          setReceipt({
+            bonusCredits: earnedBonuses + (res.firstTurnBonus ?? 0),
+            ...(res.campaign ? {
+              campaignLedgerCredit: res.campaign.debtReduced,
+              debtReduced: res.campaign.debtReduced,
+              remainingDebt: res.campaign.remainingDebt,
+            } : {}),
+          });
+          walletService.getWallet().then((wallet) => {
+            setReceipt((previous) => previous ? { ...previous, confirmedBalance: wallet.credits } : previous);
+          }).catch(() => { /* Keep the explicit unconfirmed-balance state; never invent a balance. */ });
           if (finalPayout > 0) {
             addCredits(finalPayout);
           }
@@ -563,6 +590,9 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
     session,
     entry,
     attemptsLeft,
+    history,
+    payout,
+    earnedBonuses,
     addCredits,
     subtractCredits,
     activeTutorialStep,
@@ -599,11 +629,14 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const targetTag = (e.target as HTMLElement)?.tagName;
-      if (targetTag === 'INPUT' || targetTag === 'TEXTAREA') return;
+      if (targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT') return;
+      // Enter belongs to a focused control; do not cancel its native activation.
+      if ((e.key === 'Enter' || e.code === 'NumpadEnter') && (targetTag === 'BUTTON' || targetTag === 'A')) return;
 
       const numpadMatch = e.code?.match(/^Numpad([0-9])$/);
       if (/^[0-9]$/.test(e.key) || numpadMatch) {
         e.preventDefault();
+        workspaceRef.current?.focus({ preventScroll: true });
         soundFx.playKeystroke();
         const digit = numpadMatch ? parseInt(numpadMatch[1], 10) : parseInt(e.key, 10);
         handleDigitRef.current(digit);
@@ -681,7 +714,11 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
   return (
     <TerminalFrame tier={config.tier} nodeName={nodeName} nodeType={nodeType}>
       <div
-        className="flex flex-col h-full max-h-[100dvh] w-full max-w-[480px] mx-auto bg-terminal-bg text-terminal-ink overflow-hidden relative shadow-2xl md:border-x md:border-terminal-line/40"
+        ref={workspaceRef}
+        tabIndex={-1}
+        role="region"
+        aria-label="Cipher terminal"
+        className={styles.workspace}
         data-surface="terminal"
       >
         {/* CRT Scanline Layer (3% opacity) */}
@@ -695,8 +732,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
           usedAttempts={usedAttempts}
           elapsedSeconds={elapsedSeconds}
           onOpenLegend={() => setIsLegendOpen(true)}
-          onExit={isTutorial ? handleExitTutorial : undefined}
-          exitLabel="EXIT TUTORIAL"
+          onExit={isTutorial ? handleExitTutorial : () => setIsQuitModalOpen(true)}
+          exitLabel={isTutorial ? "EXIT TUTORIAL" : "BACK TO MAP"}
           onTogglePause={() => setIsManualPaused((v) => !v)}
           isPaused={isManualPaused}
         />
@@ -711,10 +748,11 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
         />
 
         {/* 3. History (Flex-fills and scrolls, newest at bottom, visible & clear) */}
-        <HistoryList history={history} length={config.digits} />
+        <div className={styles.body} data-testid="terminal-workspace">
+        <section className={styles.history} aria-label="Probe workspace"><HistoryList history={history} length={config.digits} /></section>
 
         {/* 4. Pinned Control Deck */}
-        <div className="flex flex-col shrink-0 w-full z-10 bg-terminal-bg/95 border-t border-terminal-line/40">
+        <div className={styles.deck}>
           {/* Guess Entry Row */}
           <GuessEntry
             digits={config.digits}
@@ -796,6 +834,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
           {/* 6. Keypad (3x4, 56px keys, radius 8, 8px gaps) */}
           <Keypad
+            className={styles.keypad}
             onDigit={handleDigit}
             onBackspace={handleBackspace}
             onSubmit={handleSubmit}
@@ -807,6 +846,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
             assistMode={assistMode}
             onIllegalAttempt={handleIllegalAttempt}
           />
+        </div>
+
         </div>
 
         {/* Clue Legend Drawer */}
@@ -821,6 +862,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
             status={status}
             secret={secret}
             payout={payout}
+            receipt={receipt}
             fine={fine}
             attemptsUsed={usedAttempts}
             maxAttempts={config.attempts}
@@ -902,13 +944,8 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
 
         {/* Manual Pause Blur & Mask Overlay */}
         {isManualPaused && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="terminal-pause-title"
-            data-testid="terminal-pause-overlay"
-            className="absolute inset-0 z-40 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center select-none"
-          >
+          <Modal label="Breach paused" onClose={() => setIsManualPaused(false)} className="bg-terminal-panel text-terminal-ink max-w-sm">
+            <div data-testid="terminal-pause-overlay">
             <div className="max-w-xs w-full p-6 rounded-[8px] bg-terminal-panel border border-terminal-phosphor shadow-card flex flex-col items-center gap-4">
               <div className="w-12 h-12 rounded-full border border-terminal-phosphor bg-terminal-phosphor/10 flex items-center justify-center text-terminal-phosphor text-xl font-bold animate-pulse">
                 ⏸
@@ -934,17 +971,24 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
                 <span>RESUME BREACH</span>
               </button>
             </div>
-          </div>
+            </div>
+          </Modal>
+        )}
+
+        {isQuitModalOpen && (
+          <Modal label="Leave this breach?" onClose={() => setIsQuitModalOpen(false)} className="bg-panel-light text-ink max-w-sm"
+            footer={<div className="flex flex-col gap-2">
+              <button type="button" className="min-h-[44px] rounded-md border border-line bg-panel px-4 font-data font-bold" onClick={() => setIsQuitModalOpen(false)}>Keep cracking</button>
+              <button type="button" className="min-h-[44px] rounded-md border border-danger bg-danger px-4 text-white font-data font-bold" onClick={() => router.push('/map')}>Leave breach</button>
+            </div>}>
+            <h2 className="font-heading text-xl">Leave this breach?</h2>
+            <p className="mt-2 text-sm text-ink-muted">Return to the City Map. Leaving does not complete this target or earn its completion reward.</p>
+          </Modal>
         )}
 
         {/* Exit Tutorial Confirmation Modal */}
         {showExitTutorialModal && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="exit-tutorial-title"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-data select-none"
-          >
+          <Modal label="Exit Nix tutorial?" onClose={() => setShowExitTutorialModal(false)} className="bg-panel-light text-ink max-w-sm">
             <div className="w-full max-w-xs rounded-md border border-line bg-panel-light p-5 shadow-card text-ink flex flex-col gap-4 text-center">
               <div className="flex flex-col items-center gap-1.5">
                 <div className="w-10 h-10 rounded-full bg-danger/20 border border-danger/40 flex items-center justify-center text-danger font-bold text-lg">
@@ -977,7 +1021,7 @@ export default function TerminalScreen({ nodeId }: { nodeId: string }) {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )}
       </div>
     </TerminalFrame>

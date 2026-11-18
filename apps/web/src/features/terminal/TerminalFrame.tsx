@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import styles from './TerminalWorkspace.module.css';
 import dynamic from 'next/dynamic';
 import Tier1VendingStatic from './skins/Tier1Vending';
 import Tier2AtmStatic from './skins/Tier2Atm';
@@ -56,12 +57,12 @@ export const TerminalFrame: React.FC<TerminalFrameProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden select-none">
+    <div className={styles.frame}>
       {/* Dynamic Device Chassis Skin */}
-      {renderSkin()}
+      <div className={styles.trim} aria-hidden="true">{renderSkin()}</div>
 
       {/* Terminal Core Content (same layout bounds for all skins to prevent layout shifts) */}
-      <div className="relative z-10 flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      <div className={styles.core}>
         {children}
       </div>
     </div>

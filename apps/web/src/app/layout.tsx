@@ -22,7 +22,8 @@ export default function RootLayout({
     <html lang="en" className={`${fontHeading.variable} ${fontData.variable}`}>
       <body className="bg-panel text-ink overflow-hidden w-full h-[100dvh] min-h-[100dvh] max-h-[100dvh] fixed inset-0 font-data text-[14px]">
         <AppShell>
-          <div className="mx-auto w-full max-w-[480px] h-[100dvh] min-h-[100dvh] max-h-[100dvh] bg-panel text-ink flex flex-col relative sm:border-x sm:border-line overflow-hidden">
+          <div className="app-workspace mx-auto w-full h-[100dvh] min-h-[100dvh] max-h-[100dvh] bg-panel text-ink flex flex-col relative sm:border-x sm:border-line overflow-hidden">
+            <a href="#game-content" className="skip-link">Skip to game content</a>
             {/* Network & Mid-duel status banner */}
             <ConnectionBanner />
 
@@ -30,7 +31,7 @@ export default function RootLayout({
             <ConditionalHud />
 
             {/* Main Content Area */}
-            <main className="flex-1 min-h-0 overflow-hidden relative z-0 flex flex-col">
+            <main id="game-content" tabIndex={-1} className="flex-1 min-h-0 min-w-0 overflow-hidden relative z-0 flex flex-col outline-none">
               {children}
             </main>
 

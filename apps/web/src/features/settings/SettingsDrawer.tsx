@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { BottomDrawer } from '@/components/ui/BottomDrawer';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { ClueMarks } from '@/features/terminal/components/ClueMarks';
 
 interface SettingsDrawerProps {
   isOpen?: boolean;
@@ -101,7 +102,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             <img src="/icons/icon-settings.svg" alt="" className="w-6 h-6 object-contain pointer-events-none" aria-hidden="true" />
             <div>
               <h2 className="font-heading text-title tracking-wide text-ink">SETTINGS</h2>
-              <p className="type-label text-[10px] text-ink-muted">DECK HARDWARE & ACCOUNT PARAMS</p>
+              <p className="type-label text-[10px] text-ink-muted">Gameplay, accessibility, audio & account</p>
             </div>
           </div>
           <Button
@@ -115,14 +116,14 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
         )}>
         {/* Status notification toast */}
         {statusMessage && (
-          <div className="bg-accent/15 border-b border-accent px-4 py-2 text-accent-text text-xs flex items-center justify-between">
+          <div role="status" aria-live="polite" className="bg-accent/15 border-b border-accent px-4 py-2 text-accent-text text-xs flex items-center justify-between">
             <span>{statusMessage}</span>
             <Button
               variant="ghost"
               compact
               onClick={() => setStatusMessage(null)}
               aria-label="Dismiss status notification"
-              className="text-accent-text hover:text-ink px-2 h-auto min-h-[32px] border-none flex items-center justify-center p-1"
+              className="text-accent-text hover:text-ink px-2 h-auto min-h-[44px] border-none flex items-center justify-center p-1"
             >
               <img src="/icons/icon-close.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
             </Button>
@@ -132,6 +133,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
         {/* Scrollable Content */}
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-12 pb-safe-bottom space-y-6">
           
+          <h3 className="font-heading text-xl border-b border-line pb-2">Gameplay</h3>
           {/* 1. Rookie Assist vs Pro Mode */}
           <section className="space-y-2 border-b border-line pb-4">
             <div className="flex items-center justify-between">
@@ -140,8 +142,9 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 {store.rookieAssist ? 'ROOKIE ASSIST' : 'PRO MODE'}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div role="group" aria-label="Hacking console mode" className="grid grid-cols-2 gap-2">
               <Button
+                aria-pressed={store.rookieAssist}
                 variant={store.rookieAssist ? 'primary' : 'secondary'}
                 onClick={() => {
                   store.saveSettings({ rookieAssist: true });
@@ -149,9 +152,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 }}
                 className="text-xs"
               >
-                Rookie Assist
+                {store.rookieAssist && <span aria-hidden="true">✓ </span>}Rookie Assist
               </Button>
               <Button
+                aria-pressed={!store.rookieAssist}
                 variant={!store.rookieAssist ? 'primary' : 'secondary'}
                 onClick={() => {
                   store.saveSettings({ rookieAssist: false });
@@ -159,7 +163,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 }}
                 className="text-xs"
               >
-                Pro Mode
+                {!store.rookieAssist && <span aria-hidden="true">✓ </span>}Pro Mode
               </Button>
             </div>
             <p className="text-xs text-ink-muted leading-relaxed">
@@ -169,6 +173,36 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             </p>
           </section>
 
+          {/* 5. Daily Spend Limit */}
+          <section className="space-y-2 border-b border-line pb-4">
+            <div className="flex items-center justify-between">
+              <label className="type-label">DAILY SPEND LIMIT</label>
+              <span className="text-xs font-bold text-money-text">
+                {store.dailySpendLimit ? `$${store.dailySpendLimit.toLocaleString()}` : 'UNLIMITED'}
+              </span>
+            </div>
+            <div role="group" aria-label="Daily spend limit" className="grid grid-cols-4 gap-2">
+              {[null, 1000, 5000, 20000].map((limit) => (
+                <Button
+                  key={limit === null ? 'none' : limit}
+                  aria-pressed={store.dailySpendLimit === limit}
+                  variant={store.dailySpendLimit === limit ? 'primary' : 'secondary'}
+                  onClick={() => {
+                    store.saveSettings({ dailySpendLimit: limit });
+                    soundFx.playUiBeep();
+                  }}
+                  className="text-xs px-1"
+                >
+                  {limit === null ? 'NONE' : `$${limit / 1000}K`}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-ink-muted leading-relaxed">
+              Hardware spending governor to prevent rapid syndicate balance depletion during high-stakes breaches.
+            </p>
+          </section>
+
+          <h3 className="font-heading text-xl border-b border-line pb-2">Accessibility</h3>
           {/* 2. Reduced Motion Override */}
           <section className="space-y-2 border-b border-line pb-4">
             <div className="flex items-center justify-between">
@@ -177,10 +211,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 {store.reducedMotion}
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div role="group" aria-label="Motion preference" className="grid grid-cols-3 gap-2">
               {(['system', 'reduced', 'full'] as ReducedMotionMode[]).map((mode) => (
                 <Button
                   key={mode}
+                  aria-pressed={store.reducedMotion === mode}
                   variant={store.reducedMotion === mode ? 'primary' : 'secondary'}
                   onClick={() => {
                     store.saveSettings({ reducedMotion: mode });
@@ -188,7 +223,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   }}
                   className="text-xs px-2"
                 >
-                  {mode}
+                  {store.reducedMotion === mode && <span aria-hidden="true">✓ </span>}{mode}
                 </Button>
               ))}
             </div>
@@ -207,6 +242,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button
+                aria-pressed={!store.colorBlindMode}
                 variant={!store.colorBlindMode ? 'primary' : 'secondary'}
                 onClick={() => {
                   store.saveSettings({ colorBlindMode: false });
@@ -214,9 +250,10 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 }}
                 className="text-xs px-3"
               >
-                Standard (Color+Shape)
+                {!store.colorBlindMode && <span aria-hidden="true">✓ </span>}Standard (Color+Shape)
               </Button>
               <Button
+                aria-pressed={store.colorBlindMode}
                 variant={store.colorBlindMode ? 'primary' : 'secondary'}
                 onClick={() => {
                   store.saveSettings({ colorBlindMode: true });
@@ -224,14 +261,22 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 }}
                 className="text-xs px-3"
               >
-                Shape-Only
+                {store.colorBlindMode && <span aria-hidden="true">✓ </span>}Shape-Only
               </Button>
             </div>
             <p className="text-xs text-ink-muted leading-relaxed">
-              When Shape-Only is active, clue history uses high-contrast geometric monochrome shapes (solid diamond for Pot, open ring for Pan, dash for Miss).
+              Counts summarize the whole guess, not matching digit positions. Shape-Only uses monochrome symbols as well as labels.
             </p>
           </section>
 
+          <div data-testid="settings-clue-preview" className="border border-line rounded-sm p-3 bg-panel-light space-y-2">
+            <p className="font-bold text-sm">Live clue preview</p>
+            <div data-surface="terminal" className="bg-terminal-panel border border-terminal-line rounded-sm p-3 text-terminal-ink">
+              <ClueMarks pans={1} pots={1} length={3} />
+            </div>
+            <p className="text-xs leading-relaxed text-ink-muted">Pan: 1 correct digit in the correct slot. Pot: 1 correct digit in a different slot. Miss: 1 digit absent from the code.</p>
+          </div>
+          <h3 className="font-heading text-xl border-b border-line pb-2">Audio</h3>
           {/* 4. Audio Sliders */}
           <section className="space-y-3 border-b border-line pb-4">
             <div className="flex items-center justify-between">
@@ -243,7 +288,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   soundFx.playKeystroke();
                   setTimeout(() => soundFx.playUiBeep(), 120);
                 }}
-                className="text-xs text-accent-text border-none h-auto min-h-[32px] px-2"
+                className="text-xs text-accent-text border-none h-auto min-h-[44px] px-2"
               >
                 Test Sound
               </Button>
@@ -268,7 +313,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                   }
                 }}
                 data-testid="master-mute-toggle"
-                className="text-xs px-3 min-h-[36px]"
+                className="text-xs px-3 min-h-[44px]"
               >
                 {store.masterMute ? 'MUTED' : 'UNMUTED'}
               </Button>
@@ -286,7 +331,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 max="100"
                 value={store.audio.keystrokes}
                 onChange={(e) => handleAudioChange('keystrokes', parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-panel rounded-lg appearance-none cursor-pointer accent-accent"
+                className="w-full min-h-[44px] bg-panel rounded-lg cursor-pointer accent-accent"
                 aria-label="Keystroke audio volume"
               />
             </div>
@@ -303,7 +348,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 max="100"
                 value={store.audio.ui}
                 onChange={(e) => handleAudioChange('ui', parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-panel rounded-lg appearance-none cursor-pointer accent-accent"
+                className="w-full min-h-[44px] bg-panel rounded-lg cursor-pointer accent-accent"
                 aria-label="UI sound audio volume"
               />
             </div>
@@ -320,40 +365,13 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
                 max="100"
                 value={store.audio.ambient}
                 onChange={(e) => handleAudioChange('ambient', parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-panel rounded-lg appearance-none cursor-pointer accent-accent"
+                className="w-full min-h-[44px] bg-panel rounded-lg cursor-pointer accent-accent"
                 aria-label="Ambient audio volume"
               />
             </div>
           </section>
 
-          {/* 5. Daily Spend Limit */}
-          <section className="space-y-2 border-b border-line pb-4">
-            <div className="flex items-center justify-between">
-              <label className="type-label">DAILY SPEND LIMIT</label>
-              <span className="text-xs font-bold text-money-text">
-                {store.dailySpendLimit ? `$${store.dailySpendLimit.toLocaleString()}` : 'UNLIMITED'}
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[null, 1000, 5000, 20000].map((limit) => (
-                <Button
-                  key={limit === null ? 'none' : limit}
-                  variant={store.dailySpendLimit === limit ? 'primary' : 'secondary'}
-                  onClick={() => {
-                    store.saveSettings({ dailySpendLimit: limit });
-                    soundFx.playUiBeep();
-                  }}
-                  className="text-xs px-1"
-                >
-                  {limit === null ? 'NONE' : `$${limit / 1000}K`}
-                </Button>
-              ))}
-            </div>
-            <p className="text-xs text-ink-muted leading-relaxed">
-              Hardware spending governor to prevent rapid syndicate balance depletion during high-stakes breaches.
-            </p>
-          </section>
-
+          <h3 className="font-heading text-xl border-b border-line pb-2">Account</h3>
           {/* 6. Account Actions */}
           <section className="space-y-3 pt-1 pb-4">
             <div className="flex items-center justify-between">

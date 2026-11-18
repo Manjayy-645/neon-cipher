@@ -1,0 +1,452 @@
+[
+  {
+    "size": "360x740",
+    "screen": "city",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "city-target",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "terminal",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "terminal-probe",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "battle-locked",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "mission-requirement",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "mission-briefing",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "coop-preflight",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "coop-console",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "coop-probe",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "rig",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "market",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "purchase",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "profile",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "profile-skills",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "daily-preview",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "archive-preview",
+    "result": "passed"
+  },
+  {
+    "size": "360x740",
+    "screen": "settings",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "city",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "city-target",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "terminal",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "terminal-probe",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "battle-locked",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "mission-requirement",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "mission-briefing",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "coop-preflight",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "coop-console",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "coop-probe",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "rig",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "market",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "purchase",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "profile",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "profile-skills",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "daily-preview",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "archive-preview",
+    "result": "passed"
+  },
+  {
+    "size": "390x844",
+    "screen": "settings",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "city",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "city-target",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "terminal",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "terminal-probe",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "battle-locked",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "mission-requirement",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "mission-briefing",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "coop-preflight",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "coop-console",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "coop-probe",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "rig",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "market",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "purchase",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "profile",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "profile-skills",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "daily-preview",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "archive-preview",
+    "result": "passed"
+  },
+  {
+    "size": "844x390",
+    "screen": "settings",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "city",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "city-target",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "terminal",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "terminal-probe",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "battle-locked",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "mission-requirement",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "mission-briefing",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "coop-preflight",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "coop-console",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "coop-probe",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "rig",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "market",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "purchase",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "profile",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "profile-skills",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "daily-preview",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "archive-preview",
+    "result": "passed"
+  },
+  {
+    "size": "1366x768",
+    "screen": "settings",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "city",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "city-target",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "terminal",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "terminal-probe",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "battle-locked",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "mission-requirement",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "mission-briefing",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "coop-preflight",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "coop-console",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "coop-probe",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "rig",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "market",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "purchase",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "profile",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "profile-skills",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "daily-preview",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "archive-preview",
+    "result": "passed"
+  },
+  {
+    "size": "1440x1000",
+    "screen": "settings",
+    "result": "passed"
+  }
+]

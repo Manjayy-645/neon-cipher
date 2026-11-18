@@ -106,4 +106,21 @@ describe('Bug 1 Fix: Active Player Profile & Player-Store Sync', () => {
     expect(screen.getByText('$1,200')).toBeDefined();
     expect(screen.getByText(/175 \/ 1000 XP/)).toBeDefined();
   });
+  it('uses the active callsign even if a fetched dossier belongs to another sample identity', () => {
+    usePlayerStore.getState().setCallsign('CURRENT_PLAYER');
+    render(<DeckerProfileCard profile={{ ...dummyBaseProfile, handle: 'SAMPLE_IDENTITY' }} onUpdateCosmetics={() => {}} />);
+    expect(screen.getByText('CURRENT_PLAYER')).toBeDefined();
+    expect(screen.queryByText('SAMPLE_IDENTITY')).toBeNull();
+    expect(screen.queryByText('Grid Veteran')).toBeNull();
+    expect(screen.queryByText('0s')).toBeNull();
+    expect(screen.getAllByText('—')).toHaveLength(2);
+  });
+
+  it('matches the HUD handle when an older callsign remains in player state', () => {
+    usePlayerStore.setState({ handle: 'VISIBLE_PLAYER', callsign: 'OLD_CALLSIGN' });
+    render(<DeckerProfileCard profile={dummyBaseProfile} onUpdateCosmetics={() => {}} />);
+    expect(screen.getByRole('heading', { name: 'VISIBLE_PLAYER' })).toBeInTheDocument();
+    expect(screen.queryByText('OLD_CALLSIGN')).toBeNull();
+  });
+
 });

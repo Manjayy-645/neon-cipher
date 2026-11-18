@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { getProfileReturnPath } from '@/lib/profile-navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DeckerProfileCard } from '@/features/profile/DeckerProfileCard';
 import { SkillTreeView } from '@/features/profile/SkillTreeView';
@@ -12,10 +15,12 @@ import { Button } from '@/components/ui/Button';
 import { usePlayerStore } from '@/stores/player-store';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [data, setData] = useState<ProfileAllData | null>(null);
   const [activeSection, setActiveSection] = useState<'profile' | 'skills' | 'factions' | 'daily' | 'extras'>('profile');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isRespeccing, setIsRespeccing] = useState(false);
   const [unlockingSkillId, setUnlockingSkillId] = useState<string | null>(null);
 
@@ -24,28 +29,21 @@ export default function ProfilePage() {
 
   const effectiveProfile = React.useMemo(() => {
     if (!data?.profile) return null;
-    const isCustomProfilePassed = (data.profile.rank?.level ?? 1) > 1 || (data.profile.stats?.totalHacks ?? 0) > 0 || (data.profile.handle && data.profile.handle !== handle && data.profile.handle !== 'ZERO_COOL');
-    const isHardcodedMock = data.profile.handle === 'ZERO_COOL' && data.profile.rank?.level === 7 && data.profile.stats?.totalCreditsEarned === 38400;
-
-    const useStore = !isCustomProfilePassed || isHardcodedMock || (handle && handle !== 'ZERO_COOL') || breachesTotal > 0;
-
-    const activeHandle = useStore ? (callsign || handle || data.profile.handle) : data.profile.handle;
-    const activeAvatar = (useStore && avatarUrl) ? avatarUrl : (data.profile.avatarUrl || avatarUrl);
-    const won = useStore ? breachesWon : (data.profile.stats?.successfulBreaches ?? breachesWon);
-    const total = useStore ? breachesTotal : (data.profile.stats?.totalHacks ?? breachesTotal);
+    const activeHandle = handle || callsign;
+    const won = breachesWon;
+    const total = breachesTotal;
     const failed = Math.max(0, total - won);
-    const winRate = total > 0 ? Math.round((won / total) * 100) : (data.profile.stats?.winRatePercent ?? 0);
-    const earnings = useStore ? careerEarnings : (data.profile.stats?.totalCreditsEarned ?? careerEarnings);
+    const winRate = total > 0 ? Math.round((won / total) * 100) : 0;
 
     return {
       ...data.profile,
       handle: activeHandle,
-      avatarUrl: activeAvatar,
+      avatarUrl: avatarUrl || data.profile.avatarUrl,
       rank: {
         ...data.profile.rank,
-        level: useStore ? level : (data.profile.rank?.level ?? level),
-        currentXp: useStore ? xp : (data.profile.rank?.currentXp ?? xp),
-        nextLevelXp: useStore ? nextLevelXp : (data.profile.rank?.nextLevelXp ?? nextLevelXp),
+        level,
+        currentXp: xp,
+        nextLevelXp,
       },
       stats: {
         ...data.profile.stats,
@@ -53,7 +51,7 @@ export default function ProfilePage() {
         totalHacks: total,
         failedBreaches: failed,
         winRatePercent: winRate,
-        totalCreditsEarned: earnings,
+        totalCreditsEarned: careerEarnings,
       },
     };
   }, [data, callsign, handle, level, xp, nextLevelXp, breachesWon, breachesTotal, careerEarnings, avatarUrl]);
@@ -64,13 +62,14 @@ export default function ProfilePage() {
       setData(res);
     } catch (err: any) {
       console.error(err);
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    profileService.getAll().then(setData).catch(console.error).finally(() => setIsLoading(false));
+    profileService.getAll().then(setData).catch(() => setLoadError(true)).finally(() => setIsLoading(false));
   }, []);
 
   const handleUpdateCosmetics = async (cosmetics: any) => {
@@ -148,7 +147,7 @@ export default function ProfilePage() {
       if (data) {
         setData({ ...data, dailyBreach: updated });
       }
-      setStatusMessage(`Daily Breach submitted! Rank #${updated.userResult?.rank}`);
+      setStatusMessage(`Preview result saved. Sample rank #${updated.userResult?.rank}`);
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: any) {
       setStatusMessage(err.message || 'Failed to submit daily breach.');
@@ -165,6 +164,15 @@ export default function ProfilePage() {
       console.error(err);
     }
   };
+
+  if (loadError && !data) {
+    return <div className="scene-ground h-full overflow-y-auto p-6 flex flex-col items-start justify-center gap-4">
+      <h1 className="font-heading text-2xl">Profile unavailable</h1>
+      <p className="text-sm text-ink-muted" role="alert">The dossier could not be loaded. Your current game progress is unchanged.</p>
+      <Button onClick={() => { setLoadError(false); setIsLoading(true); void loadData(); }}>Try again</Button>
+      <Link href="/map" onClick={(event) => { event.preventDefault(); router.push(getProfileReturnPath()); }} className="min-h-[44px] inline-flex items-center underline text-accent-text">Back to previous screen</Link>
+    </div>;
+  }
 
   if (isLoading || !data) {
     return (
@@ -184,80 +192,31 @@ export default function ProfilePage() {
   }
 
   const SECTIONS = [
-    {
-      id: 'profile' as const,
-      label: '8.0 Profile',
-      tag: 'DOSSIER',
-      icon: (
-        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-    },
-    {
-      id: 'skills' as const,
-      label: '8.1 Skills',
-      tag: `${data.skillTree.availablePoints} SP`,
-      icon: (
-        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      ),
-    },
-    {
-      id: 'factions' as const,
-      label: '8.2 Factions',
-      tag: 'DIPLOMACY',
-      icon: (
-        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'daily' as const,
-      label: '8.3 Daily',
-      tag: data.dailyBreach?.userCompleted ? '✓ DONE' : 'READY',
-      icon: (
-        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="22" y1="12" x2="18" y2="12" />
-          <line x1="6" y1="12" x2="2" y2="12" />
-          <line x1="12" y1="6" x2="12" y2="2" />
-          <line x1="12" y1="22" x2="12" y2="18" />
-        </svg>
-      ),
-    },
-    {
-      id: 'extras' as const,
-      label: '8.4 Extras',
-      tag: `${data.notifications?.filter((n) => !n.read).length || 0} NEW`,
-      icon: (
-        <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ),
-    },
+    { id: 'profile' as const, label: 'Profile', tag: 'Dossier' },
+    { id: 'skills' as const, label: 'Skills', tag: `${data.skillTree.availablePoints} SP` },
+    { id: 'factions' as const, label: 'Factions', tag: 'Contracts' },
+    { id: 'daily' as const, label: 'Daily', tag: 'Preview' },
+    { id: 'extras' as const, label: 'Network & extras', tag: 'Sample archive' },
   ];
 
   return (
-    <div className="scene-ground scene-arrive h-full w-full overflow-y-auto min-h-0 p-3 sm:p-5 font-data text-ink space-y-4 pb-24 pb-safe-bottom">
+    <div className="scene-ground scene-arrive h-full w-full overflow-y-auto min-h-0 p-3 sm:p-5 font-data text-ink space-y-4 pb-6 pb-safe-bottom lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-4 lg:space-y-0 lg:content-start">
+      <Link href="/map" onClick={(event) => { event.preventDefault(); router.push(getProfileReturnPath()); }} className="lg:col-span-2 inline-flex items-center min-h-[44px] text-sm text-accent-text underline underline-offset-4">← Back to previous screen</Link>
       {/* Top Dossier Command Bar */}
-      <div className="bg-panel-light border border-line rounded-md p-3 shadow-card flex flex-wrap items-center justify-between gap-3">
+      <div className="lg:col-span-2 bg-panel-light border border-line rounded-md p-3 shadow-card flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse shrink-0" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-heading text-sm sm:text-base font-bold text-ink tracking-wide uppercase truncate">
-                OPERATIVE DOSSIER
+                Profile dossier
               </span>
               <span className="type-label text-[10px] bg-accent/15 text-accent-text border border-accent/30 px-1.5 py-0.5 rounded-sm font-bold shrink-0">
                 LVL {effectiveProfile?.rank.level ?? data.profile.rank.level}
               </span>
             </div>
             <p className="text-[11px] text-ink-muted truncate">
-              {effectiveProfile?.rank.title ?? data.profile.rank.title} • GRID STATUS: ENCRYPTED & ACTIVE
+              {effectiveProfile?.rank.title ?? data.profile.rank.title} • Player record
             </p>
           </div>
         </div>
@@ -278,52 +237,35 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Top Section Navigation Tabs */}
-      <div className="sticky top-0 z-20 bg-panel/95 backdrop-blur-sm border-b border-line pb-2.5 pt-1 -mx-3 px-3 sm:-mx-5 sm:px-5">
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          {SECTIONS.map((tab) => {
-            const isActive = activeSection === tab.id;
-            return (
-              <Button
-                key={tab.id}
-                type="button"
-                variant={isActive ? 'primary' : 'secondary'}
-                compact
-                onClick={() => setActiveSection(tab.id)}
-                className={`flex-none min-h-[44px] px-3 transition-all duration-150 ${
-                  isActive
-                    ? 'ring-1 ring-accent/40 shadow-sm'
-                    : 'hover:border-ink/40'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.icon}
-                  <span className="font-bold tracking-wide">{tab.label}</span>
-                  <span
-                    className={`type-label text-[9px] px-1 py-0.2 rounded-sm border ${
-                      isActive
-                        ? 'bg-ink/10 text-ink border-ink/20'
-                        : 'bg-panel-light text-ink-muted border-line'
-                    }`}
-                  >
-                    {tab.tag}
-                  </span>
-                </span>
-              </Button>
-            );
-          })}
+      <nav aria-label="Profile sections" className="lg:col-start-1 lg:row-span-3 lg:sticky lg:top-0 lg:self-start bg-panel-light border border-line rounded-md p-3">
+        <label htmlFor="profile-section" className="type-label block mb-2 lg:hidden">Dossier section</label>
+        <select id="profile-section" value={activeSection}
+          onChange={(event) => setActiveSection(event.target.value as typeof activeSection)}
+          className="lg:hidden w-full min-h-[44px] bg-panel-light border border-line rounded-sm px-3 text-sm text-ink">
+          {SECTIONS.map((section) => <option key={section.id} value={section.id}>{section.label} · {section.tag}</option>)}
+        </select>
+        <div className="hidden lg:flex lg:flex-col gap-2">
+          {SECTIONS.map((section) => (
+            <Button key={section.id} type="button" variant={activeSection === section.id ? 'primary' : 'secondary'}
+              onClick={() => setActiveSection(section.id)} aria-current={activeSection === section.id ? 'page' : undefined}
+              className="min-h-[44px] w-full justify-between text-left">
+              <span>{section.label}</span><span className="text-[10px] normal-case tracking-normal">{section.tag}</span>
+            </Button>
+          ))}
         </div>
-      </div>
+      </nav>
 
       {/* Animated Toast Feedback */}
       <AnimatePresence>
         {statusMessage && (
           <motion.div
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="bg-accent/15 border border-accent/40 px-4 py-2.5 text-accent-text text-xs rounded-sm shadow-sm flex items-center justify-between gap-2"
+            className="lg:col-start-2 bg-accent/15 border border-accent/40 px-4 py-2.5 text-accent-text text-xs rounded-sm shadow-sm flex items-center justify-between gap-2"
           >
             <div className="flex items-center gap-2 min-w-0">
               <svg className="w-4 h-4 shrink-0 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -347,7 +289,7 @@ export default function ProfilePage() {
 
       {/* Screen Sections with Transitions */}
       <AnimatePresence>
-        <div key={activeSection}>
+        <div key={activeSection} className="lg:col-start-2 min-w-0" aria-label={`${SECTIONS.find((section) => section.id === activeSection)?.label} section`}>
           {activeSection === 'profile' && (
             <DeckerProfileCard
               profile={effectiveProfile || data.profile}

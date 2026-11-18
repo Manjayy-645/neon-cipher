@@ -24,6 +24,6 @@ export const DISTRICT_DEFINITIONS: Record<DistrictId, DistrictDefinition> = {
     displayName: 'Commercial Strip',
     zone: 'C',
     tagPosition: { x: 72, y: 36 },
-    unlockHint: 'Cross the bridge before you go poking around there.',
+    unlockHint: 'Complete Chapter 3 for river bridge clearance.',
   },
 };

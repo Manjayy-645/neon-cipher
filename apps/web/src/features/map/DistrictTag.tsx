@@ -48,7 +48,7 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
     }
     if (isLocked) {
       triggerToast(
-        district.unlockHint || 'Commercial Strip is locked. Cross the bridge to access.',
+        district.unlockHint || 'Complete Chapter 3 for Commercial bridge clearance.',
         { type: 'locked' }
       );
       triggerNixSituation('lockedTap');
@@ -95,13 +95,13 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         aria-label={ariaLabel}
-        className={`group relative flex flex-col justify-center min-h-[56px] min-w-[210px] py-[10px] px-[14px] bg-panel-light border border-line rounded-md shadow-card outline-none text-left cursor-pointer transition-transform duration-120 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+        className={`group relative flex flex-col justify-center min-h-[56px] w-[160px] sm:w-[200px] max-w-full py-[10px] px-[14px] bg-panel-light border border-line rounded-md shadow-card outline-none text-left cursor-pointer transition-transform duration-120 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
           showCallToAction ? 'ring-2 ring-accent/40 animate-pulse' : ''
         }`}
       >
         <div className="flex items-start justify-between gap-3 w-full">
           <div className="flex flex-col">
-            <span className="font-heading text-[18px] leading-[21px] font-bold tracking-[0.8px] uppercase text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+            <span className="font-heading text-[16px] sm:text-[18px] leading-[21px] font-bold tracking-[0.8px] uppercase text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
               {district.name}
             </span>
             <span className="font-data text-[12px] leading-[16px] font-semibold text-ink mt-0.5">
@@ -113,7 +113,7 @@ export const DistrictTag: React.FC<DistrictTagProps> = ({
               </span>
             )}
             {isLocked && district.unlockHint && (
-              <span className="font-data text-[11px] font-semibold text-danger-text mt-1 max-w-[150px] truncate">
+              <span className="font-data text-[11px] font-semibold text-danger-text mt-1 max-w-[160px] whitespace-normal">
                 {district.unlockHint}
               </span>
             )}

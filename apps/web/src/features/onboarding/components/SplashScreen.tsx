@@ -126,7 +126,7 @@ export function SplashScreen() {
           NEON CIPHER
         </h1>
         <p className="font-data text-xs text-ink-muted uppercase tracking-[2px] mt-2">
-          Cracking Nodes Across the City
+          Deduce the secret code before the city traces you.
         </p>
       </div>
 
@@ -169,25 +169,31 @@ export function SplashScreen() {
               onClick={handleStart}
               data-testid="splash-start-btn"
               autoFocus
+              aria-describedby="learn-outcome"
             >
-              START
+              LEARN TO CRACK CODES
             </Button>
+            <p id="learn-outcome" className="text-xs text-ink-muted text-center">A guided practice breach with Nix. About two minutes.</p>
             <Button
               variant="ghost"
               size="full"
               onClick={handleKnowGame}
               data-testid="splash-know-game-btn"
+              aria-describedby="check-outcome"
             >
-              I KNOW THIS GAME
+              QUICK SKILLS CHECK
             </Button>
+            <p id="check-outcome" className="text-xs text-ink-muted text-center">The same practice lock, with explanations turned off.</p>
             <Button
               variant="ghost"
               size="full"
               onClick={handleSkipTutorialDirectly}
               data-testid="splash-skip-tutorial-btn"
+              aria-describedby="city-outcome"
             >
-              SKIP TUTORIAL
+              ENTER THE CITY
             </Button>
+            <p id="city-outcome" className="text-xs text-ink-muted text-center">Skip the lesson, mark Chapter 1 complete, and continue to Chapter 2.</p>
           </>
         )}
       </div>

@@ -49,7 +49,7 @@ export function TerminalToolSlots({
           {isTimerFrozen && (
             <div
               data-testid="timer-frozen-status"
-              className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-cyan-950/60 border border-cyan-400 text-cyan-300 text-[10px] font-bold uppercase tracking-wider animate-pulse"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-terminal-panel border border-terminal-phosphor text-terminal-phosphor text-[10px] font-bold uppercase tracking-wider animate-pulse"
             >
               <span>CLOCK FROZEN</span>
             </div>

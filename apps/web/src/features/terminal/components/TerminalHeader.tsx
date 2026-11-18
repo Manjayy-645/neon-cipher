@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import styles from '../TerminalWorkspace.module.css';
 import { AttemptPips } from './AttemptPips';
 import { TimerBar } from './TimerBar';
 import { IceIndicator } from '../IceIndicator';
@@ -33,22 +34,17 @@ export function TerminalHeader({
 }: TerminalHeaderProps) {
   const tierLabel = `TIER ${config.tier} • ${config.allowDuplicates ? 'DUPLICATES' : 'UNIQUE'}`;
 
-  const displayName =
-    nodeId && !nodeName.toLowerCase().includes(nodeId.toLowerCase())
-      ? `${nodeName} (Node: ${nodeId})`
-      : nodeName;
-
   return (
-    <header className="h-[52px] min-h-[52px] sm:h-[56px] sm:min-h-[56px] terminal-compact-strip w-full flex flex-col justify-between bg-terminal-panel/90 border-b border-terminal-line shrink-0 relative">
-      <div className="flex-1 px-4 flex items-center justify-between gap-3">
+    <header className={styles.header} data-testid="terminal-header">
+      <div className={styles.headerLayout}>
         {/* Left: Node Name & Tier Chip */}
-        <div className="flex flex-col justify-center min-w-0">
-          <h1 className="font-heading text-[18px] text-terminal-ink truncate font-medium">
-            {displayName}
+        <div className={styles.identity}>
+          <h1 className={styles.title}>
+            {nodeName}
           </h1>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className={styles.rules}>
             <span className="font-data text-[10px] tracking-wider uppercase px-1.5 py-0.5 rounded-[4px] bg-terminal-bg border border-terminal-line/60 text-terminal-muted">
-              {tierLabel}
+              {tierLabel} · {config.digits} DIGITS
             </span>
             {/* ICE chip slot (display only) */}
             {config.ice && config.ice !== 'None' && (
@@ -58,21 +54,21 @@ export function TerminalHeader({
         </div>
 
         {/* Right: Attempt Pips, Exit Button, Pause Button & Help Button */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className={styles.actions}>
           {onExit && (
             <button
               type="button"
               onClick={onExit}
-              data-testid="exit-tutorial-button"
-              aria-label="Exit tutorial"
-              title="Exit tutorial and return to map"
+              data-testid={exitLabel === 'BACK TO MAP' ? 'leave-breach-button' : 'exit-tutorial-button'}
+              aria-label={exitLabel === 'BACK TO MAP' ? 'Leave breach' : 'Exit tutorial'}
+              title={exitLabel === 'BACK TO MAP' ? 'Leave breach and return to map' : 'Exit tutorial and return to map'}
               className="h-11 min-h-[44px] px-2.5 sm:px-3 rounded-[6px] border border-terminal-line bg-terminal-panel hover:border-terminal-danger hover:text-terminal-danger text-terminal-muted font-data text-xs uppercase font-bold tracking-wider flex items-center gap-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-terminal-phosphor"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-terminal-danger" aria-hidden="true">
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
               <span className="hidden sm:inline">{exitLabel || 'EXIT TUTORIAL'}</span>
-              <span className="sm:hidden">EXIT</span>
+              <span className="sm:hidden">{exitLabel === 'BACK TO MAP' ? 'MAP' : 'EXIT'}</span>
             </button>
           )}
 
@@ -99,14 +95,11 @@ export function TerminalHeader({
                   </>
                 )}
               </svg>
-              <span className="hidden sm:inline">{isPaused ? 'RESUME' : 'PAUSE'}</span>
-              <span className="sm:hidden">{isPaused ? '▶' : '⏸'}</span>
+              <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
+
             </button>
           )}
 
-          {config.attempts != null && (
-            <AttemptPips total={config.attempts} used={usedAttempts} />
-          )}
 
           {/* Nix Pip Button for Clue Legend */}
           <button
@@ -125,8 +118,15 @@ export function TerminalHeader({
             <span className="sr-only">Open Clue Legend</span>
           </button>
         </div>
+        {config.attempts != null && (
+          <div className={styles.attempts}>
+            <span>{usedAttempts} of {config.attempts} attempts used</span>
+            <AttemptPips total={config.attempts} used={usedAttempts} />
+          </div>
+        )}
       </div>
 
+      {nodeId && !nodeName.includes(`Node: ${nodeId}`) && <span className="sr-only">Target reference — Node: {nodeId}</span>}
       {/* Timer Bar (4px, drains left to right, danger under 10s) */}
       {config.timerSeconds != null && (
         <TimerBar

@@ -65,11 +65,24 @@ export const MapOverlay: React.FC<MapOverlayProps> = ({ map, nodes, zoom }) => {
       });
 
       const newDistrictPos: Record<string, { x: number; y: number }> = {};
+      const container = map.getContainer?.();
+      const width = container?.clientWidth || window.innerWidth;
+      const height = container?.clientHeight || window.innerHeight;
+      const halfCard = width < 640 ? 88 : 108;
       DISTRICTS.forEach((district) => {
         const [lng, lat] = percentToLngLat(district.x, district.y);
         const { x, y } = map.project([lng, lat]);
-        newDistrictPos[district.zone] = { x, y };
+        newDistrictPos[district.zone] = {
+          x: Math.max(halfCard, Math.min(width - halfCard, x)),
+          y: Math.max(80, Math.min(height - 80, y)),
+        };
       });
+      const slums = newDistrictPos.S;
+      const commercial = newDistrictPos.C;
+      if (slums && commercial && Math.abs(slums.x - commercial.x) < halfCard * 2 + 8 && Math.abs(slums.y - commercial.y) < 160) {
+        slums.x = halfCard;
+        commercial.x = width - halfCard;
+      }
       setDistrictPositions((prev) => {
         const prevKeys = Object.keys(prev);
         const newKeys = Object.keys(newDistrictPos);

@@ -13,6 +13,7 @@ import { LoadoutSelector } from '@/features/rig/LoadoutSelector';
 import { MapMarker } from '@/features/map/MapMarker';
 import { ChapterSelect } from '@/features/story/ChapterSelect';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { useMapStore } from '@/stores/map-store';
 import { GameNode } from '@/features/map/nodeService';
 import { RigHardwareItem } from '@/app/api/mock/db';
 
@@ -127,7 +128,7 @@ describe('STYLE B2: Interactivity pass for every clickable element', () => {
       expect(tabs).toHaveLength(3);
       expect(tabs[0]).toHaveClass('min-w-0');
       expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-      expect(tabs[0]).toHaveClass('bg-accent', 'text-white');
+      expect(tabs[0]).toHaveClass('bg-accent', 'text-on-accent');
       expect(tabs[1]).toHaveAttribute('aria-selected', 'false');
       expect(tabs[1]).toHaveClass('bg-panel-light', 'text-ink');
     });
@@ -217,6 +218,8 @@ describe('STYLE B2: Interactivity pass for every clickable element', () => {
     });
 
     it('MapMarker has scale 0.95 tap state, Enter/Space support, and triggers toast when locked', () => {
+      useMapStore.setState({ unlocks: { bridge: false }, selectedNodeId: null, activeNodeId: null });
+      useCampaignStore.setState({ unlocks: { bridge: false, blackMarket: false, onlinePlay: false } });
       const mockNode: GameNode = {
         id: 'node-test',
         name: 'Harbor Relay',
@@ -252,7 +255,11 @@ describe('STYLE B2: Interactivity pass for every clickable element', () => {
 
       const toast = screen.getByRole('status');
       expect(toast).toBeInTheDocument();
-      expect(toast).toHaveTextContent('Harbor Relay is locked: Complete Chapter 2 to gain district clearance.');
+      expect(toast).toHaveTextContent('Harbor Relay is locked: Complete Chapter 3 to gain district clearance.');
+      // Inspection is allowed; selecting the marker must never grant bridge access.
+      expect(useMapStore.getState().selectedNodeId).toBe('node-test');
+      expect(useMapStore.getState().unlocks.bridge).toBe(false);
+      expect(useCampaignStore.getState().unlocks.bridge).toBe(false);
     });
   });
 
@@ -295,7 +302,12 @@ describe('STYLE B2: Interactivity pass for every clickable element', () => {
 
       expect(screen.getByText('Optical Buffer')).toBeInTheDocument();
 
-      fireEvent.keyDown(window, { key: 'Escape' });
+      // Native dialogs handle Escape through the cancel event. jsdom does not
+      // synthesize that browser default action from a window keydown.
+      const dialog = screen.getByRole('dialog', { name: 'Hardware diagnostics' });
+      expect(dialog).toHaveAttribute('open');
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      fireEvent(dialog, new Event('cancel', { cancelable: true }));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 

@@ -75,11 +75,11 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     expect(sheet).toHaveStyle({ bottom: '0px', height: '500px' });
   });
 
-  it('renders handle with 44x5px pill centered within a 28px tall touch zone', async () => {
+  it('renders handle with 44x5px pill centered within a 44px tall touch zone', async () => {
     await renderSheet();
     const handleZone = screen.getByTestId('sheet-handle-zone');
     expect(handleZone).toBeInTheDocument();
-    expect(handleZone).toHaveClass('h-[28px]', 'flex', 'items-center', 'justify-center');
+    expect(handleZone).toHaveClass('h-[44px]', 'flex', 'items-center', 'justify-center');
     expect(handleZone).toHaveAttribute('role', 'button');
     expect(handleZone).toHaveAttribute('aria-label', 'Toggle node sheet size');
 
@@ -125,7 +125,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     const jackInBtn = screen.getByTestId('jack-in-button');
     expect(jackInBtn).toBeInTheDocument();
     expect(jackInBtn).toHaveTextContent('JACK IN');
-    expect(jackInBtn).toHaveClass('min-h-[48px]', 'bg-accent', 'text-white', 'rounded-[8px]', 'font-data', 'text-[15px]', 'tracking-[3px]');
+    expect(jackInBtn).toHaveClass('min-h-[48px]', 'bg-accent', 'text-on-accent', 'rounded-[8px]', 'font-data', 'text-[15px]', 'tracking-[3px]');
     expect(jackInBtn).toHaveAttribute('data-tutorial', 'jack-in');
     expect(jackInBtn).not.toBeDisabled();
   });
@@ -294,7 +294,7 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     expect(screen.getByText('TRACE RISK')).toBeInTheDocument();
     expect(screen.getByText('10%')).toBeInTheDocument();
     expect(screen.getByText('RECENT ATTEMPTS')).toBeInTheDocument();
-    expect(screen.getByText('3 FAILED')).toBeInTheDocument();
+    expect(screen.getByText('Not recorded')).toBeInTheDocument();
     expect(screen.getByText('RIVAL ACTIVITY')).toBeInTheDocument();
     expect(screen.getByText('NONE DETECTED')).toBeInTheDocument();
   });
@@ -322,4 +322,21 @@ describe('STYLE S7: Node Bottom Sheet', () => {
     });
     expect(screen.getByTestId('node-sheet-peek')).toBeInTheDocument();
   });
+  it('uses a full dossier on desktop even when mobile state is collapsed', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(min-width: 1024px)', media: query,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    }));
+    try {
+      useMapStore.setState({ sheetHeight: 76, sheetState: 'peek' });
+      const { unmount } = await renderSheet();
+      expect(screen.getByRole('region', { name: 'Rusty Soda Machine target dossier' })).toHaveStyle({ height: '100%' });
+      expect(screen.getByTestId('jack-in-button')).toBeEnabled();
+      expect(screen.getByTestId('expanded-specs')).toBeInTheDocument();
+      unmount();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
 });

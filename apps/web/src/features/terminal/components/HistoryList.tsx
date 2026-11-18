@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GuessRecord, describeGuess } from '@neon-cipher/game-rules';
 import { GuessRow } from './GuessRow';
+import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 
 interface HistoryListProps {
   history: GuessRecord[];
@@ -10,6 +11,7 @@ interface HistoryListProps {
 }
 
 export function HistoryList({ history, length }: HistoryListProps) {
+  const reducedMotion = usePrefersReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
@@ -18,11 +20,11 @@ export function HistoryList({ history, length }: HistoryListProps) {
   const scrollToBottom = useCallback((smooth = true) => {
     if (bottomRef.current && typeof bottomRef.current.scrollIntoView === 'function') {
       bottomRef.current.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'auto',
+        behavior: smooth && !reducedMotion ? 'smooth' : 'auto',
         block: 'end',
       });
     }
-  }, []);
+  }, [reducedMotion]);
 
   // Check scroll position to display Jump to Latest pill
   const handleScroll = () => {
@@ -41,7 +43,7 @@ export function HistoryList({ history, length }: HistoryListProps) {
 
   return (
     <div
-      className="relative flex-1 min-h-0 min-h-[160px] sm:min-h-[220px] w-full flex flex-col justify-end overflow-hidden"
+      className="relative flex-1 min-h-0 w-full flex flex-col justify-end overflow-hidden"
       data-tutorial="history"
     >
       {/* Screen reader polite live region for new results */}
@@ -74,9 +76,10 @@ export function HistoryList({ history, length }: HistoryListProps) {
               CIPHER TRACE ACTIVE
             </div>
             <p className="font-data text-xs text-terminal-ink leading-relaxed">
-              Enter <span className="font-bold text-terminal-phosphor">{length} digits</span> below to probe the target cipher.
+              Enter <span className="font-bold text-terminal-phosphor">{length} digits</span> to probe the target cipher.
             </p>
-            <div className="flex items-center gap-3 pt-2 text-[10px] font-data text-terminal-muted border-t border-terminal-line/30 w-full justify-center">
+            <p className="text-[11px] text-terminal-muted leading-relaxed">Clues are total counts, not hints for the digit above each mark.</p>
+            <div className="flex flex-wrap items-center gap-3 pt-2 text-[10px] font-data text-terminal-muted border-t border-terminal-line/30 w-full justify-center">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-terminal-phosphor inline-block" />
                 <span className="text-terminal-ink font-semibold">PAN</span>: Exact

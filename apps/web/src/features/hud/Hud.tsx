@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { usePlayerStore } from '../../stores/player-store';
 import { useSettingsStore } from '../../stores/settings-store';
+import { getProfileReturnPath, rememberProfileOrigin } from '@/lib/profile-navigation';
 import { Button } from '@/components/ui/Button';
 
 import { CITY_NAME } from '@neon-cipher/game-rules';
@@ -24,8 +25,9 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
 
   const handleToggleProfile = () => {
     if (isProfileActive) {
-      router.back();
+      router.push(getProfileReturnPath());
     } else {
+      rememberProfileOrigin(pathname);
       router.push('/profile');
     }
   };
@@ -35,9 +37,9 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
   const activeSegments = Math.round((clampedHeat / 100) * heatSegments);
 
   return (
-    <header className="min-h-[56px] h-[calc(56px_+_max(env(safe-area-inset-top),0.5rem))] pt-[max(env(safe-area-inset-top),0.5rem)] bg-panel border-b border-line px-3 grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center shrink-0 select-none gap-2 z-hud-bars relative">
+    <header className="app-hud min-h-[56px] h-[calc(56px_+_max(env(safe-area-inset-top),0.5rem))] pt-[max(env(safe-area-inset-top),0.5rem)] bg-panel border-b border-line px-3 grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center shrink-0 select-none gap-2 z-hud-bars relative">
       {/* Group 1: Avatar 36px (profile toggle), Handle with Credits, Separate Settings button, and Coins */}
-      <div className="flex items-center min-w-0">
+      <div className="hud-identity flex items-center min-w-0">
         {/* Profile Toggle (Avatar + Identity) */}
         <Button
           variant="ghost"
@@ -87,7 +89,7 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
           onClick={openDrawer}
           aria-label="Open settings"
           data-testid="hud-settings-btn"
-          className="relative w-[36px] h-[36px] min-w-[36px] min-h-[36px] sm:w-[44px] sm:h-[44px] sm:min-w-[44px] sm:min-h-[44px] p-0 flex items-center justify-center border-none bg-transparent hover:bg-panel-light/60 text-ink-muted hover:text-ink shrink-0 rounded-[6px] transition-colors ml-0.5 before:absolute before:-inset-1 before:content-['']"
+          className="relative w-[44px] h-[44px] min-w-[44px] min-h-[44px] sm:w-[44px] sm:h-[44px] sm:min-w-[44px] sm:min-h-[44px] p-0 flex items-center justify-center border-none bg-transparent hover:bg-panel-light/60 text-ink-muted hover:text-ink shrink-0 rounded-[6px] transition-colors ml-0.5 before:absolute before:-inset-1 before:content-['']"
         >
           <svg
             className="w-4 h-4 shrink-0 pointer-events-none"
@@ -106,7 +108,7 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
 
         {/* 8px gap between credits and coins */}
         <div
-          className="ml-2 flex items-center gap-1 shrink-0"
+          className="hud-coins ml-2 flex items-center gap-1 shrink-0"
           title={`${coins.toLocaleString()} coins`}
         >
           <svg
@@ -132,10 +134,10 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
       </div>
 
       {/* Hairline Divider 1 */}
-      <div className="w-[1px] h-[24px] bg-line shrink-0" aria-hidden="true" />
+      <div className="hud-divider w-[1px] h-[24px] bg-line shrink-0" aria-hidden="true" />
 
       {/* Group 2 (Center): City Name (serif, ellipsis) */}
-      <div className="min-w-0 text-center px-1">
+      <div className="hud-city min-w-0 text-center px-1">
         <span
           title={cityName}
           className="font-heading text-[18px] sm:text-[19px] tracking-[0.5px] text-ink truncate block leading-none"
@@ -145,7 +147,7 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
       </div>
 
       {/* Hairline Divider 2 */}
-      <div className="w-[1px] h-[24px] bg-line shrink-0" aria-hidden="true" />
+      <div className="hud-divider w-[1px] h-[24px] bg-line shrink-0" aria-hidden="true" />
 
       {/* Group 3 (Right): Sector Heat (12px right padding via container pr-3) */}
       <div
@@ -155,12 +157,13 @@ export const Hud: React.FC<HudProps> = ({ cityName = CITY_NAME }) => {
         aria-valuenow={clampedHeat}
         aria-valuemin={0}
         aria-valuemax={100}
+        title="Sector heat tracks city alertness. Higher heat means greater risk."
       >
-        <span className="font-data text-[11px] uppercase tracking-[1px] text-ink-muted leading-tight">
+        <span className="hud-heat-label font-data text-[11px] uppercase tracking-[1px] text-ink-muted leading-tight">
           SECTOR HEAT
         </span>
         <div className="flex items-center gap-1.5 mt-0.5 leading-none">
-          <div className="flex gap-[2px]" aria-hidden="true">
+          <div className="hud-heat-bars flex gap-[2px]" aria-hidden="true">
             {Array.from({ length: heatSegments }).map((_, i) => (
               <div
                 key={i}

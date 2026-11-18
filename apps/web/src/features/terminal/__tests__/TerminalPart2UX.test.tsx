@@ -7,6 +7,7 @@ import { useCampaignStore } from '@/stores/campaign-store';
 import { useMapStore } from '@/stores/map-store';
 import { usePlayerStore } from '@/stores/player-store';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { emit } from '@/features/onboarding/events';
 import { NIX_RECOVERY_NODE_ID } from '@/features/story/recoveryQuest';
 
 const mockPush = vi.fn();
@@ -41,6 +42,38 @@ describe('Part 2 Terminal UX: Pause, Keyboard & Navigation', () => {
         'chapter-2': { completed: false, skipped: false },
       },
     });
+  });
+
+  it('routes the coach exit request through confirmation without changing progress on cancel', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'test-coach-exit', startedAt: Date.now(),
+      config: { digits: 3, allowDuplicates: false, attempts: 6, timerSeconds: 60, tier: 1, ice: 'None' },
+    });
+    render(<TerminalScreen nodeId="tutorial-soda" />);
+    await screen.findByTestId('exit-tutorial-button');
+    act(() => emit({ type: 'terminal:exit-requested' }));
+    expect(screen.getByRole('dialog', { name: 'Exit Nix tutorial?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('cancel-exit-tutorial-btn'));
+    expect(screen.queryByRole('dialog', { name: 'Exit Nix tutorial?' })).not.toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('preserves native Enter activation on focused controls and moves typed digits into the terminal', async () => {
+    vi.spyOn(terminalService, 'startSession').mockResolvedValue({
+      sessionId: 'keyboard-controls', startedAt: Date.now(),
+      config: { digits: 3, allowDuplicates: false, attempts: 6, timerSeconds: 120, tier: 1, ice: 'None' },
+    });
+    const submit = vi.spyOn(terminalService, 'submitGuess');
+    render(<TerminalScreen nodeId="n4" />);
+    const help = await screen.findByRole('button', { name: 'Open Clue Legend' });
+    help.focus();
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    fireEvent(help, enter);
+    expect(enter.defaultPrevented).toBe(false);
+    expect(submit).not.toHaveBeenCalled();
+    fireEvent.keyDown(help, { key: '1' });
+    expect(screen.getByRole('region', { name: 'Cipher terminal' })).toHaveFocus();
+    expect(screen.getByRole('group', { name: 'Digit entry, 1 of 3 digits filled' })).toBeInTheDocument();
   });
 
   it('supports physical keyboard input (0-9, Backspace, Enter)', async () => {

@@ -20,19 +20,22 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
 
   return (
     <div className="scene-card bg-panel-light border border-line rounded-md p-4 sm:p-5 text-ink font-data shadow-card space-y-6">
+      <p role="note" className="text-sm leading-relaxed border border-money/40 bg-money/10 text-money-text p-3 rounded-sm">
+        Preview / simulation. This form saves a self-reported sample result; it does not start a live global challenge or verify a competitive score.
+      </p>
       {/* Header with seeded date and target info */}
       <div className="border-b border-line pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-wide text-ink">DAILY BREACH</h2>
             <span className="type-label bg-money/15 text-money-text border border-money/30 px-2 py-0.5 rounded-sm text-[10px] font-bold">
               SEEDED: {data.seed}
             </span>
           </div>
-          <p className="type-label text-[10px] text-ink-muted mt-0.5">ONE GLOBAL CIPHER PER DAY • COMPETE WORLDWIDE</p>
+          <p className="type-label text-[10px] text-ink-muted mt-0.5">PREVIEW / SIMULATION • SAMPLE LEADERBOARD</p>
         </div>
         <div className="text-left sm:text-right shrink-0 bg-panel border border-line px-3 py-1.5 rounded-sm shadow-xs">
-          <span className="type-label text-[9px] block text-ink-muted">TODAY&apos;S DATE</span>
+          <span className="type-label text-[9px] block text-ink-muted">SAMPLE DATE</span>
           <span className="font-bold text-xs sm:text-sm text-ink tabular-nums">{data.date}</span>
         </div>
       </div>
@@ -50,7 +53,7 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
             <span className="text-xs text-ink-muted mt-0.5 block">Tier {data.tier} Corporate Node • {data.digits} Digits</span>
           </div>
           <div className="text-left sm:text-right shrink-0">
-            <span className="type-label text-[9px] block text-ink-muted">DAILY BOUNTY</span>
+            <span className="type-label text-[9px] block text-ink-muted">SAMPLE BOUNTY</span>
             <span className="font-bold text-money-text text-xl sm:text-2xl tabular-nums">${data.bounty.toLocaleString()}</span>
           </div>
         </div>
@@ -76,14 +79,14 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
             <div className="space-y-1">
               <span className="font-bold text-accent-text text-sm flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-accent" />
-                ✓ DAILY BREACH COMPLETED
+                ✓ PREVIEW ATTEMPT RECORDED
               </span>
               <span className="text-ink-muted block text-xs">
                 Solved in {data.userResult.guessesCount} guesses • {data.userResult.timeSeconds} seconds
               </span>
             </div>
             <div className="text-left sm:text-right bg-panel border border-line px-3 py-1.5 rounded-sm shrink-0">
-              <span className="type-label text-[9px] block text-ink-muted">GLOBAL RANK</span>
+              <span className="type-label text-[9px] block text-ink-muted">SAMPLE RANK</span>
               <span className="font-bold text-accent-text text-lg sm:text-xl tabular-nums">#{data.userResult.rank}</span>
             </div>
           </div>
@@ -133,7 +136,7 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
               onClick={() => onSubmitAttempt(simGuesses, simSeconds)}
               className="min-h-[44px] font-bold"
             >
-              SUBMIT DAILY ATTEMPT
+              SAVE PREVIEW ATTEMPT
             </Button>
           </div>
         )}
@@ -142,7 +145,7 @@ export const DailyBreachView: React.FC<DailyBreachViewProps> = ({
       {/* Global Leaderboard */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <h3 className="type-label text-[10px] font-bold text-ink">GLOBAL LEADERBOARD (MOCK DATA)</h3>
+          <h3 className="type-label text-[10px] font-bold text-ink">SAMPLE LEADERBOARD</h3>
           <span className="text-[10px] text-ink-muted">Worldwide Decker Standings</span>
         </div>
         <div className="space-y-2">

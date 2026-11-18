@@ -232,7 +232,7 @@ describe('TASK: Map page states (overview, district, node)', () => {
       // Toast triggered
       const toast = useToastStore.getState().toast;
       expect(toast).not.toBeNull();
-      expect(toast?.message).toContain('Cross the bridge');
+      expect(toast?.message).toContain('Complete Chapter 3');
 
       // Nix active situation updated
       expect(useMapStore.getState().activeNixSituation).toBe('lockedTap');

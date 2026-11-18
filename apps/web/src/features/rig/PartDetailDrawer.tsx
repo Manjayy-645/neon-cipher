@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { Modal } from '@/components/ui/Modal';
 import { RigHardwareItem } from '@/app/api/mock/db';
 import { getItemIcon } from '../market/catalog';
 import { Button } from '@/components/ui/Button';
@@ -38,14 +38,6 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
   onClose,
   onNavigateToMarket,
 }) => {
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   const item = hardware[slotId];
   if (!item) return null;
 
@@ -75,21 +67,8 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
 
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[480px] bg-panel border-t border-line rounded-t-lg p-5 flex flex-col gap-4 shadow-sheet max-h-[85vh] overflow-y-auto"
-      >
+    <Modal label="Hardware diagnostics" onClose={onClose} className="bg-panel-light border border-line rounded-t-lg p-5 shadow-sheet" footer={<Button variant="secondary" fullWidth onClick={onClose}>Close</Button>}>
+      <div className="flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-ink-muted/30 pb-2">
           <span className="font-data text-[10px] uppercase tracking-wider text-ink-muted">
@@ -316,15 +295,7 @@ export const PartDetailDrawer: React.FC<PartDetailDrawerProps> = ({
           </div>
         ) : null}
 
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={onClose}
-        >
-          CLOSE
-        </Button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 };
-

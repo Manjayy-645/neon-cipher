@@ -1,0 +1,177 @@
+[
+  {
+    "viewport": "360x740",
+    "flow": "legend",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "purchase",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "briefing",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "market-loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "settings",
+    "result": "passed"
+  },
+  {
+    "viewport": "360x740",
+    "flow": "coop",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "legend",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "purchase",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "briefing",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "market-loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "settings",
+    "result": "passed"
+  },
+  {
+    "viewport": "390x844",
+    "flow": "coop",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "legend",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "purchase",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "briefing",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "market-loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "settings",
+    "result": "passed"
+  },
+  {
+    "viewport": "844x390",
+    "flow": "coop",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "legend",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "purchase",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "briefing",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "market-loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "settings",
+    "result": "passed"
+  },
+  {
+    "viewport": "1366x768",
+    "flow": "coop",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "legend",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "purchase",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "briefing",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "market-loadout",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "settings",
+    "result": "passed"
+  },
+  {
+    "viewport": "1440x1000",
+    "flow": "coop",
+    "result": "passed"
+  }
+]

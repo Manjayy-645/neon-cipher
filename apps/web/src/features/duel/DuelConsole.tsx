@@ -28,6 +28,7 @@ import {
 
 import { useDuelStore } from '@/stores/duel-store';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 
 export interface DuelConsoleProps {
   initialSession?: DuelSession;
@@ -95,6 +96,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
   }, [session, setStoreMobileTab]);
 
   const onExit = propsOnExit || storeExit;
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const { credits, setBalances } = usePlayerStore();
   const colorBlindMode = useSettingsStore((s) => s.colorBlindMode);
@@ -407,8 +409,9 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
     <div
       data-testid="duel-console"
       data-surface="terminal"
-      className="flex flex-col h-full w-full bg-panel-dark text-panel-light overflow-hidden relative select-none"
+      className="flex flex-col h-full w-full bg-panel-dark text-panel-light overflow-y-auto relative select-none"
     >
+      <p className="shrink-0 px-3 py-1 border-b border-line font-data text-xs text-ink-muted bg-panel-dark">Local duel simulation · Synthetic opponent</p>
       {/* 1. TOP STATUS BAR: Opponent info, pot, mode, alerts & clocks */}
       <header
         data-testid="duel-status-bar"
@@ -492,7 +495,7 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
           <Button
             type="button"
             variant="icon"
-            onClick={onExit}
+            onClick={() => { if (session.status === 'active') setConfirmLeave(true); else onExit(); }}
             data-testid="surrender-button"
             aria-label="Surrender or Exit Duel"
             title="Surrender / Exit Duel"
@@ -1285,6 +1288,10 @@ export const DuelConsole: React.FC<DuelConsoleProps> = ({
         disabled={session.status !== 'active'}
         onSabotageResult={handleSabotageResult}
       />
+
+      {confirmLeave && <Modal label="Leave this duel?" onClose={() => setConfirmLeave(false)} header={<h2 className="font-heading text-xl">Leave this duel?</h2>} footer={<div className="flex gap-2"><Button variant="secondary" onClick={() => setConfirmLeave(false)}>Keep playing</Button><Button variant="primary" onClick={onExit}>Leave duel</Button></div>}>
+        <p className="font-data text-sm">Leaving ends your view of this attempt. The duel clock and any game-credit stakes are not paused.</p>
+      </Modal>}
 
       {/* 9. RESOLUTION MODAL */}
       {session.status !== 'active' && (

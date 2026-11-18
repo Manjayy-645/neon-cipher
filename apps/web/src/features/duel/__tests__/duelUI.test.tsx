@@ -48,7 +48,7 @@ describe('Task 11: Duel UI Components', () => {
 
       render(<MatchmakingLobby />);
 
-      expect(screen.getByText('MATCHMAKING LOBBY')).toBeDefined();
+      expect(screen.getByText('Duel practice lobby')).toBeDefined();
       expect(screen.getByTestId('match-type-casual')).toBeDefined();
       expect(screen.getByTestId('match-type-wager')).toBeDefined();
       expect(screen.getByTestId('match-type-turf')).toBeDefined();

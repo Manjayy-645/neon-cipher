@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, useMotionValue, useTransform, animate, PanInfo, AnimatePresence } from 'framer-motion';
+import { motion, useDragControls, useMotionValue, useTransform, animate, PanInfo, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useMapStore } from '../../stores/map-store';
 import { getNodes, getNodeById, GameNode, NodeStatus } from '../map/nodeService';
@@ -13,6 +13,7 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
 import { emit } from '@/features/onboarding/events';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { useDesktopMap } from '../map/useDesktopMap';
 
 export const DEFAULT_SNAP_POINTS: [number, number, number] = [76, 250, 500];
 
@@ -43,9 +44,9 @@ const NIX_SAY = [
 ];
 
 function getMicrocopy(node: GameNode, isLocked: boolean): string {
-  if (isLocked) return 'District ICE active. Bridge clearance required.';
-  if (node.status === 'cooldown') return 'Node cooling down. Countermeasures rebooting.';
-  if (node.status === 'owned') return 'Node compromised. Regular dividends collected.';
+  if (isLocked) return 'Complete Chapter 3 to unlock the river bridge and this district.';
+  if (node.status === 'cooldown') return 'Countermeasures are resetting. This target cannot be breached during cooldown.';
+  if (node.status === 'owned') return 'Already compromised. This target is not available for another breach.';
   switch (node.tier) {
     case 1:
       return 'Signal stable. Lock is local.';
@@ -151,6 +152,9 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   onClose,
 }) => {
   const router = useRouter();
+  const isDesktop = useDesktopMap();
+  const dragControls = useDragControls();
+  const sheetElement = React.useRef<HTMLDivElement>(null);
   const selectedNodeId = useMapStore(s => s.selectedNodeId);
   const activeNodeId = useMapStore(s => s.activeNodeId);
   const selectNode = useMapStore(s => s.selectNode);
@@ -222,6 +226,20 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   const [isLoadoutOpen, setIsLoadoutOpen] = useState(false);
   const y = useMotionValue(snapPoints[2] - snapPoints[snapIndex]);
   const footerY = useTransform(y, (value) => -value);
+  const displaySnapIndex = isDesktop ? 2 : snapIndex;
+
+  useEffect(() => {
+    const parent = sheetElement.current?.parentElement;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      const available = entry.contentRect.height;
+      if (available <= 0 || isDesktop) return;
+      const expanded = Math.min(520, available);
+      setSnapPoints([Math.min(76, expanded), Math.min(400, Math.max(220, available * 0.6), expanded), expanded]);
+    });
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [effectiveNodeId, isDesktop]);
 
   // Sync wallet on mount to ensure fresh loadout and inventory
   useEffect(() => {
@@ -329,7 +347,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   if (isLocked) {
     actionLabel = 'LOCKED ZONE';
   } else if (node.status === 'cooldown') {
-    actionLabel = 'COOLDOWN - 05:43';
+    actionLabel = 'COOLDOWN — NOT AVAILABLE';
   } else if (node.status === 'owned') {
     actionLabel = 'OWNED';
   }
@@ -393,27 +411,34 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
   return (
     <>
       <motion.div
+        ref={sheetElement}
         data-testid="node-sheet"
-        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-bottom-sheet flex h-[500px] flex-col touch-none pointer-events-auto select-none max-h-[min(520px,calc(100dvh-var(--hud-top-height,56px)-var(--nav-bottom-height,64px)-16px))]"
+        role="region"
+        aria-label={`${node.name} target dossier`}
+        className="absolute left-0 right-0 bottom-0 w-full bg-panel-light rounded-t-lg border-t border-line shadow-sheet z-bottom-sheet flex h-[500px] flex-col pointer-events-auto select-none max-h-full lg:relative lg:rounded-none lg:border-t-0 lg:shadow-none"
         style={{ 
-          y,
+          y: isDesktop ? 0 : y,
           bottom: 0,
-          height: snapPoints[2],
+          height: isDesktop ? '100%' : snapPoints[2],
         }}
-        drag="y"
+        drag={isDesktop ? false : 'y'}
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0, bottom: snapPoints[2] - snapPoints[0] }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
       >
-        {/* Handle: 44 x 5px pill, ink.muted at 70%, 28px tall touch zone */}
+        {/* Handle: 44 x 5px pill, ink.muted at 70%, 44px tall touch zone */}
         <div 
           data-testid="sheet-handle-zone"
-          className="h-[28px] shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-accent outline-none"
+          className="h-[44px] lg:hidden touch-none shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-accent outline-none"
+          onPointerDown={(event) => { if (!isDesktop) dragControls.start(event); }}
           onClick={cycleState}
           onKeyDown={handleKeyDown}
           tabIndex={0}
           role="button"
           aria-label="Toggle node sheet size"
+          aria-expanded={displaySnapIndex === 2}
         >
           <div 
             data-testid="sheet-handle-pill"
@@ -431,7 +456,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             className="flex flex-col flex-1 overflow-hidden"
             data-testid="sheet-node-content"
           >
-            {snapIndex === 0 ? (
+            {displaySnapIndex === 0 ? (
               /* Peek (76px): plate 36px, node name serif 17px, tier chip, bounty in money.text, chevron up */
               <div 
                 className="h-[48px] px-4 flex items-center justify-between gap-3 cursor-pointer select-none"
@@ -480,7 +505,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
               /* Half (about 250px) & Expanded */
               <div
                 className="px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex-1 min-h-0 flex flex-col gap-2.5 overflow-y-auto overscroll-contain"
-                style={{ paddingBottom: 100 }}
+                style={{ paddingBottom: 144 }}
               >
                 {/* 1. Row: 52px plate, node name serif 21px / 23px line height (max two lines), status chip right */}
                 <div className="flex items-center justify-between gap-3 shrink-0 pt-1">
@@ -503,7 +528,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                         }
                       }}
                       aria-label="Close sheet"
-                      className="w-8 h-8 flex items-center justify-center p-1 text-ink-muted hover:text-ink"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 text-ink-muted hover:text-ink"
                     >
                       <img src="/icons/icon-close.svg" alt="" className="w-4 h-4 object-contain pointer-events-none" aria-hidden="true" />
                     </Button>
@@ -529,7 +554,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                       <img src="/icons/icon-stopwatch.svg" alt="" className="w-3.5 h-3.5 object-contain pointer-events-none" aria-hidden="true" />
                       <span>TIMER</span>
                     </span>
-                    <span className="font-data text-[15px] font-semibold text-ink">{node.timerSeconds}s</span>
+                    <span className="font-data text-[15px] font-semibold text-ink">{node.timerSeconds > 0 ? `${node.timerSeconds}s` : 'No limit'}</span>
                   </div>
                   <div className="flex flex-col items-center justify-center px-1 text-center">
                     <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted">BOUNTY</span>
@@ -544,14 +569,14 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                       WARNING: Rival runner active on frequency.
                     </p>
                   ) : (
-                    <p className="font-data text-[12px] text-ink-muted truncate" data-testid="microcopy">
+                    <p className="font-data text-[12px] leading-relaxed text-ink-muted" data-testid="microcopy">
                       {getMicrocopy(node, isLocked)}
                     </p>
                   )}
                 </div>
 
                 {/* Expanded state: adds recent attempts, trace risk, rival activity */}
-                {snapIndex === 2 && (
+                {displaySnapIndex === 2 && (
                   <div className="flex flex-col divide-y divide-line border-y border-line py-1 text-sm shrink-0" data-testid="expanded-specs">
                     {(() => {
                       const campaignChapter = getChapterByNodeId(node.id);
@@ -579,7 +604,7 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
                     </div>
                     <div className="flex items-center justify-between py-2">
                       <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted">RECENT ATTEMPTS</span>
-                      <span className="font-data text-[15px] font-semibold text-ink">3 FAILED</span>
+                      <span className="font-data text-[13px] text-ink-muted">Not recorded</span>
                     </div>
                     <div className="flex items-center justify-between py-2">
                       <span className="font-data text-[11px] uppercase tracking-[1.5px] text-ink-muted">RIVAL ACTIVITY</span>
@@ -599,12 +624,17 @@ export const NodeSheet: React.FC<NodeSheetProps> = ({
             )}
           </motion.div>
         </AnimatePresence>
-        {snapIndex > 0 && (
+        {displaySnapIndex > 0 && (
           <motion.div
             data-testid="node-sheet-actions"
             className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 border-t border-line bg-panel-light px-4 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
-            style={{ y: footerY }}
+            style={{ y: isDesktop ? 0 : footerY }}
           >
+            {isLocked && (
+              <Button variant="secondary" fullWidth onClick={() => router.push('/comms?chapter=chapter-3')}>
+                View Chapter 3 requirement
+              </Button>
+            )}
             {!isActionDisabled && (
               <Button
                 variant="secondary"

@@ -10,7 +10,7 @@ describe('STYLE B1: Unified Button Component', () => {
     expect(btn).toBeDefined();
     expect(btn.className).toContain('min-h-[48px]');
     expect(btn.className).toContain('bg-accent');
-    expect(btn.className).toContain('text-white');
+    expect(btn.className).toContain('text-on-accent');
     expect(btn.className).toContain('rounded-[8px]');
     expect(btn.className).toContain('tracking-[3px]');
     expect(btn.className).toContain('uppercase');
@@ -42,7 +42,7 @@ describe('STYLE B1: Unified Button Component', () => {
     expect(btn).toBeDefined();
     expect(btn.className).toContain('min-h-[48px]');
     expect(btn.className).toContain('bg-danger');
-    expect(btn.className).toContain('text-white');
+    expect(btn.className).toContain('text-on-accent');
   });
 
   it('renders compact variant with min-h 44px, 12px padding, and 12px text size for cards', () => {

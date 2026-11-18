@@ -113,3 +113,25 @@ describe('TourSpotlight', () => {
     expect(onSkip).toHaveBeenCalledTimes(2);
   });
 });
+
+it('can expose one named tutorial exit in the coach while hiding its duplicate corner control', () => {
+  const requestExit = vi.fn();
+  render(<TourSpotlight line="Read the result." speaker="nix" showCornerSkip={false} skipLabel="EXIT TUTORIAL" onSkip={requestExit} />);
+  expect(screen.queryByTestId('skip-tutorial-btn')).not.toBeInTheDocument();
+  const exit = screen.getByRole('button', { name: 'Exit tutorial' });
+  exit.focus();
+  expect(exit).toHaveFocus();
+  fireEvent.click(exit);
+  expect(requestExit).toHaveBeenCalledOnce();
+});
+
+
+it('offers a focusable Continue action that advances once without bubbling to the card', () => {
+  const advance = vi.fn();
+  render(<TourSpotlight line="The marks are counts." speaker="nix" isTapToAdvance onTap={advance} showSkip={false} />);
+  const next = screen.getByRole('button', { name: 'Continue guide' });
+  next.focus();
+  expect(next).toHaveFocus();
+  fireEvent.click(next);
+  expect(advance).toHaveBeenCalledOnce();
+});

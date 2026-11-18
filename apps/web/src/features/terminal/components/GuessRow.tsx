@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import styles from '../TerminalWorkspace.module.css';
 import { motion, useReducedMotion } from 'framer-motion';
 import { GuessRecord, describeGuess } from '@neon-cipher/game-rules';
 import { ClueMarks } from './ClueMarks';
@@ -30,7 +31,7 @@ export function GuessRow({ record, length, index, isLatest = false }: GuessRowPr
     <div
       role="listitem"
       aria-label={ariaLabel}
-      className={`min-h-[38px] sm:min-h-[42px] py-1 px-2 sm:px-3 rounded-[6px] border flex items-center justify-between gap-1 sm:gap-2 transition-colors ${
+      className={`${styles.guessRow} min-h-[38px] sm:min-h-[42px] py-1 px-2 sm:px-3 rounded-[6px] border flex items-center justify-between gap-1 sm:gap-2 transition-colors ${
         isBreached
           ? 'border-terminal-phosphor bg-terminal-phosphor/10 shadow-[0_0_12px_rgba(111,191,122,0.25)]'
           : isLatest

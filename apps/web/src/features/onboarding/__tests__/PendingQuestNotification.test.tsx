@@ -5,6 +5,7 @@ import { PendingQuestNotification } from '../components/PendingQuestNotification
 import { useOnboardingStore } from '../onboardingStore';
 import { Modal } from '@/components/ui/Modal';
 import { useFocusedFlow, useOverlayStore } from '@/stores/overlay-store';
+import { useMapStore } from '@/stores/map-store';
 import { useCampaignStore } from '@/stores/campaign-store';
 
 const mockPush = vi.fn();
@@ -21,8 +22,16 @@ vi.mock('next/navigation', () => ({
 describe('PendingQuestNotification Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useMapStore.setState({ selectedNodeId: null, activeNodeId: null, sheetState: 'peek' });
     useOnboardingStore.getState().reset();
     currentPathname = '/map';
+  });
+
+  it('yields to the selected-node dossier on the city map', () => {
+    useOnboardingStore.setState({ step: 'cold.intro', skipped: false });
+    useMapStore.setState({ selectedNodeId: 'n1', sheetState: 'half' });
+    render(<PendingQuestNotification />);
+    expect(screen.queryByTestId('pending-quest-notification')).not.toBeInTheDocument();
   });
 
   it('renders pending quest notification when user is on a different page than the incomplete task', () => {

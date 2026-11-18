@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { StepId, STEP_ORDER, STEPS, STALL_HINTS, STALL_MS, CH2_NODE_ID, TUTORIAL } from '../steps';
 import { useOnboardingStore, ONBOARDING_AVATARS } from '../onboardingStore';
 import { usePlayerStore } from '@/stores/player-store';
-import { subscribe, OnboardingEvent } from '../events';
+import { emit, subscribe, OnboardingEvent } from '../events';
 import { track } from '../analytics';
 import { TourSpotlight } from './TourSpotlight';
 import { SavePromptDrawer } from './SavePromptDrawer';
@@ -64,6 +64,19 @@ export function getNextStallHint(
   return { hint: hints[nextIndex], nextIndex };
 }
 
+
+/** Teach from the returned counts, without claiming a symbol is in this result. */
+export function getTutorialClueLines(result: { pans: number; pots: number } | null): string[] {
+  const summary = result
+    ? result.pans === 0 && result.pots === 0
+      ? 'No matches this time. None of those digits are in the code.'
+      : `Your result: ${result.pans} exact match${result.pans === 1 ? '' : 'es'} and ${result.pots} right digit${result.pots === 1 ? '' : 's'} in the wrong position.`
+    : 'Each result counts exact matches and right digits in the wrong position.';
+  return [summary,
+    'A filled dot (Pan) means a correct digit in the correct slot. A ring (Pot) means a correct digit in the wrong slot.',
+    'A dash means no match. These are total counts, not clues tied to the digit above each mark.'];
+}
+
 export function TourDirector() {
   const now = useClock();
   const pathname = usePathname();
@@ -84,6 +97,7 @@ export function TourDirector() {
 
   const mounted = useHydrated();
   const [currentLineIndex, setCurrentLineIndex] = useResettableState(0, step);
+  const [latestClueResult, setLatestClueResult] = useState<{ pans: number; pots: number } | null>(null);
   const [deadKeyTarget, setDeadKeyTarget] = useState<string | null>(null);
   const [activeStallHint, setActiveStallHint] = useResettableState<string | null>(null, step);
   const lastStallHintIndexRef = useRef<number>(-1);
@@ -104,6 +118,7 @@ export function TourDirector() {
 
       // 1. First guess tracking & cold.intro advancement
       if (e.type === 'terminal:guess') {
+        if (e.pans !== undefined && e.pots !== undefined) setLatestClueResult({ pans: e.pans, pots: e.pots });
         if (!firstGuessTrackedRef.current) {
           firstGuessTrackedRef.current = true;
           track('first_guess');
@@ -185,6 +200,10 @@ export function TourDirector() {
   }, [step, setActiveStallHint]);
 
   const handleSkipTour = useCallback(() => {
+    if (pathname.startsWith('/terminal/')) {
+      emit({ type: 'terminal:exit-requested' });
+      return;
+    }
     skip();
     track('tour_skipped');
     // Ensure player has a profile if skipping before profile was created
@@ -203,7 +222,7 @@ export function TourDirector() {
     useOnboardingStore.getState().crackNode(TUTORIAL.mapNodeId, TUTORIAL.cooldownMs);
     triggerToast('Nix tutorial skipped. Transceiver locked to City Map.');
     router.push('/map');
-  }, [skip, router]);
+  }, [skip, router, pathname]);
 
   if (!mounted || skipped || step === 'done') {
     return null;
@@ -224,6 +243,8 @@ export function TourDirector() {
         isTapToAdvance={true}
         onTap={() => setDeadKeyTarget(null)}
         showSkip={true}
+        showCornerSkip={!pathname.startsWith('/terminal/')}
+        skipLabel={pathname.startsWith('/terminal/') ? 'EXIT TUTORIAL' : 'SKIP TUTORIAL'}
         onSkip={handleSkipTour}
       />
     );
@@ -251,6 +272,8 @@ export function TourDirector() {
         isTapToAdvance={true}
         onTap={() => setActiveStallHint(null)}
         showSkip={true}
+        showCornerSkip={!pathname.startsWith('/terminal/')}
+        skipLabel={pathname.startsWith('/terminal/') ? 'EXIT TUTORIAL' : 'SKIP TUTORIAL'}
         onSkip={handleSkipTour}
       />
     );
@@ -258,9 +281,10 @@ export function TourDirector() {
 
   // Render step spotlight if step has lines
   if (stepDef.lines && stepDef.lines.length > 0) {
-    const currentLine = stepDef.lines[currentLineIndex] || stepDef.lines[0];
-    const isMultiLine = stepDef.lines.length > 1;
-    const isLastLine = currentLineIndex >= stepDef.lines.length - 1;
+    const lines = step === 'cold.clues' ? getTutorialClueLines(latestClueResult) : stepDef.lines;
+    const currentLine = lines[currentLineIndex] || lines[0];
+    const isMultiLine = lines.length > 1;
+    const isLastLine = currentLineIndex >= lines.length - 1;
 
     const handleTapToAdvance = () => {
       if (isMultiLine && !isLastLine) {
@@ -294,6 +318,8 @@ export function TourDirector() {
         isTapToAdvance={stepDef.advance === 'tap'}
         onTap={stepDef.advance === 'tap' ? handleTapToAdvance : undefined}
         showSkip={true}
+        showCornerSkip={!pathname.startsWith('/terminal/')}
+        skipLabel={pathname.startsWith('/terminal/') ? 'EXIT TUTORIAL' : 'SKIP TUTORIAL'}
         onSkip={handleSkipTour}
       />
     );

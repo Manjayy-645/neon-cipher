@@ -37,9 +37,7 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
   // Read active player's callsign, level, xp, breachesWon, breachesTotal, careerEarnings directly from player-store.ts
   const useStore = !isCustomProfilePassed || isHardcodedMock || (player.handle && player.handle !== 'ZERO_COOL') || player.breachesTotal > 0;
 
-  const handle = useStore
-    ? (player.callsign || player.handle || profile.handle)
-    : (profile.handle || player.callsign || player.handle);
+  const handle = player.handle || player.callsign;
 
   const avatarUrl = (useStore && player.avatarUrl) ? player.avatarUrl : (profile.avatarUrl || player.avatarUrl);
 
@@ -86,8 +84,8 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-wide truncate text-ink">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-wide break-all max-w-full text-ink">
                 {handle}
               </h2>
               <span className="type-label bg-accent/15 text-accent-text border border-accent/40 px-2 py-0.5 rounded-sm text-[10px] font-bold shrink-0">
@@ -97,7 +95,7 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
             <div className="flex items-center gap-2 text-xs text-ink-muted mt-0.5">
               <span className="font-semibold text-ink">{rank.title}</span>
               <span>•</span>
-              <span className="text-[11px]">Grid Veteran</span>
+              <span className="text-[11px]">Equipped title</span>
             </div>
           </div>
         </div>
@@ -209,7 +207,7 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
                 <span className="type-label text-[9px] text-ink-muted">SPEED RECORD</span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-ink tabular-nums">{stats.fastestBreachSeconds}s</span>
+                <span className="text-2xl font-bold text-ink tabular-nums">{stats.fastestBreachSeconds > 0 ? `${stats.fastestBreachSeconds}s` : '—'}</span>
                 <span className="text-[10px] text-ink-muted">Record solve clock</span>
               </div>
               <span className="text-[10px] text-ink-muted block">Apex ICE bypass execution time</span>
@@ -224,7 +222,7 @@ export const DeckerProfileCard: React.FC<DeckerProfileCardProps> = ({
                 </span>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-money-text tabular-nums">{stats.fewestGuesses} probes</span>
+                <span className="text-2xl font-bold text-money-text tabular-nums">{stats.fewestGuesses > 0 ? `${stats.fewestGuesses} probes` : '—'}</span>
                 <span className="text-[10px] text-ink-muted">Efficiency record</span>
               </div>
               <span className="text-[10px] text-ink-muted block">Minimum telemetry cycles to crack node</span>

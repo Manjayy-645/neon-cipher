@@ -171,7 +171,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
         </div>
 
         {/* Chapter Cards List */}
-        <div className="flex flex-col gap-3 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-4">
           {CHAPTERS.map((ch) => {
             const progress = chapters[ch.id];
             const status = progress ? progress.status : ch.number === 1 ? 'available' : 'locked';
@@ -303,7 +303,7 @@ export const ChapterSelect: React.FC<ChapterSelectProps> = ({
                 <div className="mt-auto pt-2.5 border-t border-line/40 flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2.5 text-xs font-data flex-wrap">
                     <span className="font-semibold text-money-text text-[14px]">
-                      +${ch.contract.bounty} BOUNTY
+                      +${ch.contract.bounty} CONTRACT BOUNTY
                     </span>
                     <span className="font-semibold text-accent-text text-[14px]">
                       -${ch.contract.debtReduction.toLocaleString()} DEBT

@@ -1,9 +1,10 @@
+@layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import '@neon-cipher/tokens/tokens.css';
 @import "tailwindcss/utilities.css" layer(utilities);
 @config "../../tailwind.config.ts";
 
-@theme {
+@theme inline {
   --color-panel: var(--surface-panel);
   --color-panel-light: var(--surface-panel-light);
   --color-panel-dark: var(--surface-dark);
@@ -372,8 +373,8 @@
   overflow: hidden;
   padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   /* Opaque paper also when terminal utility aliases are unavailable. */
-  background-color: var(--color-panel-light);
-  color: var(--color-ink);
+  background-color: var(--surface-panel-light);
+  color: var(--ink);
 }
 .modal-header { flex-shrink: 0; padding-bottom: 12px; }
 .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
@@ -381,3 +382,50 @@
 @media (min-width: 640px) {
   .app-modal { padding-top: max(16px, env(safe-area-inset-top, 0px)); }
 }
+
+/* Responsive paper workspace. Individual screens compose their own columns. */
+.app-workspace { max-width: 480px; isolation: isolate; }
+.skip-link {
+  position: absolute;
+  inset: 8px auto auto 8px;
+  z-index: 100;
+  transform: translateY(-200%);
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel-light);
+  color: var(--ink);
+}
+.skip-link:focus { transform: translateY(0); }
+@media (min-width: 768px) {
+  .app-workspace { max-width: 1200px; }
+  .app-hud .hud-identity { gap: 8px; }
+  .app-hud .hud-city { padding-inline: 24px; }
+}
+@media (max-width: 600px) {
+  .app-hud { display: flex; gap: 8px; }
+  .app-hud .hud-identity { flex: 1 1 auto; min-width: 0; }
+  .app-hud .hud-identity button:first-child { min-width: 0; }
+  .app-hud .hud-identity button:first-child > div:last-child { max-width: 72px; }
+  .app-hud .hud-coins, .app-hud .hud-divider, .app-hud .hud-heat-bars { display: none; }
+  .app-hud .hud-city { flex: 0 1 112px; }
+  .app-hud .hud-city span { font-size: 16px; }
+  .app-hud .hud-heat-label { font-size: 9px; letter-spacing: 0; }
+}
+@media (max-height: 500px) {
+  .app-workspace { --nav-height: 48px; }
+  .app-hud {
+    min-height: 48px;
+    height: calc(48px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .app-navigation { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .app-navigation a { margin-block: 2px; flex-direction: row; gap: 8px; }
+  [data-testid="pending-quest-notification"] { display: none; }
+}
+
+/* Keep compact identity controls from consuming the city-name column. */
+.app-hud .hud-identity button:first-child { padding: 0; border: 0; box-shadow: none; background: transparent; }
+@media (max-width: 600px) { .app-hud .hud-city { flex: 0 0 auto; } }
+
+[data-surface="terminal"] { --on-accent: var(--terminal-bg); }

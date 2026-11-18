@@ -86,7 +86,7 @@ export function SegmentedControl<T extends string>({
             onKeyDown={(e) => handleKeyDown(e, idx)}
             className={`flex-1 min-w-0 rounded-[6px] text-xs transition-all gap-1.5 ${
               isActive
-                ? 'bg-accent text-white font-bold shadow-sm border border-transparent'
+                ? 'bg-accent text-on-accent font-bold shadow-sm border border-transparent'
                 : 'bg-panel-light border border-line text-ink font-medium hover:border-ink-muted'
             } ${size === 'sm' ? 'py-1 text-[11px]' : ''}`}
           >
@@ -97,7 +97,7 @@ export function SegmentedControl<T extends string>({
               <span
                 className={`shrink-0 text-[10px] px-1.5 py-0.2 rounded-pill font-mono ${
                   isActive
-                    ? 'bg-white/20 text-white font-bold'
+                    ? 'bg-white/20 text-on-accent font-bold'
                     : 'bg-ink/10 text-ink-muted'
                 }`}
               >

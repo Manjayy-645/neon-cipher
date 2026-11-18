@@ -53,19 +53,19 @@ export function MatchmakingLobby() {
   return (
     <div
       data-surface="lobby"
-      className="w-full max-w-xl mx-auto flex flex-col gap-5 p-4 sm:p-6 bg-panel-light text-ink"
+      className="w-full max-w-4xl mx-auto flex flex-col gap-5 p-4 sm:p-6 bg-panel-light text-ink"
     >
       {/* Header with Network Status and Wallet */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
         <div>
           <div className="font-data text-[10px] tracking-widest text-accent-text uppercase font-bold">
-            P2P CARRIER ACTIVE // ENCRYPTED MESH
+            LOCAL PREVIEW / NO HUMAN MATCHMAKING
           </div>
           <h1 className="font-heading text-2xl font-bold text-ink">
-            MATCHMAKING LOBBY
+            Duel practice lobby
           </h1>
           <p className="font-data text-xs text-ink-muted">
-            1v1 Live Cipher Duels vs Deckers & Synthetic Opponents
+            Local simulation with synthetic opponents. Rooms and opponents are sample data; game-credit rules still apply.
           </p>
         </div>
 
@@ -84,6 +84,7 @@ export function MatchmakingLobby() {
           className="p-3 bg-danger/10 border border-danger rounded-sm font-data text-xs text-danger-text"
         >
           {error}
+          <Button variant="secondary" compact onClick={() => fetchRooms()} className="mt-2">Retry connection</Button>
         </div>
       )}
 
@@ -125,7 +126,7 @@ export function MatchmakingLobby() {
             PACING MODE
           </label>
           <span className="font-data text-[10px] text-accent-text font-bold uppercase tracking-wider">
-            {selectedPacingMode === 'simultaneous' ? '⚡ Realtime Race' : '⏱️ 35s Tactical Turns'}
+            {selectedPacingMode === 'simultaneous' ? 'Simultaneous race' : '35s tactical turns'}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -141,7 +142,7 @@ export function MatchmakingLobby() {
             }`}
           >
             <span className="font-data text-xs uppercase font-bold flex items-center gap-1">
-              ⚡ SPEED (SIMULTANEOUS)
+              SPEED (SIMULTANEOUS)
             </span>
             <span className="font-data text-[9px] text-ink-muted text-center leading-tight">
               Realtime speed race. Guess at will.
@@ -160,7 +161,7 @@ export function MatchmakingLobby() {
             }`}
           >
             <span className="font-data text-xs uppercase font-bold flex items-center gap-1">
-              ⏱️ TACTICAL (TURN-BASED)
+              TACTICAL (TURN-BASED)
             </span>
             <span className="font-data text-[9px] text-ink-muted text-center leading-tight">
               Strict turns. 35s clock per decker.
@@ -257,12 +258,12 @@ export function MatchmakingLobby() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/Character portraits/Null_Byte.png" alt="Null_Byte" className="w-full h-full object-cover" />
           </div>
-          <span>QUICK JACK-IN (VS NULL_BYTE)</span>
+          <span>START PRACTICE (VS NULL_BYTE AI)</span>
         </Button>
 
         <div className="flex items-center justify-between pt-1">
           <span className="font-data text-[11px] font-bold text-ink-muted uppercase tracking-wider">
-            ACTIVE ROOMS ({rooms.length})
+            SAMPLE ROOMS ({rooms.length})
           </span>
           <Button
             variant="ghost"
@@ -319,7 +320,7 @@ export function MatchmakingLobby() {
       <section aria-label="Available Rooms" className="flex flex-col gap-2">
         {rooms.length === 0 ? (
           <div className="p-6 text-center bg-panel/30 border border-line/60 rounded-md font-data text-xs text-ink-muted">
-            NO OPEN ROOMS ON THE GRID. USE QUICK JACK-IN OR BROADCAST A ROOM.
+            No sample rooms returned. Start practice, create a local room, or retry.
           </div>
         ) : (
           rooms.map((room) => {
@@ -338,8 +339,8 @@ export function MatchmakingLobby() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3 font-data text-[10px] text-ink-muted">
-                    <span>HOST: {room.host}</span>
+                  <div className="flex flex-wrap items-center gap-3 font-data text-[10px] text-ink-muted">
+                    <span>SAMPLE HOST: {room.host}</span>
                     <span>WAGER: {room.wager} CR</span>
                     <span className="flex items-center gap-1 font-mono">
                       <span

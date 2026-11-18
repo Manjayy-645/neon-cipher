@@ -37,12 +37,14 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
     if (tab) setActiveTab(tab);
   }, [pathname, setActiveTab]);
 
-  const currentTab = controlledTab ?? getTabForPathname(pathname) ?? storedTab;
+  // Profile and other secondary routes have their own breadcrumb. Never carry
+  // the previously selected Market (or another tab) into a different screen.
+  const currentTab = controlledTab ?? (pathname ? getTabForPathname(pathname) : storedTab);
 
   return (
     <nav
       aria-label="Main Navigation"
-      className="h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel z-hud-bars relative select-none px-1 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
+      className="app-navigation h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel z-hud-bars relative select-none px-1 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
     >
       <div className="flex items-stretch justify-around h-full gap-0.5 max-w-[720px] mx-auto">
         {NAV_ITEMS.map((item) => {
@@ -53,7 +55,7 @@ export function Navigation({ activeTab: controlledTab, onTabChange }: Navigation
               key={item.tab}
               href={item.href}
               onClick={() => { setActiveTab(item.tab); onTabChange?.(item.tab); }}
-              aria-label={battleLocked ? 'Battle — online duels unlock in Chapter 4; view battle modes' : item.description}
+              aria-label={battleLocked ? 'Battle — online duels unlock in Chapter 4; view battle modes' : `${item.name} — ${item.description}`}
               aria-current={active ? 'page' : undefined}
               style={{ backgroundColor: active ? 'var(--accent)' : undefined, color: active ? 'var(--on-accent)' : 'var(--ink-muted)' }}
               data-testid={`nav-item-${item.tab}`}

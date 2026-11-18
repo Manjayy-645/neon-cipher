@@ -209,7 +209,7 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
       if (node) {
         const [lng, lat] = percentToLngLat(node.x, node.y);
         const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-        const upwardOffset = -Math.round(vh * 0.20);
+        const upwardOffset = window.matchMedia?.('(min-width: 1024px)').matches ? 0 : -Math.round(vh * 0.20);
         mapInstance.current.easeTo({
           center: [lng, lat],
           zoom: 4.2,
@@ -275,6 +275,8 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
     <div
       className="relative w-full h-full flex-1 bg-panel overflow-hidden"
       data-time={timeOfDay}
+      data-map-ready={loadedMap !== null}
+      aria-busy={loadedMap === null}
       onClick={handleMapClick}
     >
       <div 

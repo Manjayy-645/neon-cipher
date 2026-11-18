@@ -9,6 +9,7 @@ import { useCampaignStore } from '@/stores/campaign-store';
 import { getChapterById } from '@neon-cipher/game-rules';
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { isFocusedRoute, useOverlayStore } from '@/stores/overlay-store';
+import { useMapStore } from '@/stores/map-store';
 import { StepId } from '../steps';
 
 export interface PendingQuest {
@@ -140,10 +141,13 @@ export function PendingQuestNotification() {
 
   const [dismissedPath, setDismissedPath] = useResettableState<string | null>(null, pathname ?? '');
 
+  const selectedNodeId = useMapStore((state) => state.activeNodeId ?? state.selectedNodeId);
+  const sheetState = useMapStore((state) => state.sheetState);
+
   const quest = getPendingQuest(step, skipped, activeChapterId, chapters);
 
   // Hide if no quest, or if already on quest route, or on root splash, or dismissed on this page
-  if (!quest || isFocused || (pathname && isFocusedRoute(pathname))) return null;
+  if (!quest || (pathname === '/map' && selectedNodeId && sheetState !== 'peek') || isFocused || (pathname && isFocusedRoute(pathname))) return null;
   if (!pathname || pathname === '/' || pathname === quest.route) return null;
   if (pathname.startsWith('/terminal') && pathname !== quest.route) return null;
   if (dismissedPath === pathname) return null;
@@ -225,7 +229,7 @@ export function PendingQuestNotification() {
               type="button"
               data-testid="pending-quest-action"
               onClick={handleResume}
-              className="relative px-2 py-1 rounded-[4px] bg-accent text-on-accent font-data text-[9px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer after:absolute after:-inset-1 pointer-events-auto"
+              className="relative px-2 py-1 rounded-[4px] bg-accent text-on-accent min-h-[44px] font-data text-[11px] font-bold uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer after:absolute after:-inset-1 pointer-events-auto"
             >
               <span>RESUME</span>
               <svg
@@ -247,7 +251,7 @@ export function PendingQuestNotification() {
               data-testid="pending-quest-dismiss"
               onClick={handleDismiss}
               aria-label="Dismiss pending quest notification"
-              className="relative w-5 h-5 rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer after:absolute after:-inset-1.5 pointer-events-auto"
+              className="relative min-w-[44px] min-h-[44px] rounded-full border border-line/40 hover:border-line bg-panel/70 hover:bg-panel text-ink-muted hover:text-ink flex items-center justify-center transition-colors cursor-pointer after:absolute after:-inset-1.5 pointer-events-auto"
             >
               <svg
                 width="10"
