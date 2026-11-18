@@ -8,6 +8,7 @@ import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { NIX_GUIDE_LINES, NixSituation } from './nixGuideLines';
 import { getNodes, getNodeById } from './nodeService';
 import { useCampaignStore } from '@/stores/campaign-store';
+import { useOverlayStore } from '@/stores/overlay-store';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
 
 export const NixGuide: React.FC = () => {
@@ -105,7 +106,7 @@ export const NixGuide: React.FC = () => {
   // Keyboard Escape listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isNixBubbleOpen) {
+      if (e.key === 'Escape' && isNixBubbleOpen && useOverlayStore.getState().modals.length === 0) {
         e.stopPropagation();
         setNixBubbleOpen(false);
       }

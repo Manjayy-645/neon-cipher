@@ -18,6 +18,7 @@ import {
 } from './camera';
 import { useMapStore } from '../../stores/map-store';
 import { useOnboardingStore } from '@/features/onboarding/onboardingStore';
+import { useOverlayStore } from '@/stores/overlay-store';
 
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion';
 import { Button } from '@/components/ui/Button';
@@ -244,6 +245,8 @@ export default function MapEngine({ children }: { children?: React.ReactNode }) 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // A native dialog owns Escape; never navigate the map underneath it.
+        if (useOverlayStore.getState().modals.length > 0) return;
         const state = useMapStore.getState();
         if (state.isNixBubbleOpen) {
           return; // NixGuide handles its own escape

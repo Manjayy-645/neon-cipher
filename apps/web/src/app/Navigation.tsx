@@ -1,23 +1,17 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { isFeatureEnabled } from '../lib/flags';
-import { motion, AnimatePresence } from 'framer-motion';
-
 import { useMapStore, NavTab } from '../stores/map-store';
 import { useCampaignStore } from '../stores/campaign-store';
-import { useOnboardingStore } from '../features/onboarding/onboardingStore';
-import { triggerToast } from '../stores/toast-store';
-import { Button } from '../components/ui/Button';
 
-const navItems = [
-  { name: 'Map', href: '/map', flag: 'map' as const, icon: <MapIcon /> },
-  { name: 'Rig', href: '/rig', flag: 'rig' as const, icon: <RigIcon /> },
-  { name: 'Market', href: '/market', flag: 'market' as const, icon: <MarketIcon /> },
-  { name: 'Comms', href: '/comms', flag: 'comms' as const, icon: <CommsIcon /> },
-  { name: 'Duel', href: '/duel', flag: 'duel' as const, icon: <DuelIcon /> },
+const NAV_ITEMS: Array<{ name: string; href: string; tab: NavTab; icon: React.ReactNode; description: string }> = [
+  { name: 'City', href: '/map', tab: 'map', icon: <MapIcon />, description: 'Explore city districts' },
+  { name: 'Battle', href: '/duel', tab: 'duel', icon: <DuelIcon />, description: 'Duels and turf wars' },
+  { name: 'Missions', href: '/comms', tab: 'comms', icon: <CommsIcon />, description: 'Story and co-op heists' },
+  { name: 'Rig', href: '/rig', tab: 'rig', icon: <RigIcon />, description: 'Configure your cyberdeck' },
+  { name: 'Market', href: '/market', tab: 'market', icon: <MarketIcon />, description: 'Acquire equipment' },
 ];
 
 export interface NavigationProps {
@@ -25,196 +19,74 @@ export interface NavigationProps {
   onTabChange?: (tab: NavTab) => void;
 }
 
-function getTabForPathname(pathname: string | null): NavTab | null {
+export function getTabForPathname(pathname: string | null): NavTab | null {
   if (!pathname) return null;
   if (pathname.startsWith('/terminal/')) return 'map';
-
-  return navItems.find(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
-  )?.flag ?? null;
+  if (pathname === '/coop' || pathname.startsWith('/coop/') || pathname === '/story') return 'comms';
+  return NAV_ITEMS.find((item) => pathname === item.href || pathname.startsWith(item.href + '/'))?.tab ?? null;
 }
 
 export function Navigation({ activeTab: controlledTab, onTabChange }: NavigationProps = {}) {
   const pathname = usePathname();
-  const storeActiveTab = useMapStore((s) => s.activeTab);
-  const setActiveTab = useMapStore((s) => s.setActiveTab);
-  // Re-evaluates flags when developer toggles feature flags in DevMenu
-  useMapStore((s) => s.devFlagTick);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const storedTab = useMapStore((state) => state.activeTab);
+  const setActiveTab = useMapStore((state) => state.setActiveTab);
+  const multiplayerUnlocked = useCampaignStore((state) => state.unlocks.onlinePlay);
 
   React.useEffect(() => {
-    if (!pathname) return;
-    const matchedTab = getTabForPathname(pathname);
-    if (matchedTab) {
-      setActiveTab(matchedTab);
-    } else if (pathname === '/') {
-      setActiveTab('map');
-    }
+    const tab = getTabForPathname(pathname);
+    if (tab) setActiveTab(tab);
   }, [pathname, setActiveTab]);
 
-  const currentTab =
-    controlledTab ??
-    (getTabForPathname(pathname) ??
-      (pathname === '/' ? 'map' : storeActiveTab));
-
-  const handleDisabledClick = (e: React.MouseEvent, itemFlag: NavTab) => {
-    e.preventDefault();
-    if (onTabChange) {
-      onTabChange(itemFlag);
-      setActiveTab(itemFlag);
-      return;
-    }
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage('Coming soon');
-    toastTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-    }, 2000);
-  };
-
-  const handleItemClick = (flag: NavTab) => {
-    setActiveTab(flag);
-    onTabChange?.(flag);
-  };
+  const currentTab = controlledTab ?? getTabForPathname(pathname) ?? storedTab;
 
   return (
-    <nav 
+    <nav
       aria-label="Main Navigation"
-      className="h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel flex items-stretch justify-around pb-[max(env(safe-area-inset-bottom),0.5rem)] z-hud-bars relative select-none"
+      className="h-[calc(var(--nav-height)_+_max(env(safe-area-inset-bottom),0.5rem))] min-h-[var(--nav-height)] shrink-0 border-t border-line bg-panel z-hud-bars relative select-none px-1 pb-[max(env(safe-area-inset-bottom),0.5rem)]"
     >
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            data-testid="nav-toast"
-            role="status"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.12 }}
-            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-50 bg-panel-light border border-line text-ink font-data text-label uppercase px-3 py-1.5 rounded-sm shadow-card pointer-events-none whitespace-nowrap"
-          >
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {navItems.map((item) => {
-        const campaignUnlocks = useCampaignStore.getState()?.unlocks;
-        const onboardingStep = useOnboardingStore.getState()?.step;
-        const isOnboardingComms =
-          item.flag === 'comms' &&
-          (onboardingStep === 'comms.nav' || onboardingStep === 'comms.debt');
-        const isProgressionUnlocked =
-          (item.flag === 'duel' && Boolean(campaignUnlocks?.onlinePlay)) ||
-          (item.flag === 'market' && Boolean(campaignUnlocks?.blackMarket)) ||
-          isOnboardingComms;
-        const enabled = isFeatureEnabled(item.flag) || isProgressionUnlocked;
-        const isActive = currentTab === item.flag;
-
-        const commonClasses =
-          'flex-1 h-[calc(100%-12px)] my-[6px] mx-[4px] rounded-[8px] flex flex-col items-center justify-center gap-[3px] min-h-[44px] no-underline transition-all duration-[120ms] active:scale-[0.97] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
-        const tabStyle: React.CSSProperties = {
-          backgroundColor: isActive ? 'var(--accent)' : undefined,
-          color: isActive ? 'var(--on-accent)' : 'var(--ink-muted)',
-        };
-
-        if (!enabled) {
+      <div className="flex items-stretch justify-around h-full gap-0.5 max-w-[720px] mx-auto">
+        {NAV_ITEMS.map((item) => {
+          const active = currentTab === item.tab;
+          const battleLocked = item.tab === 'duel' && !multiplayerUnlocked;
           return (
-            <Button
-              key={item.name}
-              variant="ghost"
-              onClick={(e) => handleDisabledClick(e, item.flag)}
-              className={`border-0 p-0 ${commonClasses}`}
-              style={tabStyle}
-              aria-label={`${item.name} (Coming soon)`}
-              aria-current={isActive ? 'page' : undefined}
-              data-testid={`nav-item-${item.name.toLowerCase()}`}
-              data-tour={item.flag === 'comms' ? 'nav-comms' : undefined}
+            <Link
+              key={item.tab}
+              href={item.href}
+              onClick={() => { setActiveTab(item.tab); onTabChange?.(item.tab); }}
+              aria-label={battleLocked ? 'Battle — online duels unlock in Chapter 4; view battle modes' : item.description}
+              aria-current={active ? 'page' : undefined}
+              style={{ backgroundColor: active ? 'var(--accent)' : undefined, color: active ? 'var(--on-accent)' : 'var(--ink-muted)' }}
+              data-testid={`nav-item-${item.tab}`}
+              data-tour={item.tab === 'comms' ? 'nav-comms' : undefined}
+              className={`group relative flex-1 min-w-0 min-h-[44px] mx-0.5 my-1 rounded-[6px] flex flex-col items-center justify-center gap-[3px] no-underline outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${active ? 'bg-accent text-on-accent shadow-sm' : 'text-ink-muted hover:bg-panel-light hover:text-ink'}`}
             >
-              <div className="w-[22px] h-[22px] flex items-center justify-center">
+              <span className="relative w-[22px] h-[22px] flex items-center justify-center" aria-hidden="true">
                 {item.icon}
-              </div>
-              <span className="font-data text-[10px] uppercase tracking-[1px] leading-tight">
+                {battleLocked && <span className="absolute -right-2 -top-1 w-2 h-2 rounded-full border border-panel bg-ink-muted" />}
+              </span>
+              <span className="font-data text-[10px] font-bold uppercase tracking-[0.5px] leading-tight truncate max-w-full px-0.5">
                 {item.name}
               </span>
-            </Button>
+            </Link>
           );
-        }
-
-        return (
-          <Link
-            key={item.name}
-            href={item.href}
-            onClick={() => handleItemClick(item.flag)}
-            className={commonClasses}
-            style={tabStyle}
-            aria-current={isActive ? 'page' : undefined}
-            data-testid={`nav-item-${item.name.toLowerCase()}`}
-            data-tour={item.flag === 'comms' ? 'nav-comms' : undefined}
-          >
-            <div className="w-[22px] h-[22px] flex items-center justify-center">
-              {item.icon}
-            </div>
-            <span className="font-data text-[10px] uppercase tracking-[1px] leading-tight">
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
+        })}
+      </div>
     </nav>
   );
 }
 
 function MapIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
-      <line x1="9" y1="3" x2="9" y2="18"></line>
-      <line x1="15" y1="6" x2="15" y2="21"></line>
-    </svg>
-  );
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>;
 }
-
 function RigIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-      <path d="M12 12h.01"></path>
-      <path d="M8 12h.01"></path>
-      <path d="M16 12h.01"></path>
-    </svg>
-  );
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>;
 }
-
 function MarketIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="21" r="1"></circle>
-      <circle cx="20" cy="21" r="1"></circle>
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-    </svg>
-  );
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h16l-1.5 12h-13L4 8ZM3 8l2-5h14l2 5M9 12v4M15 12v4"/></svg>;
 }
-
 function CommsIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-    </svg>
-  );
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v14H4zM7 9h10M7 13h7M7 17h4"/><path d="m17 15 3 4"/></svg>;
 }
-
 function DuelIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.5 17.5L3 6l2.5-2.5 11.5 11.5"></path>
-      <path d="M13 19l6-6"></path>
-      <path d="M16 16l4 4"></path>
-      <path d="M19 21l2-2"></path>
-      <path d="M8.5 6.5L21 19l-2.5 2.5L7 10"></path>
-      <path d="M11 5l-6 6"></path>
-      <path d="M8 8L4 4"></path>
-      <path d="M5 3L3 5"></path>
-    </svg>
-  );
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 4 15 15M19 4 4 19M3 3l4 1-3 4M21 3l-4 1 3 4M3 21l4-1-3-4M21 21l-4-1 3-4"/></svg>;
 }

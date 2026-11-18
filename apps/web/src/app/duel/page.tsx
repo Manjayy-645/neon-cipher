@@ -46,6 +46,11 @@ export default function DuelPage() {
 
   return (
     <main className="scene-ground scene-arrive flex h-full w-full min-h-0 flex-col text-ink overflow-hidden">
+      <header className="shrink-0 border-b border-line bg-panel px-4 py-3 sm:py-4">
+        <span className="font-data text-[10px] uppercase tracking-[0.18em] text-accent-text">THE CITY / COMPETITIVE NETWORK</span>
+        <h1 className="font-heading text-xl font-semibold text-ink leading-tight mt-1">Battle Network</h1>
+        <p className="font-data text-[11px] text-ink-muted mt-1 leading-relaxed">Explore territory conflicts or enter a 1v1 cipher duel.</p>
+      </header>
       {/* Top Tab Bar (Segmented Control) */}
       <div className="bg-panel-light border-b border-line px-4 py-2 shrink-0 relative z-20">
         <SegmentedControl
@@ -93,15 +98,17 @@ export default function DuelPage() {
               >
                 VIEW CAMPAIGN ASSIGNMENTS
               </Button>
-              <Button
-                variant="ghost"
-                compact
-                fullWidth
-                onClick={() => setDevBypassUnlock(true)}
-                data-testid="dev-bypass-unlock-button"
-              >
-                [DEV TESTING]: OVERRIDE CARRIER LOCK
-              </Button>
+              {process.env.NODE_ENV === "development" && (
+                <Button
+                  variant="ghost"
+                  compact
+                  fullWidth
+                  onClick={() => setDevBypassUnlock(true)}
+                  data-testid="dev-bypass-unlock-button"
+                >
+                  [DEV TESTING]: OVERRIDE CARRIER LOCK
+                </Button>
+              )}
             </div>
           </div>
         </div>
