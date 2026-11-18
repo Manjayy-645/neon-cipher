@@ -98,15 +98,17 @@ export default function DuelPage() {
               >
                 VIEW CAMPAIGN ASSIGNMENTS
               </Button>
-              <Button
-                variant="ghost"
-                compact
-                fullWidth
-                onClick={() => setDevBypassUnlock(true)}
-                data-testid="dev-bypass-unlock-button"
-              >
-                [DEV TESTING]: OVERRIDE CARRIER LOCK
-              </Button>
+              {process.env.NODE_ENV === "development" && (
+                <Button
+                  variant="ghost"
+                  compact
+                  fullWidth
+                  onClick={() => setDevBypassUnlock(true)}
+                  data-testid="dev-bypass-unlock-button"
+                >
+                  [DEV TESTING]: OVERRIDE CARRIER LOCK
+                </Button>
+              )}
             </div>
           </div>
         </div>
